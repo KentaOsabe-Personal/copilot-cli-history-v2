@@ -96,7 +96,7 @@ export function useSessionIndex(
     previousRequest?.controller.abort()
     setIsRefreshing(true)
 
-    const result = await client.fetchSessionIndex(controller.signal)
+    const result = await client.fetchSessionIndex({ signal: controller.signal })
 
     if (controller.signal.aborted || activeRequestRef.current?.id !== requestId) {
       if (activeRequestRef.current?.id === requestId) {
@@ -134,7 +134,7 @@ export function useSessionIndex(
     activeRequestRef.current = { id: requestId, controller }
     previousRequest?.controller.abort()
 
-    void client.fetchSessionIndex(controller.signal).then((result) => {
+    void client.fetchSessionIndex({ signal: controller.signal }).then((result) => {
       if (controller.signal.aborted || activeRequestRef.current?.id !== requestId) {
         if (activeRequestRef.current?.id === requestId) {
           activeRequestRef.current = null

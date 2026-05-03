@@ -251,11 +251,11 @@ describe('useSessionIndex', () => {
 
   it('aborts the in-flight request when the hook unmounts', () => {
     let observedSignal: AbortSignal | undefined
-    const request = deferred<SessionApiResult<SessionIndexResponse>>()
-    const fetchSessionIndex = vi.fn<SessionApiClient['fetchSessionIndex']>((signal) => {
-      observedSignal = signal
+    const pendingRequest = deferred<SessionApiResult<SessionIndexResponse>>()
+    const fetchSessionIndex = vi.fn<SessionApiClient['fetchSessionIndex']>((request) => {
+      observedSignal = request?.signal
 
-      return request.promise
+      return pendingRequest.promise
     })
     const client = createClient(fetchSessionIndex)
 

@@ -48,6 +48,16 @@ export interface SessionIndexResponse {
   meta: SessionIndexMeta
 }
 
+export interface SessionIndexQuery {
+  from?: string
+  to?: string
+}
+
+export interface SessionIndexRequest {
+  signal?: AbortSignal
+  query?: SessionIndexQuery
+}
+
 export interface SessionMessageSnapshot {
   role: string | null
   content: string | null
@@ -225,7 +235,7 @@ export type SessionApiResult<T> =
   | { status: 'error'; error: SessionApiError }
 
 export interface SessionApiClient {
-  fetchSessionIndex(signal?: AbortSignal): Promise<SessionApiResult<SessionIndexResponse>>
+  fetchSessionIndex(request?: SessionIndexRequest): Promise<SessionApiResult<SessionIndexResponse>>
   fetchSessionDetail(
     sessionId: string,
     signal?: AbortSignal,
