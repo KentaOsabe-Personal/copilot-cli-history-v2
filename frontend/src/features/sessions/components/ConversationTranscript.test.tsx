@@ -137,7 +137,8 @@ describe('ConversationTranscript', () => {
     expect(screen.getByRole('button', { name: '発話 #7 を非表示' })).toHaveAttribute('aria-expanded', 'true')
   })
 
-  it('renders tool-only entries without adding an empty-body placeholder and keeps entry issues visible', () => {
+  it('does not add an empty-body placeholder when a tool-only entry is expanded', async () => {
+    const user = userEvent.setup()
     const conversation: SessionConversation = {
       ...buildConversation(),
       entries: [
@@ -174,9 +175,55 @@ describe('ConversationTranscript', () => {
 
     const entry = screen.getByTestId('conversation-entry-9')
 
+    await user.click(screen.getByRole('button', { name: '発話 #9 を表示' }))
+
     expect(entry).toHaveTextContent('skill-context')
     expect(entry).toHaveTextContent('tool context was truncated')
     expect(entry).not.toHaveTextContent('表示できる会話本文はありません')
+  })
+
+  it('starts tool-only entries hidden by default and reveals them after expanding', async () => {
+    const user = userEvent.setup()
+    const conversation: SessionConversation = {
+      ...buildConversation(),
+      entries: [
+        {
+          sequence: 10,
+          role: 'assistant',
+          content: '',
+          occurred_at: '2026-04-26T09:02:30Z',
+          tool_calls: [
+            {
+              name: 'functions.bash',
+              arguments_preview: '{"command":"pwd"}',
+              is_truncated: false,
+              status: 'complete',
+            },
+          ],
+          degraded: false,
+          issues: [],
+        },
+      ],
+      message_count: 1,
+    }
+
+    render(<ConversationTranscript conversation={conversation} stateScopeKey="session-1" />)
+
+    const entry = screen.getByTestId('conversation-entry-10')
+    const toggleButton = screen.getByRole('button', { name: '発話 #10 を表示' })
+
+    expect(toggleButton).toHaveAttribute('aria-expanded', 'false')
+    expect(entry).toHaveTextContent('発話 #10')
+    expect(entry).not.toHaveTextContent('functions.bash')
+    expect(entry).not.toHaveTextContent('{"command":"pwd"}')
+
+    await user.click(toggleButton)
+
+    expect(screen.getByRole('button', { name: '発話 #10 を非表示' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    )
+    expect(entry).toHaveTextContent('functions.bash')
   })
 
   it('starts entries that begin with a skill-context tag hidden by default', async () => {

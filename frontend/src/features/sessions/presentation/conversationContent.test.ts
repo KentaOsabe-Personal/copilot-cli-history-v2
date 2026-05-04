@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { SessionConversationEntry } from '../api/sessionApi.types.ts'
 import {
+  shouldDefaultHideConversationEntry,
   formatConversationEntryContent,
   shouldDefaultHideConversationEntryContent,
 } from './conversationContent.ts'
@@ -212,5 +213,61 @@ describe('shouldDefaultHideConversationEntryContent', () => {
     )
     expect(shouldDefaultHideConversationEntryContent('')).toBe(false)
     expect(shouldDefaultHideConversationEntryContent(null)).toBe(false)
+  })
+})
+
+describe('shouldDefaultHideConversationEntry', () => {
+  it('returns true when the entry has only tool calls and no visible body content', () => {
+    expect(
+      shouldDefaultHideConversationEntry(
+        buildEntry({
+          content: '',
+          tool_calls: [
+            {
+              name: 'functions.bash',
+              arguments_preview: '{"command":"pwd"}',
+              is_truncated: false,
+              status: 'complete',
+            },
+          ],
+        }),
+      ),
+    ).toBe(true)
+  })
+
+  it('returns true when the entry body is whitespace only and tool calls are present', () => {
+    expect(
+      shouldDefaultHideConversationEntry(
+        buildEntry({
+          content: '  \n\t  ',
+          tool_calls: [
+            {
+              name: 'functions.bash',
+              arguments_preview: '{"command":"pwd"}',
+              is_truncated: false,
+              status: 'complete',
+            },
+          ],
+        }),
+      ),
+    ).toBe(true)
+  })
+
+  it('returns false when the entry still has visible prose alongside tool calls', () => {
+    expect(
+      shouldDefaultHideConversationEntry(
+        buildEntry({
+          content: 'I will inspect the current session.',
+          tool_calls: [
+            {
+              name: 'functions.bash',
+              arguments_preview: '{"command":"pwd"}',
+              is_truncated: false,
+              status: 'complete',
+            },
+          ],
+        }),
+      ),
+    ).toBe(false)
   })
 })

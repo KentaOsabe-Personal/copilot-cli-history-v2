@@ -104,6 +104,30 @@ export function shouldDefaultHideConversationEntryContent(content: string | null
   return content.trimStart().startsWith(SKILL_CONTEXT_PREFIX)
 }
 
+export function shouldDefaultHideConversationEntry(
+  entry: Pick<SessionConversationEntry, 'content' | 'tool_calls'>,
+): boolean {
+  if (shouldDefaultHideConversationEntryContent(entry.content)) {
+    return true
+  }
+
+  if (entry.tool_calls.length === 0) {
+    return false
+  }
+
+  return !extractContentBlocks(entry.content).some((block) => {
+    if (block.kind === 'code') {
+      return true
+    }
+
+    if (block.kind !== 'text') {
+      return false
+    }
+
+    return block.text.trim().length > 0
+  })
+}
+
 function resolveToolCollapseReason(toolCall: SessionTimelineToolCall): ToolCollapseReason {
   if (toolCall.name === 'skill-context') {
     return 'skill_context'
