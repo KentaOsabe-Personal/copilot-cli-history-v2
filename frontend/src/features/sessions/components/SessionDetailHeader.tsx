@@ -12,6 +12,7 @@ interface SessionDetailHeaderProps {
 
 function SessionDetailHeader({ detail }: SessionDetailHeaderProps) {
   const metadataItems = buildSessionMetadataItems({
+    createdAt: detail.created_at,
     updatedAt: detail.updated_at,
     workContext: detail.work_context,
     selectedModel: detail.selected_model,
@@ -24,9 +25,11 @@ function SessionDetailHeader({ detail }: SessionDetailHeaderProps) {
   return (
     <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-6 shadow-2xl shadow-slate-950/20">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div>
+        <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-3">
-            <h3 className="font-mono text-xl font-semibold text-cyan-200">{detail.id}</h3>
+            <h3 className="min-w-0 break-all font-mono text-xl font-semibold text-cyan-200">
+              {detail.id}
+            </h3>
             {signals.map((signal) => (
               <span
                 key={signal.label}
@@ -44,11 +47,11 @@ function SessionDetailHeader({ detail }: SessionDetailHeaderProps) {
           {metadataItems.length > 0 ? (
             <dl className="mt-4 grid gap-3 text-sm text-slate-300 sm:grid-cols-2">
               {metadataItems.map((item) => (
-                <div key={item.label}>
+                <div key={item.label} className="min-w-0">
                   <dt className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
                     {item.label}
                   </dt>
-                  <dd className="mt-1">{item.value}</dd>
+                  <dd className="mt-1 break-words">{item.value}</dd>
                 </div>
               ))}
             </dl>

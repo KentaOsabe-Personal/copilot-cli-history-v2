@@ -35,38 +35,38 @@
   - _Requirements: 1.6, 2.3, 2.4, 5.5_
   - _Boundary: SessionEmptyState_
 
-- [ ] 3. 長い内容の表示面を overflow-safe に整える
-- [ ] 3.1 (P) 一覧カードの長い識別子とメタデータを画面幅内で読めるようにする
+- [x] 3. 長い内容の表示面を overflow-safe に整える
+- [x] 3.1 (P) 一覧カードの長い識別子とメタデータを画面幅内で読めるようにする
   - 一覧カードの時刻表示は `updated_at ?? created_at` の優先順で絞り込み根拠と揃える。
   - 長い session id や metadata があってもページ全体の横スクロールが発生しない。
   - component テストで通常コンテンツの可読性を落とさず長い値だけ折り返せることを確認できる。
   - _Requirements: 4.1, 4.4, 4.5_
   - _Boundary: SessionSummaryCard, formatters_
-- [ ] 3.2 (P) 詳細ヘッダーの長い識別子とメタデータを画面幅内で読めるようにする
+- [x] 3.2 (P) 詳細ヘッダーの長い識別子とメタデータを画面幅内で読めるようにする
   - 詳細ヘッダーの session id と metadata value がページ全体の横スクロールを生まない。
   - 長い値がない通常ケースでは既存の可読性を落とさない。
   - component テストで wrap policy を確認できる。
   - _Requirements: 4.2, 4.4, 4.5_
   - _Boundary: SessionDetailHeader_
-- [ ] 3.3 (P) 詳細ページ上部の session id 表示を長い値でも崩れないようにする
+- [x] 3.3 (P) 詳細ページ上部の session id 表示を長い値でも崩れないようにする
   - route 上部の session id が長くてもページ全体の横スクロールを前提にしない。
   - 詳細ヘッダーとは別に、上部導線の識別子表示だけを局所的に調整する。
   - page テストで長い route session id の表示が確認できる。
   - _Requirements: 4.2, 4.4, 4.5_
   - _Boundary: SessionDetailPage_
-- [ ] 3.4 (P) タイムライン本文と code / arguments 表示をブロック内スクロールへ閉じ込める
+- [x] 3.4 (P) タイムライン本文と code / arguments 表示をブロック内スクロールへ閉じ込める
   - prose text は折り返し、code / arguments preview は各ブロック内だけで横移動できる。
   - 周辺の会話文脈やヘッダー幅を崩さない表示になる。
   - component テストで wrap / local scroll の分岐を確認できる。
   - _Requirements: 4.2, 4.3, 4.4, 4.5_
   - _Boundary: TimelineContent_
-- [ ] 3.5 (P) raw payload 表示をページ全体ではなくブロック内で横移動できるようにする
+- [x] 3.5 (P) raw payload 表示をページ全体ではなくブロック内で横移動できるようにする
   - raw payload の整形済みテキストが広くても、横方向の移動はそのブロック内だけで完結する。
   - 他のタイムライン要素と同じ overflow policy を維持する。
   - component テストで raw payload の local scroll 表示を確認できる。
   - _Requirements: 4.2, 4.3, 4.4, 4.5_
   - _Boundary: ActivityTimeline_
-- [ ] 3.6 (P) issue message と source path を長い値でも同じ画面幅で読めるようにする
+- [x] 3.6 (P) issue message と source path を長い値でも同じ画面幅で読めるようにする
   - 長い issue message は折り返し、`source_path` は等幅表示でも token break できる。
   - issue 情報が長くても詳細ページ全体の横スクロールを生まない。
   - component テストで issue message と source path の wrap policy を確認できる。

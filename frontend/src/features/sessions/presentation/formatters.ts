@@ -72,6 +72,7 @@ export function getDisplayableModel(value: string | null): string | null {
 }
 
 export function buildSessionMetadataItems(input: {
+  createdAt: string | null
   updatedAt: string | null
   workContext: WorkContext
   selectedModel: string | null
@@ -79,7 +80,7 @@ export function buildSessionMetadataItems(input: {
   const items: MetadataDisplayItem[] = [
     {
       label: '更新日時',
-      value: formatTimestamp(input.updatedAt),
+      value: formatTimestamp(input.updatedAt ?? input.createdAt),
     },
   ]
   const workContext = getDisplayableWorkContext(input.workContext)

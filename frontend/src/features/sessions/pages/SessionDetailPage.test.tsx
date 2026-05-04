@@ -273,6 +273,27 @@ describe('SessionDetailPage', () => {
     expect(screen.queryByText('モデル不明')).not.toBeInTheDocument()
   })
 
+  it('applies a wrap-safe class to the route-level session id', () => {
+    const longSessionId =
+      'route-session-id-with-an-extremely-long-identifier-that-should-wrap-without-requiring-page-scroll'
+
+    mockedUseSessionDetail.mockReturnValue({
+      state: {
+        status: 'success',
+        sessionId: longSessionId,
+        rawStatus: 'idle',
+        detail: buildDetail({
+          id: longSessionId,
+        }),
+      },
+      requestRaw,
+    })
+
+    renderDetailPage(`/sessions/${longSessionId}`)
+
+    expect(screen.getAllByText(longSessionId)[0]).toHaveClass('break-all')
+  })
+
   it('keeps tool, code, partial, and unknown timeline events readable in sequence order', async () => {
     mockedUseSessionDetail.mockReturnValue({
       state: {

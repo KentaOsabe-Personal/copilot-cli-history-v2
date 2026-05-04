@@ -87,13 +87,13 @@ function TimelineContent({ event, stateScopeKey }: TimelineContentProps) {
                 ) : null}
               </div>
 
-              <div id={argumentsContentId} hidden={!hasArgumentsPreview || !isExpanded}>
-                {hasArgumentsPreview && isExpanded ? (
-                  <pre className="mt-3 overflow-x-auto whitespace-pre-wrap rounded-xl bg-slate-950/50 p-3 text-xs text-cyan-50">
-                    <code>{block.argumentsPreview}</code>
-                  </pre>
-                ) : null}
-              </div>
+                <div id={argumentsContentId} hidden={!hasArgumentsPreview || !isExpanded}>
+                  {hasArgumentsPreview && isExpanded ? (
+                    <pre className="mt-3 overflow-x-auto whitespace-pre rounded-xl bg-slate-950/50 p-3 text-xs text-cyan-50">
+                      <code>{block.argumentsPreview}</code>
+                    </pre>
+                  ) : null}
+                </div>
             </section>
           )
         }
@@ -102,7 +102,7 @@ function TimelineContent({ event, stateScopeKey }: TimelineContentProps) {
           return (
             <pre
               key={`code-${index}`}
-              className="overflow-x-auto rounded-2xl border border-white/10 bg-slate-950/90 p-4 text-sm text-slate-100"
+              className="overflow-x-auto whitespace-pre rounded-2xl border border-white/10 bg-slate-950/90 p-4 text-sm text-slate-100"
             >
               <code>{block.code}</code>
             </pre>
@@ -125,14 +125,19 @@ function TimelineContent({ event, stateScopeKey }: TimelineContentProps) {
                 <p className="text-sm font-medium text-slate-100">{block.title}</p>
               </div>
               {block.body != null ? (
-                <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-300">{block.body}</p>
+                <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6 text-slate-300">
+                  {block.body}
+                </p>
               ) : null}
             </section>
           )
         }
 
         return (
-          <p key={`text-${index}`} className="whitespace-pre-wrap text-sm leading-6 text-slate-100">
+          <p
+            key={`text-${index}`}
+            className="whitespace-pre-wrap break-words text-sm leading-6 text-slate-100"
+          >
             {block.text}
           </p>
         )

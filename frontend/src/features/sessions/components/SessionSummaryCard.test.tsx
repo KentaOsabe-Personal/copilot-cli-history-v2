@@ -75,4 +75,51 @@ describe('SessionSummaryCard', () => {
     expect(screen.queryByText('degraded')).not.toBeInTheDocument()
     expect(screen.queryByText('正常')).not.toBeInTheDocument()
   })
+
+  it('falls back to created_at and applies wrap-safe classes for long values', () => {
+    render(
+      <MemoryRouter>
+        <SessionSummaryCard
+          session={buildSessionUiSummary({
+            id: 'session-with-an-extremely-long-identifier-that-should-break-without-expanding-the-page-width',
+            updated_at: null,
+            created_at: '2026-04-26T09:00:00Z',
+            work_context: {
+              cwd: '/workspace/very-long-path-segment/that/keeps/going/without/natural/breakpoints',
+              git_root:
+                '/workspace/very-long-path-segment/that/keeps/going/without/natural/breakpoints',
+              repository:
+                'octo/copilot-cli-history-with-a-very-long-repository-name-that-needs-to-wrap',
+              branch:
+                'feature/overflow-safe-rendering-for-session-summary-cards-with-long-identifiers',
+            },
+            conversation_summary: {
+              has_conversation: true,
+              message_count: 1,
+              preview:
+                'This preview includes aSuperLongTokenWithoutNaturalBreakpointsThatShouldStillWrapInsideTheCard',
+              activity_count: 0,
+            },
+          })}
+        />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByText('2026-04-26 18:00:00 JST')).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'session-with-an-extremely-long-identifier-that-should-break-without-expanding-the-page-width',
+      ),
+    ).toHaveClass('break-all')
+    expect(
+      screen.getByText(
+        'This preview includes aSuperLongTokenWithoutNaturalBreakpointsThatShouldStillWrapInsideTheCard',
+      ),
+    ).toHaveClass('whitespace-pre-wrap', 'break-words')
+    expect(
+      screen.getByText(
+        'octo/copilot-cli-history-with-a-very-long-repository-name-that-needs-to-wrap @ feature/overflow-safe-rendering-for-session-summary-cards-with-long-identifiers',
+      ),
+    ).toHaveClass('break-words')
+  })
 })

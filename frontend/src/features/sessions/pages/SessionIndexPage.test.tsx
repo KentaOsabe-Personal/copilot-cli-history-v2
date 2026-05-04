@@ -179,7 +179,7 @@ describe('SessionIndexPage', () => {
       '/sessions/session-a',
     ])
     expect(screen.getAllByText('一部欠損あり')).toHaveLength(1)
-    expect(screen.getByText('時刻不明')).toBeInTheDocument()
+    expect(screen.getByText('2026-04-26 18:00:00 JST')).toBeInTheDocument()
     expect(screen.queryByText('作業コンテキスト不明')).not.toBeInTheDocument()
     expect(screen.queryByText('モデル不明')).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'session-b を開く' })).toHaveAttribute(

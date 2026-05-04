@@ -102,7 +102,7 @@ function ActivityTimeline({
               </div>
 
               {rawIncluded && entry.raw_payload != null ? (
-                <pre className="mt-4 overflow-x-auto whitespace-pre-wrap rounded-2xl border border-white/10 bg-slate-950/90 p-4 text-xs text-slate-100">
+                <pre className="mt-4 overflow-x-auto whitespace-pre rounded-2xl border border-white/10 bg-slate-950/90 p-4 text-xs text-slate-100">
                   <code>{JSON.stringify(entry.raw_payload, null, 2)}</code>
                 </pre>
               ) : null}

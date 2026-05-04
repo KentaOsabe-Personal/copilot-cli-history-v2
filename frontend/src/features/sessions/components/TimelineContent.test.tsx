@@ -63,6 +63,33 @@ describe('TimelineContent', () => {
     expect(screen.getByText('functions.bash / tool-1')).toBeInTheDocument()
   })
 
+  it('wraps prose and detail body text without relying on page-level overflow', () => {
+    render(
+      <TimelineContent
+        stateScopeKey="session-1:event-1"
+        event={buildEvent({
+          content:
+            'This prose block contains aVeryLongTokenWithoutNaturalBreakpointsThatShouldWrapWithinTheTimeline',
+          tool_calls: [],
+          detail: {
+            category: 'tool_execution',
+            title: 'tool.execution_start',
+            body: 'detail-body-with-aVeryLongTokenWithoutNaturalBreakpointsThatShouldAlsoWrap',
+          },
+        })}
+      />,
+    )
+
+    expect(
+      screen.getByText(
+        'This prose block contains aVeryLongTokenWithoutNaturalBreakpointsThatShouldWrapWithinTheTimeline',
+      ),
+    ).toHaveClass('whitespace-pre-wrap', 'break-words')
+    expect(
+      screen.getByText('detail-body-with-aVeryLongTokenWithoutNaturalBreakpointsThatShouldAlsoWrap'),
+    ).toHaveClass('whitespace-pre-wrap', 'break-words')
+  })
+
   it('collapses long tool arguments by default while keeping tool metadata visible', () => {
     render(
       <TimelineContent
@@ -129,6 +156,10 @@ describe('TimelineContent', () => {
     expect(within(toolBlock).getByRole('button', { name: 'arguments を隠す' })).toHaveAttribute(
       'aria-expanded',
       'true',
+    )
+    expect(within(toolBlock).getByText(/echo one\s+echo two/).closest('pre')).toHaveClass(
+      'overflow-x-auto',
+      'whitespace-pre',
     )
   })
 
@@ -213,5 +244,14 @@ describe('TimelineContent', () => {
 
     expect(within(toolBlock).getByText('functions.read')).toBeInTheDocument()
     expect(within(toolBlock).queryByRole('button')).not.toBeInTheDocument()
+  })
+
+  it('keeps code blocks in block-local horizontal scroll containers', () => {
+    render(<TimelineContent stateScopeKey="session-1:event-1" event={buildEvent()} />)
+
+    expect(screen.getByText('const answer = 42').closest('pre')).toHaveClass(
+      'overflow-x-auto',
+      'whitespace-pre',
+    )
   })
 })

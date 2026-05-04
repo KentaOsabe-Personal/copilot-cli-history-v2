@@ -53,6 +53,7 @@ describe('formatters', () => {
   it('builds metadata items without placeholder-only work context or model entries', () => {
     expect(
       buildSessionMetadataItems({
+        createdAt: null,
         updatedAt: null,
         workContext: {
           cwd: null,
@@ -66,6 +67,27 @@ describe('formatters', () => {
       {
         label: '更新日時',
         value: '時刻不明',
+      },
+    ])
+  })
+
+  it('falls back to created_at when updated_at is unavailable', () => {
+    expect(
+      buildSessionMetadataItems({
+        createdAt: '2026-04-26T09:00:00Z',
+        updatedAt: null,
+        workContext: {
+          cwd: null,
+          git_root: null,
+          repository: null,
+          branch: null,
+        },
+        selectedModel: null,
+      }),
+    ).toEqual([
+      {
+        label: '更新日時',
+        value: '2026-04-26 18:00:00 JST',
       },
     ])
   })
