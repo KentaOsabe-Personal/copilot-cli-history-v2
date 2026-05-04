@@ -45,7 +45,7 @@ export function formatTimestamp(value: string | null): string {
 }
 
 export interface MetadataDisplayItem {
-  label: '更新日時' | '作業コンテキスト' | 'モデル'
+  label: '表示日時' | '更新日時' | '作成日時' | '作業コンテキスト' | 'モデル'
   value: string
 }
 
@@ -72,16 +72,14 @@ export function getDisplayableModel(value: string | null): string | null {
 }
 
 export function buildSessionMetadataItems(input: {
+  surface?: 'summary' | 'detail'
   createdAt: string | null
   updatedAt: string | null
   workContext: WorkContext
   selectedModel: string | null
 }): readonly MetadataDisplayItem[] {
   const items: MetadataDisplayItem[] = [
-    {
-      label: '更新日時',
-      value: formatTimestamp(input.updatedAt ?? input.createdAt),
-    },
+    buildTimestampMetadataItem(input.surface ?? 'detail', input.createdAt, input.updatedAt),
   ]
   const workContext = getDisplayableWorkContext(input.workContext)
   const model = getDisplayableModel(input.selectedModel)
@@ -101,6 +99,38 @@ export function buildSessionMetadataItems(input: {
   }
 
   return items
+}
+
+function buildTimestampMetadataItem(
+  surface: 'summary' | 'detail',
+  createdAt: string | null,
+  updatedAt: string | null,
+): MetadataDisplayItem {
+  if (surface === 'summary') {
+    return {
+      label: '表示日時',
+      value: formatTimestamp(updatedAt ?? createdAt),
+    }
+  }
+
+  if (updatedAt != null) {
+    return {
+      label: '更新日時',
+      value: formatTimestamp(updatedAt),
+    }
+  }
+
+  if (createdAt != null) {
+    return {
+      label: '作成日時',
+      value: formatTimestamp(createdAt),
+    }
+  }
+
+  return {
+    label: '更新日時',
+    value: formatTimestamp(null),
+  }
 }
 
 export function formatDegradedLabel(degraded: boolean): string {

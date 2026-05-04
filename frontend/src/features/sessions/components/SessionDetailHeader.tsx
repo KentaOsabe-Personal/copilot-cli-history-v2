@@ -12,6 +12,7 @@ interface SessionDetailHeaderProps {
 
 function SessionDetailHeader({ detail }: SessionDetailHeaderProps) {
   const metadataItems = buildSessionMetadataItems({
+    surface: 'detail',
     createdAt: detail.created_at,
     updatedAt: detail.updated_at,
     workContext: detail.work_context,

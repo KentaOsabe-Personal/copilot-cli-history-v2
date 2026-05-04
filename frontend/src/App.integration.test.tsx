@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
   HistorySyncResponse,
@@ -29,6 +29,8 @@ vi.mock('./features/sessions/api/sessionApi.ts', () => ({
 }))
 
 import App from './App'
+
+const FIXED_NOW = new Date('2026-05-03T18:15:00Z')
 
 function deferred<T>() {
   let resolve!: (value: T) => void
@@ -110,10 +112,16 @@ function buildSyncResponse(): SessionApiResult<HistorySyncResponse> {
 
 describe('App integration', () => {
   beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    vi.setSystemTime(FIXED_NOW)
     sessionApiClientMock.fetchSessionIndex.mockReset()
     sessionApiClientMock.fetchSessionDetail.mockReset()
     sessionApiClientMock.fetchSessionDetailWithRaw.mockReset()
     sessionApiClientMock.syncHistory.mockReset()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   it(

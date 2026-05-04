@@ -68,22 +68,27 @@ export function useSessionIndex(
 ): UseSessionIndexResult {
   const client = options.client ?? sessionApiClient
   const now = options.now ?? defaultNow
-  const [appliedRange, setAppliedRange] = useState<SessionDateRangeDraft>(() => buildDefaultRange(now()))
-  const [settledState, setSettledState] = useState<SettledStateEnvelope | null>(() => {
+  const [initialState] = useState(() => {
     const initialRange = buildDefaultRange(now())
     const queryKey = buildQueryKey(initialRange)
     const snapshot = readReusableSnapshot(client, queryKey)
 
-    if (snapshot == null) {
-      return null
-    }
-
     return {
-      client,
-      queryKey,
-      state: snapshot,
+      appliedRange: initialRange,
+      settledState:
+        snapshot == null
+          ? null
+          : ({
+              client,
+              queryKey,
+              state: snapshot,
+            } satisfies SettledStateEnvelope),
     }
   })
+  const [appliedRange, setAppliedRange] = useState<SessionDateRangeDraft>(initialState.appliedRange)
+  const [settledState, setSettledState] = useState<SettledStateEnvelope | null>(
+    initialState.settledState,
+  )
   const [isRefreshing, setIsRefreshing] = useState(false)
   const appliedRangeRef = useRef(appliedRange)
   const settledStateRef = useRef<SettledStateEnvelope | null>(settledState)
@@ -202,6 +207,7 @@ export function useSessionIndex(
   }, [performRequest])
 
   useEffect(() => {
+    let disposed = false
     const initialRange = appliedRangeRef.current
     const initialQueryKey = buildQueryKey(initialRange)
     const hasReusableSnapshot = readReusableSnapshot(client, initialQueryKey) != null
@@ -211,13 +217,18 @@ export function useSessionIndex(
       queryKey: initialQueryKey,
       preserveVisibleState: hasReusableSnapshot,
       preserveSnapshotOnError: hasReusableSnapshot,
+    }).then((result) => {
+      if (!disposed && hasReusableSnapshot && result.status === 'error') {
+        applySettledState(initialQueryKey, result)
+      }
     })
 
     return () => {
+      disposed = true
       activeRequestRef.current?.controller.abort()
       activeRequestRef.current = null
     }
-  }, [client, performRequest])
+  }, [applySettledState, client, performRequest])
 
   if (settledState == null || settledState.client !== client) {
     return {

@@ -94,4 +94,22 @@ describe('SessionDetailHeader', () => {
       screen.getByText('gpt-5.4-with-a-very-long-suffix-for-overflow-checking'),
     ).toHaveClass('break-words')
   })
+
+  it('shows created_at as 作成日時 when the session has never been updated', () => {
+    render(
+      <MemoryRouter>
+        <SessionDetailHeader
+          detail={buildSessionUiDetail({
+            id: 'detail-created-only',
+            created_at: '2026-04-26T09:00:00Z',
+            updated_at: null,
+          })}
+        />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByText('作成日時')).toBeInTheDocument()
+    expect(screen.queryByText('更新日時')).not.toBeInTheDocument()
+    expect(screen.getByText('2026-04-26 18:00:00 JST')).toBeInTheDocument()
+  })
 })

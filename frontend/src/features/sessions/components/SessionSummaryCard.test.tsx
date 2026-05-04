@@ -106,6 +106,7 @@ describe('SessionSummaryCard', () => {
     )
 
     expect(screen.getByText('2026-04-26 18:00:00 JST')).toBeInTheDocument()
+    expect(screen.getByText('表示日時')).toBeInTheDocument()
     expect(
       screen.getByText(
         'session-with-an-extremely-long-identifier-that-should-break-without-expanding-the-page-width',

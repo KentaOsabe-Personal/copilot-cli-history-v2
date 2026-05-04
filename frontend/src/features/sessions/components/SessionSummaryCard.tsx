@@ -12,6 +12,7 @@ interface SessionSummaryCardProps {
 
 function SessionSummaryCard({ session }: SessionSummaryCardProps) {
   const metadataItems = buildSessionMetadataItems({
+    surface: 'summary',
     createdAt: session.created_at,
     updatedAt: session.updated_at,
     workContext: session.work_context,
