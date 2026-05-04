@@ -73,20 +73,20 @@
   - _Requirements: 4.2, 4.4, 4.5_
   - _Boundary: IssueList_
 
-- [ ] 4. 一覧導線へフィルタ体験を統合する
-- [ ] 4.1 一覧ページが draft / applied range を所有し、日付フィルタ操作を current range に結び付ける
+- [x] 4. 一覧導線へフィルタ体験を統合する
+- [x] 4.1 一覧ページが draft / applied range を所有し、日付フィルタ操作を current range に結び付ける
   - 一覧ページが controlled な draft 値をフォームへ渡し、初期 7 日、両端指定、片側指定、空入力 reset を適用できる。
   - 現在の適用範囲ラベルが一覧、empty、再描画後も一貫して表示される。
   - page テストで filter apply と current range 表示を確認できる。
   - _Depends: 2.1, 2.2, 2.3_
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 2.1, 2.3, 2.4, 3.3, 5.1_
-- [ ] 4.2 一覧ページが loading / empty / error / sync refresh を適用済み範囲に揃えて扱う
+- [x] 4.2 一覧ページが loading / empty / error / sync refresh を適用済み範囲に揃えて扱う
   - filtered empty と error panel を混同せず、new-range error でも attempted range が current range として残る。
   - 手動同期後の再取得は最新の適用範囲を使い、current / legacy を同じ `/api/sessions` 契約で扱い続ける。
   - page 統合テストで別条件への切替、sync 後 refresh、mixed session data でも同じ filter experience を確認できる。
   - _Depends: 2.1, 2.3, 4.1_
   - _Requirements: 1.6, 2.1, 2.2, 2.5, 5.4, 5.5_
-- [ ] 4.3 (P) read-only 導線の説明文を日付フィルタ追加後のスコープに合わせて更新する
+- [x] 4.3 (P) read-only 導線の説明文を日付フィルタ追加後のスコープに合わせて更新する
   - 探索可能なのは日付範囲だけで、検索、編集、共有、自動更新を追加していないことが説明文から分かる。
   - shell レベルのテストが新しいスコープ説明を固定する。
   - _Requirements: 5.2, 5.3, 5.5_

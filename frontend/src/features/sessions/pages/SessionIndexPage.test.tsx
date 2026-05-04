@@ -29,18 +29,23 @@ const DEFAULT_APPLIED_RANGE: SessionDateRangeDraft = {
 function buildUseSessionIndexResult(
   state: SessionIndexState,
   appliedRange: SessionDateRangeDraft = DEFAULT_APPLIED_RANGE,
+  overrides: Partial<
+    Pick<UseSessionIndexResult, 'isRefreshing' | 'applyRange' | 'reloadSessions'>
+  > = {},
 ): UseSessionIndexResult {
   const reloadOutcome =
     state.status === 'loading'
       ? ({ status: 'empty' } as const)
       : state
 
+  const reloadSessions = overrides.reloadSessions ?? (async () => reloadOutcome)
+
   return {
     state,
     appliedRange,
-    isRefreshing: false,
-    applyRange: vi.fn(async () => reloadOutcome),
-    reloadSessions: async () => reloadOutcome,
+    isRefreshing: overrides.isRefreshing ?? false,
+    applyRange: overrides.applyRange ?? vi.fn(async () => reloadOutcome),
+    reloadSessions,
   }
 }
 
@@ -105,6 +110,105 @@ describe('SessionIndexPage', () => {
     expect(screen.getByRole('heading', { name: 'セッション一覧を読み込んでいます' })).toBeInTheDocument()
   })
 
+  it('keeps the attempted applied range visible inside the loading panel context', () => {
+    mockedUseSessionIndex.mockReturnValue(
+      buildUseSessionIndexResult(
+        { status: 'loading' },
+        {
+          from: '2026-05-01',
+          to: '2026-05-07',
+        },
+      ),
+    )
+
+    render(
+      <MemoryRouter>
+        <SessionIndexPage />
+      </MemoryRouter>,
+    )
+
+    expect(
+      screen.getByText('現在の表示範囲: 2026-05-01 〜 2026-05-07 のセッションを確認しています。'),
+    ).toBeInTheDocument()
+  })
+
+  it('renders the date filter form with the hook-applied range as the current confirmed range', () => {
+    mockedUseSessionIndex.mockReturnValue(buildUseSessionIndexResult({ status: 'empty' }))
+
+    render(
+      <MemoryRouter>
+        <SessionIndexPage />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByRole('heading', { name: '日付範囲で絞り込む' })).toBeInTheDocument()
+    expect(screen.getByLabelText('開始日')).toHaveValue('2026-04-28')
+    expect(screen.getByLabelText('終了日')).toHaveValue('2026-05-04')
+    expect(screen.getAllByText('現在の表示範囲: 2026-04-28 〜 2026-05-04')).toHaveLength(2)
+  })
+
+  it('submits the page-owned draft range through applyRange while keeping the confirmed label on the hook state', async () => {
+    const user = userEvent.setup()
+    const applyRange = vi.fn(async () => ({ status: 'empty' } as const))
+
+    mockedUseSessionIndex.mockReturnValue(
+      buildUseSessionIndexResult(
+        { status: 'success', sessions: [buildSessionSummary()], meta: { count: 1, partial_results: false } },
+        DEFAULT_APPLIED_RANGE,
+        { applyRange },
+      ),
+    )
+
+    render(
+      <MemoryRouter>
+        <SessionIndexPage />
+      </MemoryRouter>,
+    )
+
+    await user.clear(screen.getByLabelText('開始日'))
+    await user.type(screen.getByLabelText('開始日'), '2026-05-01')
+    await user.clear(screen.getByLabelText('終了日'))
+    await user.type(screen.getByLabelText('終了日'), '2026-05-07')
+    await user.click(screen.getByRole('button', { name: '適用する' }))
+
+    expect(applyRange).toHaveBeenCalledWith({
+      from: '2026-05-01',
+      to: '2026-05-07',
+    })
+    expect(screen.getByText('現在の表示範囲: 2026-04-28 〜 2026-05-04')).toBeInTheDocument()
+  })
+
+  it('lets the page submit an empty draft so the hook can reset back to the default 7-day range', async () => {
+    const user = userEvent.setup()
+    const applyRange = vi.fn(async () => ({ status: 'empty' } as const))
+
+    mockedUseSessionIndex.mockReturnValue(
+      buildUseSessionIndexResult(
+        { status: 'empty' },
+        {
+          from: '2026-05-01',
+          to: '2026-05-07',
+        },
+        { applyRange },
+      ),
+    )
+
+    render(
+      <MemoryRouter>
+        <SessionIndexPage />
+      </MemoryRouter>,
+    )
+
+    await user.clear(screen.getByLabelText('開始日'))
+    await user.clear(screen.getByLabelText('終了日'))
+    await user.click(screen.getByRole('button', { name: '適用する' }))
+
+    expect(applyRange).toHaveBeenCalledWith({
+      from: '',
+      to: '',
+    })
+  })
+
   it('renders an empty-state sync action when the backend returns no sessions', () => {
     mockedUseSessionIndex.mockReturnValue(buildUseSessionIndexResult({ status: 'empty' }))
 
@@ -116,7 +220,7 @@ describe('SessionIndexPage', () => {
 
     expect(screen.getByRole('button', { name: '履歴を最新化' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'この日付範囲に一致するセッションはありません' })).toBeInTheDocument()
-    expect(screen.getByText('現在の表示範囲: 2026-04-28 〜 2026-05-04')).toBeInTheDocument()
+    expect(screen.getAllByText('現在の表示範囲: 2026-04-28 〜 2026-05-04')).toHaveLength(2)
     expect(screen.getByRole('button', { name: '履歴を取り込む' })).toBeInTheDocument()
   })
 
@@ -137,7 +241,7 @@ describe('SessionIndexPage', () => {
       </MemoryRouter>,
     )
 
-    expect(screen.getByText('現在の表示範囲: 2026-05-01 〜 2026-05-07')).toBeInTheDocument()
+    expect(screen.getAllByText('現在の表示範囲: 2026-05-01 〜 2026-05-07')).toHaveLength(2)
   })
 
   it('renders ordered session cards without placeholder-only work context or model metadata', () => {
@@ -272,6 +376,42 @@ describe('SessionIndexPage', () => {
     expect(screen.queryByRole('link', { name: 'session-123 を開く' })).not.toBeInTheDocument()
   })
 
+  it('keeps a new-range error aligned to the attempted applied range instead of stale success content', () => {
+    mockedUseSessionIndex.mockReturnValue(
+      buildUseSessionIndexResult(
+        {
+          status: 'error',
+          error: {
+            kind: 'backend',
+            httpStatus: 503,
+            code: 'root_missing',
+            message: 'history root does not exist',
+            details: {
+              path: '/tmp/.copilot',
+            },
+          },
+        },
+        {
+          from: '2026-05-01',
+          to: '2026-05-07',
+        },
+      ),
+    )
+
+    render(
+      <MemoryRouter>
+        <SessionIndexPage />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByText('現在の表示範囲: 2026-05-01 〜 2026-05-07')).toBeInTheDocument()
+    expect(
+      screen.getByText('現在の表示範囲: 2026-05-01 〜 2026-05-07 の一覧取得に失敗しました。時間をおいて再度開いてください。'),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'session-123 を開く' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'この日付範囲に一致するセッションはありません' })).not.toBeInTheDocument()
+  })
+
   it('navigates to the detail route when a session card is selected', async () => {
     const user = userEvent.setup()
 
@@ -378,6 +518,63 @@ describe('SessionIndexPage', () => {
     expect(screen.getByRole('link', { name: 'session-123 を開く' })).toBeInTheDocument()
   })
 
+  it('keeps the same date-filter experience after sync when current and legacy sessions share the result list', () => {
+    mockedUseSessionIndex.mockReturnValue(buildUseSessionIndexResult(
+      {
+        status: 'success',
+        sessions: [
+          buildSessionSummary({
+            id: 'current-session',
+            source_format: 'current',
+          }),
+          buildSessionSummary({
+            id: 'legacy-session',
+            source_format: 'legacy',
+          }),
+        ],
+        meta: {
+          count: 2,
+          partial_results: false,
+        },
+      },
+      {
+        from: '2026-05-01',
+        to: '',
+      },
+    ))
+    mockedUseHistorySync.mockReturnValue(buildUseHistorySyncResult({
+      status: 'synced_with_sessions',
+      result: {
+        sync_run: {
+          id: 42,
+          status: 'completed',
+          started_at: '2026-04-30T09:00:00Z',
+          finished_at: '2026-04-30T09:00:03Z',
+        },
+        counts: {
+          processed_count: 5,
+          inserted_count: 2,
+          updated_count: 1,
+          saved_count: 3,
+          skipped_count: 2,
+          failed_count: 0,
+          degraded_count: 0,
+        },
+      },
+    }))
+
+    render(
+      <MemoryRouter>
+        <SessionIndexPage />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByText('現在の表示範囲: 2026-05-01 以降')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '履歴を最新化しました' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'current-session を開く' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'legacy-session を開く' })).toBeInTheDocument()
+  })
+
   it('renders a synced-empty banner and keeps the empty state distinct from failure', () => {
     mockedUseSessionIndex.mockReturnValue(buildUseSessionIndexResult({ status: 'empty' }))
     mockedUseHistorySync.mockReturnValue(buildUseHistorySyncResult({
@@ -409,7 +606,7 @@ describe('SessionIndexPage', () => {
 
     expect(screen.getByRole('heading', { name: '履歴の同期は完了しました' })).toBeInTheDocument()
     expect(screen.getByText('取り込みは完了しましたが、表示できるセッションはまだありません。')).toBeInTheDocument()
-    expect(screen.getByText('現在の表示範囲: 2026-04-28 〜 2026-05-04')).toBeInTheDocument()
+    expect(screen.getAllByText('現在の表示範囲: 2026-04-28 〜 2026-05-04')).toHaveLength(2)
     expect(screen.getByRole('button', { name: '履歴を取り込む' })).toBeInTheDocument()
   })
 
