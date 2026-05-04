@@ -134,7 +134,7 @@ function buildTimestampMetadataItem(
 }
 
 export function formatDegradedLabel(degraded: boolean): string {
-  return degraded ? '一部欠損あり' : '正常'
+  return degraded ? DEGRADED_LABEL : '正常'
 }
 
 export function formatSourceStateLabel(sourceState: SessionSourceState): string {
@@ -150,26 +150,48 @@ export function buildSessionSummarySignals(input: {
   degraded: boolean
   sourceState: SessionSourceState
 }): readonly SessionSignalBadge[] {
-  const badges: SessionSignalBadge[] = []
+  if (input.sourceState === 'workspace_only') {
+    return [
+      {
+        label: 'workspace-only',
+        tone: 'warning',
+      },
+    ]
+  }
 
   if (!input.hasConversation) {
-    badges.push({
-      label: input.sourceState === 'workspace_only' ? 'workspace-only' : 'metadata-only',
-      tone: input.sourceState === 'workspace_only' ? 'warning' : 'neutral',
-    })
+    return [
+      {
+        label: 'metadata-only',
+        tone: 'neutral',
+      },
+    ]
   }
 
-  if (
-    input.sourceState === 'workspace_only' &&
-    !badges.some((badge) => badge.label === 'workspace-only')
-  ) {
-    badges.push({
+  return []
+}
+
+const DEGRADED_LABEL = '一部欠損あり'
+
+function buildSessionConstraintBadge(input: {
+  degraded: boolean
+  sourceState: SessionSourceState
+}): SessionSignalBadge | null {
+  if (input.degraded || input.sourceState === 'degraded') {
+    return {
+      label: DEGRADED_LABEL,
+      tone: 'warning',
+    }
+  }
+
+  if (input.sourceState === 'workspace_only') {
+    return {
       label: 'workspace-only',
       tone: 'warning',
-    })
+    }
   }
 
-  return badges
+  return null
 }
 
 export function buildSessionDetailSignals(input: {
@@ -206,25 +228,4 @@ function normalizeText(value: string | null): string | null {
   const normalized = value?.trim()
 
   return normalized != null && normalized.length > 0 ? normalized : null
-}
-
-function buildSessionConstraintBadge(input: {
-  degraded: boolean
-  sourceState: SessionSourceState
-}): SessionSignalBadge | null {
-  if (input.degraded || input.sourceState === 'degraded') {
-    return {
-      label: formatDegradedLabel(true),
-      tone: 'warning',
-    }
-  }
-
-  if (input.sourceState === 'workspace_only') {
-    return {
-      label: 'workspace-only',
-      tone: 'warning',
-    }
-  }
-
-  return null
 }
