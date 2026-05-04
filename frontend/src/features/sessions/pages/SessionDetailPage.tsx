@@ -28,7 +28,7 @@ function SessionDetailPage() {
   return (
     <section className="flex flex-col gap-6">
       <h2 className="text-2xl font-semibold text-white">セッション詳細</h2>
-      <p className="font-mono text-sm text-cyan-200">{sessionId}</p>
+      <p className="min-w-0 break-all font-mono text-sm text-cyan-200">{sessionId}</p>
 
       {state.status === 'loading' ? (
         <StatusPanel

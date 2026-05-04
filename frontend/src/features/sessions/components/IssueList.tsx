@@ -33,9 +33,11 @@ function IssueList({ title, issues }: IssueListProps) {
                   </span>
                 ) : null}
               </div>
-              <p className="text-sm leading-6 text-amber-50">{issue.message}</p>
+              <p className="whitespace-pre-wrap break-words text-sm leading-6 text-amber-50">
+                {issue.message}
+              </p>
               {issue.source_path != null ? (
-                <p className="font-mono text-xs text-amber-100/80">{issue.source_path}</p>
+                <p className="break-all font-mono text-xs text-amber-100/80">{issue.source_path}</p>
               ) : null}
             </li>
           )

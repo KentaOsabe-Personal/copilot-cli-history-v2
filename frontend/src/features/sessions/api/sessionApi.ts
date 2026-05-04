@@ -6,6 +6,7 @@ import type {
   SessionApiEnvironment,
   SessionApiError,
   SessionApiResult,
+  SessionIndexQuery,
 } from './sessionApi.types.ts'
 
 type FetchImpl = typeof fetch
@@ -22,8 +23,13 @@ export function createSessionApiClient(
   const env = options.env
 
   return {
-    fetchSessionIndex(signal) {
-      return requestJson('/api/sessions', { fetchImpl, env, signal })
+    fetchSessionIndex(request = {}) {
+      return requestJson('/api/sessions', {
+        fetchImpl,
+        env,
+        signal: request.signal,
+        query: request.query,
+      })
     },
     fetchSessionDetail(sessionId, signal) {
       if (sessionId.length === 0) {
@@ -67,6 +73,7 @@ async function requestJson<T>(
     env?: SessionApiEnvironment
     signal?: AbortSignal
     method?: 'GET' | 'POST'
+    query?: SessionIndexQuery
   },
 ): Promise<SessionApiResult<T>> {
   const baseUrlResult = resolveApiBaseUrl(options.env)
@@ -79,7 +86,7 @@ async function requestJson<T>(
   }
 
   try {
-    const response = await options.fetchImpl(new URL(path, baseUrlResult.baseUrl), {
+    const response = await options.fetchImpl(buildRequestUrl(path, baseUrlResult.baseUrl, options.query), {
       method: options.method ?? 'GET',
       headers: {
         Accept: 'application/json',
@@ -113,6 +120,24 @@ async function requestJson<T>(
       },
     }
   }
+}
+
+function buildRequestUrl(path: string, baseUrl: URL, query?: SessionIndexQuery): URL {
+  const url = new URL(path, baseUrl)
+
+  if (isPresentQueryValue(query?.from)) {
+    url.searchParams.set('from', query.from)
+  }
+
+  if (isPresentQueryValue(query?.to)) {
+    url.searchParams.set('to', query.to)
+  }
+
+  return url
+}
+
+function isPresentQueryValue(value: string | undefined): value is string {
+  return value != null && value.length > 0
 }
 
 function normalizeHttpError(status: number, errorEnvelope: ErrorEnvelope): SessionApiError {

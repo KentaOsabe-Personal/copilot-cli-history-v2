@@ -120,6 +120,99 @@ describe('createSessionApiClient', () => {
     })
   })
 
+  it('serializes the explicit default 7-day date query for the session index in a stable order', async () => {
+    const payload = {
+      data: [],
+      meta: {
+        count: 0,
+        partial_results: false,
+      },
+    }
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(jsonResponse(payload))
+    const client = createSessionApiClient({
+      fetchImpl: fetchMock,
+      env: { VITE_API_BASE_URL: 'http://localhost:30000' },
+    })
+
+    await expect(
+      client.fetchSessionIndex({
+        query: {
+          from: '2026-04-28T00:00:00+09:00',
+          to: '2026-05-04T23:59:59.999999+09:00',
+        },
+      }),
+    ).resolves.toEqual({
+      status: 'success',
+      data: payload,
+    })
+
+    expect(String(fetchMock.mock.calls[0][0])).toBe(
+      'http://localhost:30000/api/sessions?from=2026-04-28T00%3A00%3A00%2B09%3A00&to=2026-05-04T23%3A59%3A59.999999%2B09%3A00',
+    )
+  })
+
+  it('omits empty date query values while keeping defined values', async () => {
+    const payload = {
+      data: [],
+      meta: {
+        count: 0,
+        partial_results: false,
+      },
+    }
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(jsonResponse(payload))
+    const client = createSessionApiClient({
+      fetchImpl: fetchMock,
+      env: { VITE_API_BASE_URL: 'http://localhost:30000' },
+    })
+
+    await expect(
+      client.fetchSessionIndex({
+        query: {
+          from: '2026-05-01T00:00:00+09:00',
+          to: '',
+        },
+      }),
+    ).resolves.toEqual({
+      status: 'success',
+      data: payload,
+    })
+
+    expect(String(fetchMock.mock.calls[0][0])).toBe(
+      'http://localhost:30000/api/sessions?from=2026-05-01T00%3A00%3A00%2B09%3A00',
+    )
+  })
+
+  it('serializes a to-only date query without adding an empty from value', async () => {
+    const payload = {
+      data: [],
+      meta: {
+        count: 0,
+        partial_results: false,
+      },
+    }
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(jsonResponse(payload))
+    const client = createSessionApiClient({
+      fetchImpl: fetchMock,
+      env: { VITE_API_BASE_URL: 'http://localhost:30000' },
+    })
+
+    await expect(
+      client.fetchSessionIndex({
+        query: {
+          from: '',
+          to: '2026-05-07T23:59:59.999999+09:00',
+        },
+      }),
+    ).resolves.toEqual({
+      status: 'success',
+      data: payload,
+    })
+
+    expect(String(fetchMock.mock.calls[0][0])).toBe(
+      'http://localhost:30000/api/sessions?to=2026-05-07T23%3A59%3A59.999999%2B09%3A00',
+    )
+  })
+
   it('fetches normal and raw-explicit detail through separate typed client methods', async () => {
     const payload = {
       data: {

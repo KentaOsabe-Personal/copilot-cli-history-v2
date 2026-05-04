@@ -1,0 +1,107 @@
+# Implementation Plan
+
+- [x] 1. 日付範囲ポリシーと一覧取得契約を整備する
+- [x] 1.1 JST 基準の既定 7 日範囲、空入力のリセット、無効範囲判定を共通化する
+  - 開始日・終了日の draft 値から、適用範囲、一覧取得用の query 入力、表示ラベル、query key を同じ規則で導けるようにする。
+  - `from > to` だけを無効とし、片側入力と両日付空は有効な入力として扱えるようにする。
+  - 既定 7 日と終了日の JST 終端が自動テストで固定され、通常導線が backend の既定 30 日に依存しない状態になる。
+  - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 2.3, 2.4, 3.1, 3.2, 3.3, 3.4, 3.5_
+- [x] 1.2 一覧 API クライアントが適用済み範囲を既存 API 契約へ直列化できるようにする
+  - `from` / `to` は定義された値だけ送信し、query 未指定時の既存互換性を維持する。
+  - 既定 7 日、片側指定、両端指定の query 文字列が安定して生成される。
+  - 一覧取得が current / legacy を区別せず同じ `/api/sessions` 契約を使い続けることを自動テストで確認できる。
+  - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 2.2, 5.4_
+
+- [x] 2. 日付フィルタの状態管理と入力 UI を実装する
+- [x] 2.1 (P) 一覧 hook が query key 単位の snapshot、stale response 防止、最新範囲 refresh を管理する
+  - 初期表示と空入力適用は、常に解決済みの直近 7 日範囲を current applied range として取得する。
+  - request id と abort 制御で stale response を current result に混ぜず、新しい条件の読み込みでは別条件の成功結果を残さない。
+  - 同一条件の再取得だけ直前 snapshot を維持し、同期完了後の refresh は latest applied range を使う。
+  - hook テストで query key 再利用、new-range loading、same-range reload、sync 後 latest range refresh を確認できる。
+  - _Requirements: 1.1, 1.5, 1.6, 2.1, 2.2, 2.5, 5.4_
+  - _Boundary: useSessionIndex_
+- [x] 2.2 (P) 日付フィルタフォームが開始日・終了日だけを扱い、無効範囲を送信前に防ぐ
+  - 開始日と終了日の 2 項目だけを表示し、現在の適用範囲を補助表示する。
+  - 無効範囲では理由メッセージが表示され Apply を押せず、修正後は再度適用できる。
+  - 両入力空の送信は「直近 7 日へ戻す」として許可される。
+  - component テストで invalid、修正後 valid、片側指定、空入力 reset を確認できる。
+  - _Requirements: 1.2, 1.3, 1.4, 1.5, 1.6, 3.1, 3.2, 3.3, 3.4, 3.5, 5.1_
+  - _Boundary: SessionDateFilterForm_
+- [x] 2.3 (P) 絞り込み専用の empty 表示が現在の適用範囲を示し、同期補助文言と責務を分ける
+  - 0 件は current applied range に一致する結果だけを意味し、履歴全体が空とは断定しない。
+  - empty panel でも現在の開始日・終了日を同じ表現で確認できる。
+  - `synced_empty` は copy 上の補助文言としてだけ扱い、refresh の state 遷移判断は抱え込まない。
+  - component テストで default 7 日 empty、user-selected empty、sync 後 empty の表示差分を確認できる。
+  - _Requirements: 1.6, 2.3, 2.4, 5.5_
+  - _Boundary: SessionEmptyState_
+
+- [x] 3. 長い内容の表示面を overflow-safe に整える
+- [x] 3.1 (P) 一覧カードの長い識別子とメタデータを画面幅内で読めるようにする
+  - 一覧カードの時刻表示は `updated_at ?? created_at` の優先順で絞り込み根拠と揃える。
+  - 長い session id や metadata があってもページ全体の横スクロールが発生しない。
+  - component テストで通常コンテンツの可読性を落とさず長い値だけ折り返せることを確認できる。
+  - _Requirements: 4.1, 4.4, 4.5_
+  - _Boundary: SessionSummaryCard, formatters_
+- [x] 3.2 (P) 詳細ヘッダーの長い識別子とメタデータを画面幅内で読めるようにする
+  - 詳細ヘッダーの session id と metadata value がページ全体の横スクロールを生まない。
+  - 長い値がない通常ケースでは既存の可読性を落とさない。
+  - component テストで wrap policy を確認できる。
+  - _Requirements: 4.2, 4.4, 4.5_
+  - _Boundary: SessionDetailHeader_
+- [x] 3.3 (P) 詳細ページ上部の session id 表示を長い値でも崩れないようにする
+  - route 上部の session id が長くてもページ全体の横スクロールを前提にしない。
+  - 詳細ヘッダーとは別に、上部導線の識別子表示だけを局所的に調整する。
+  - page テストで長い route session id の表示が確認できる。
+  - _Requirements: 4.2, 4.4, 4.5_
+  - _Boundary: SessionDetailPage_
+- [x] 3.4 (P) タイムライン本文と code / arguments 表示をブロック内スクロールへ閉じ込める
+  - prose text は折り返し、code / arguments preview は各ブロック内だけで横移動できる。
+  - 周辺の会話文脈やヘッダー幅を崩さない表示になる。
+  - component テストで wrap / local scroll の分岐を確認できる。
+  - _Requirements: 4.2, 4.3, 4.4, 4.5_
+  - _Boundary: TimelineContent_
+- [x] 3.5 (P) raw payload 表示をページ全体ではなくブロック内で横移動できるようにする
+  - raw payload の整形済みテキストが広くても、横方向の移動はそのブロック内だけで完結する。
+  - 他のタイムライン要素と同じ overflow policy を維持する。
+  - component テストで raw payload の local scroll 表示を確認できる。
+  - _Requirements: 4.2, 4.3, 4.4, 4.5_
+  - _Boundary: ActivityTimeline_
+- [x] 3.6 (P) issue message と source path を長い値でも同じ画面幅で読めるようにする
+  - 長い issue message は折り返し、`source_path` は等幅表示でも token break できる。
+  - issue 情報が長くても詳細ページ全体の横スクロールを生まない。
+  - component テストで issue message と source path の wrap policy を確認できる。
+  - _Requirements: 4.2, 4.4, 4.5_
+  - _Boundary: IssueList_
+
+- [x] 4. 一覧導線へフィルタ体験を統合する
+- [x] 4.1 一覧ページが draft / applied range を所有し、日付フィルタ操作を current range に結び付ける
+  - 一覧ページが controlled な draft 値をフォームへ渡し、初期 7 日、両端指定、片側指定、空入力 reset を適用できる。
+  - 現在の適用範囲ラベルが一覧、empty、再描画後も一貫して表示される。
+  - page テストで filter apply と current range 表示を確認できる。
+  - _Depends: 2.1, 2.2, 2.3_
+  - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 2.1, 2.3, 2.4, 3.3, 5.1_
+- [x] 4.2 一覧ページが loading / empty / error / sync refresh を適用済み範囲に揃えて扱う
+  - filtered empty と error panel を混同せず、new-range error でも attempted range が current range として残る。
+  - 手動同期後の再取得は最新の適用範囲を使い、current / legacy を同じ `/api/sessions` 契約で扱い続ける。
+  - page 統合テストで別条件への切替、sync 後 refresh、mixed session data でも同じ filter experience を確認できる。
+  - _Depends: 2.1, 2.3, 4.1_
+  - _Requirements: 1.6, 2.1, 2.2, 2.5, 5.4, 5.5_
+- [x] 4.3 (P) read-only 導線の説明文を日付フィルタ追加後のスコープに合わせて更新する
+  - 探索可能なのは日付範囲だけで、検索、編集、共有、自動更新を追加していないことが説明文から分かる。
+  - shell レベルのテストが新しいスコープ説明を固定する。
+  - _Requirements: 5.2, 5.3, 5.5_
+  - _Boundary: AppShell_
+
+- [x] 5. 回帰防止の検証を仕上げる
+- [x] 5.1 一覧導線の統合テストで日付フィルタ体験と read-only スコープを固定する
+  - 日付条件の適用、same-range refresh、sync 後の条件維持、scope copy が同時に崩れないことを確認できる。
+  - current / legacy の混在データでも同じ filter experience が保たれることを確認できる。
+  - feature 全体で read-only の探索体験を維持できる自動テストが揃う。
+  - _Depends: 4.2, 4.3_
+  - _Requirements: 2.2, 2.5, 5.2, 5.3, 5.4, 5.5_
+- [x] 5.2 一覧・詳細の overflow-sensitive surface で横スクロール回帰を防ぐ
+  - 一覧カード、詳細ヘッダー、route 上部、タイムライン、raw payload、issue 表示で page 全体の横スクロールを前提にしないことを確認できる。
+  - created-only session でも一覧表示時刻が filter basis と同じ優先順で出ることを確認できる。
+  - 長い値がない通常ケースの可読性を落とさない回帰テストが揃う。
+  - _Depends: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
+  - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_

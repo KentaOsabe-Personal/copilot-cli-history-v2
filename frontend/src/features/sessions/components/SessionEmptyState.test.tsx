@@ -9,9 +9,17 @@ describe('SessionEmptyState', () => {
     const user = userEvent.setup()
     const onSync = vi.fn()
 
-    render(<SessionEmptyState syncState={{ status: 'idle' }} isSyncing={false} onSync={onSync} />)
+    render(
+      <SessionEmptyState
+        appliedRangeLabel="直近 7 日"
+        syncState={{ status: 'idle' }}
+        isSyncing={false}
+        onSync={onSync}
+      />,
+    )
 
-    expect(screen.getByRole('heading', { name: 'まだ表示できるセッションがありません' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'この日付範囲に一致するセッションはありません' })).toBeInTheDocument()
+    expect(screen.getByText('現在の表示範囲: 直近 7 日')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: '履歴を取り込む' }))
 
@@ -21,14 +29,22 @@ describe('SessionEmptyState', () => {
   it('disables the empty-state action while syncing', () => {
     const onSync = vi.fn()
 
-    render(<SessionEmptyState syncState={{ status: 'syncing' }} isSyncing onSync={onSync} />)
+    render(
+      <SessionEmptyState
+        appliedRangeLabel="2026-05-01 〜 2026-05-07"
+        syncState={{ status: 'syncing' }}
+        isSyncing
+        onSync={onSync}
+      />,
+    )
 
     expect(screen.getByRole('button', { name: '履歴を取り込み中...' })).toBeDisabled()
   })
 
-  it('explains a synced-empty outcome without treating it as a failure', () => {
+  it('keeps the empty meaning range-scoped and adds synced_empty only as a hint', () => {
     render(
       <SessionEmptyState
+        appliedRangeLabel="2026-05-01 〜 2026-05-07"
         syncState={{
           status: 'synced_empty',
           result: {
@@ -54,6 +70,7 @@ describe('SessionEmptyState', () => {
       />,
     )
 
-    expect(screen.getByText('履歴の取り込みは完了しましたが、表示できるセッションはまだありません。')).toBeInTheDocument()
+    expect(screen.getByText('現在の表示範囲: 2026-05-01 〜 2026-05-07')).toBeInTheDocument()
+    expect(screen.getByText('この条件では、まだ一致するセッションが見つかっていません。')).toBeInTheDocument()
   })
 })

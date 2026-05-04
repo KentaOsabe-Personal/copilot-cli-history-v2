@@ -10,6 +10,17 @@ import type {
 } from '../api/sessionApi.types.ts'
 import { useSessionIndex } from './useSessionIndex.ts'
 
+const DEFAULT_RANGE = {
+  from: '2026-04-28',
+  to: '2026-05-04',
+} as const
+
+const DEFAULT_QUERY = {
+  from: '2026-04-28T00:00:00+09:00',
+  to: '2026-05-04T23:59:59.999999+09:00',
+} as const
+const FIXED_NOW = () => new Date('2026-05-03T18:15:00Z')
+
 function deferred<T>() {
   let resolve!: (value: T) => void
 
@@ -41,15 +52,19 @@ function createClient(fetchSessionIndex: SessionApiClient['fetchSessionIndex']):
 
 const StateProbe = forwardRef<
   ReturnType<typeof useSessionIndex>,
-  { client: SessionApiClient }
->(function StateProbe({ client }, ref) {
-  const hookResult = useSessionIndex({ client })
+  {
+    client: SessionApiClient
+    now?: () => Date
+  }
+>(function StateProbe({ client, now = FIXED_NOW }, ref) {
+  const hookResult = useSessionIndex({ client, now })
 
   useImperativeHandle(ref, () => hookResult, [hookResult])
 
   return (
     <>
       <pre data-testid="state">{JSON.stringify(hookResult.state)}</pre>
+      <pre data-testid="range">{JSON.stringify(hookResult.appliedRange)}</pre>
       <pre data-testid="refreshing">{JSON.stringify(hookResult.isRefreshing)}</pre>
     </>
   )
@@ -59,13 +74,17 @@ function readState() {
   return JSON.parse(screen.getByTestId('state').textContent ?? 'null')
 }
 
+function readAppliedRange() {
+  return JSON.parse(screen.getByTestId('range').textContent ?? 'null')
+}
+
 function readRefreshing() {
   return JSON.parse(screen.getByTestId('refreshing').textContent ?? 'false')
 }
 
-function renderStateProbe(client: SessionApiClient) {
+function renderStateProbe(client: SessionApiClient, now?: () => Date) {
   const ref = createRef<ReturnType<typeof useSessionIndex>>()
-  const view = render(<StateProbe client={client} ref={ref} />)
+  const view = render(<StateProbe client={client} now={now} ref={ref} />)
 
   return { ref, ...view }
 }
@@ -76,6 +95,17 @@ function reloadSessions(ref: RefObject<ReturnType<typeof useSessionIndex> | null
   }
 
   return ref.current.reloadSessions()
+}
+
+function applyRange(
+  ref: RefObject<ReturnType<typeof useSessionIndex> | null>,
+  range: { from: string; to: string },
+) {
+  if (ref.current == null) {
+    throw new Error('Hook result is not available yet')
+  }
+
+  return ref.current.applyRange(range)
 }
 
 function buildIndexResponse(
@@ -120,73 +150,18 @@ afterEach(() => {
 })
 
 describe('useSessionIndex', () => {
-  it('starts in loading and transitions to success without reordering sessions', async () => {
-    const request = deferred<SessionApiResult<SessionIndexResponse>>()
-    const fetchSessionIndex = vi.fn<SessionApiClient['fetchSessionIndex']>(() => request.promise)
+  it('loads the default 7-day range on mount and exposes it as the applied range', async () => {
+    const payload = buildIndexResponse()
+    const fetchSessionIndex = vi.fn<SessionApiClient['fetchSessionIndex']>(async () => ({
+      status: 'success',
+      data: payload,
+    }))
     const client = createClient(fetchSessionIndex)
 
     renderStateProbe(client)
 
     expect(readState()).toEqual({ status: 'loading' })
-
-    const payload: SessionIndexResponse = {
-      data: [
-        {
-          id: 'session-b',
-          source_format: 'current',
-          created_at: '2026-04-26T10:00:00Z',
-          updated_at: '2026-04-26T10:05:00Z',
-          work_context: {
-            cwd: '/workspace/session-b',
-            git_root: '/workspace/session-b',
-            repository: 'octo/example',
-            branch: 'feature/b',
-          },
-          selected_model: 'gpt-5.4',
-          source_state: 'complete',
-          event_count: 3,
-          message_snapshot_count: 1,
-          conversation_summary: {
-            has_conversation: true,
-            message_count: 1,
-            preview: 'current transcript',
-            activity_count: 2,
-          },
-          degraded: false,
-          issues: [],
-        },
-        {
-          id: 'session-a',
-          source_format: 'legacy',
-          created_at: '2026-04-26T08:00:00Z',
-          updated_at: null,
-          work_context: {
-            cwd: null,
-            git_root: null,
-            repository: null,
-            branch: null,
-          },
-          selected_model: null,
-          source_state: 'degraded',
-          event_count: 1,
-          message_snapshot_count: 0,
-          conversation_summary: {
-            has_conversation: false,
-            message_count: 0,
-            preview: null,
-            activity_count: 1,
-          },
-          degraded: true,
-          issues: [],
-        },
-      ],
-      meta: {
-        count: 2,
-        partial_results: true,
-      },
-    }
-
-    request.resolve({ status: 'success', data: payload })
+    expect(readAppliedRange()).toEqual(DEFAULT_RANGE)
 
     await waitFor(() =>
       expect(readState()).toEqual({
@@ -195,80 +170,54 @@ describe('useSessionIndex', () => {
         meta: payload.meta,
       }),
     )
-    expect(fetchSessionIndex).toHaveBeenCalledTimes(1)
-  })
 
-  it('separates an empty response from success', async () => {
-    const fetchSessionIndex = vi.fn<SessionApiClient['fetchSessionIndex']>(async () => ({
-      status: 'success',
-      data: {
-        data: [],
-        meta: {
-          count: 0,
-          partial_results: false,
-        },
-      },
-    }))
-    const client = createClient(fetchSessionIndex)
-
-    renderStateProbe(client)
-
-    await waitFor(() => expect(readState()).toEqual({ status: 'empty' }))
-  })
-
-  it('exposes backend and network/config failures as an error state', async () => {
-    const fetchSessionIndex = vi.fn<SessionApiClient['fetchSessionIndex']>(async () => ({
-      status: 'error',
-      error: {
-        kind: 'backend',
-        httpStatus: 503,
-        code: 'root_missing',
-        message: 'history root does not exist',
-        details: {
-          path: '/tmp/.copilot',
-        },
-      },
-    }))
-    const client = createClient(fetchSessionIndex)
-
-    renderStateProbe(client)
-
-    await waitFor(() =>
-      expect(readState()).toEqual({
-        status: 'error',
-        error: {
-          kind: 'backend',
-          httpStatus: 503,
-          code: 'root_missing',
-          message: 'history root does not exist',
-          details: {
-            path: '/tmp/.copilot',
-          },
-        },
+    expect(fetchSessionIndex).toHaveBeenCalledWith(
+      expect.objectContaining({
+        query: DEFAULT_QUERY,
+        signal: expect.any(AbortSignal),
       }),
     )
   })
 
-  it('aborts the in-flight request when the hook unmounts', () => {
-    let observedSignal: AbortSignal | undefined
-    const request = deferred<SessionApiResult<SessionIndexResponse>>()
-    const fetchSessionIndex = vi.fn<SessionApiClient['fetchSessionIndex']>((signal) => {
-      observedSignal = signal
-
-      return request.promise
-    })
+  it('captures the initial default range from now() only once during startup', async () => {
+    const payload = buildIndexResponse()
+    const fetchSessionIndex = vi.fn<SessionApiClient['fetchSessionIndex']>(async () => ({
+      status: 'success',
+      data: payload,
+    }))
     const client = createClient(fetchSessionIndex)
+    const now = vi
+      .fn<() => Date>()
+      .mockReturnValueOnce(new Date('2026-05-03T14:59:59Z'))
+      .mockReturnValue(new Date('2026-05-03T15:00:00Z'))
 
-    const { unmount } = renderStateProbe(client)
+    render(<StateProbe client={client} now={now} />)
 
-    expect(observedSignal?.aborted).toBe(false)
+    await waitFor(() =>
+      expect(readState()).toEqual({
+        status: 'success',
+        sessions: payload.data,
+        meta: payload.meta,
+      }),
+    )
 
-    unmount()
-
-    expect(observedSignal?.aborted).toBe(true)
+    expect(now).toHaveBeenCalledTimes(1)
+    expect(readAppliedRange()).toEqual({
+      from: '2026-04-27',
+      to: '2026-05-03',
+    })
+    expect(fetchSessionIndex).toHaveBeenCalledWith(
+      expect.objectContaining({
+        query: {
+          from: '2026-04-27T00:00:00+09:00',
+          to: '2026-05-03T23:59:59.999999+09:00',
+        },
+        signal: expect.any(AbortSignal),
+      }),
+    )
   })
 
-  it('reuses the last successful index snapshot immediately for the same client on remount', async () => {
+  it('reuses only the same-query snapshot immediately on remount', async () => {
     const firstPayload = buildIndexResponse()
     const nextRequest = deferred<SessionApiResult<SessionIndexResponse>>()
     const fetchSessionIndex = vi
@@ -290,20 +239,205 @@ describe('useSessionIndex', () => {
     firstRender.unmount()
     renderStateProbe(client)
 
+    expect(readAppliedRange()).toEqual(DEFAULT_RANGE)
     expect(readState()).toEqual({
       status: 'success',
       sessions: firstPayload.data,
       meta: firstPayload.meta,
     })
     expect(fetchSessionIndex).toHaveBeenCalledTimes(2)
+    expect(fetchSessionIndex).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        query: DEFAULT_QUERY,
+        signal: expect.any(AbortSignal),
+      }),
+    )
   })
 
-  it('reuses the last empty index snapshot immediately but does not reuse errors', async () => {
-    const emptyPayload = buildIndexResponse([])
-    const errorPayload: SessionApiResult<SessionIndexResponse> = {
-      status: 'error',
+  it('surfaces a remount revalidation error instead of silently keeping a stale snapshot', async () => {
+    const payload = buildIndexResponse()
+    const revalidationError = {
+      status: 'error' as const,
       error: {
-        kind: 'backend',
+        kind: 'network' as const,
+        code: 'network_error' as const,
+        message: 'network unavailable',
+        details: {
+          cause: 'offline',
+        },
+      },
+    }
+    const fetchSessionIndex = vi
+      .fn<SessionApiClient['fetchSessionIndex']>()
+      .mockResolvedValueOnce({ status: 'success', data: payload })
+      .mockResolvedValueOnce(revalidationError)
+    const client = createClient(fetchSessionIndex)
+
+    const firstRender = renderStateProbe(client)
+
+    await waitFor(() =>
+      expect(readState()).toEqual({
+        status: 'success',
+        sessions: payload.data,
+        meta: payload.meta,
+      }),
+    )
+
+    firstRender.unmount()
+    renderStateProbe(client)
+
+    expect(readState()).toEqual({
+      status: 'success',
+      sessions: payload.data,
+      meta: payload.meta,
+    })
+
+    await waitFor(() => expect(readState()).toEqual(revalidationError))
+  })
+
+  it('treats an apply for a different range as a new loading state instead of keeping the old success visible', async () => {
+    const initialPayload = buildIndexResponse()
+    const nextPayload = buildIndexResponse([
+      {
+        ...initialPayload.data[0],
+        id: 'session-next',
+        updated_at: '2026-05-01T01:00:00Z',
+      },
+    ])
+    const applyRequest = deferred<SessionApiResult<SessionIndexResponse>>()
+    const fetchSessionIndex = vi
+      .fn<SessionApiClient['fetchSessionIndex']>()
+      .mockResolvedValueOnce({ status: 'success', data: initialPayload })
+      .mockReturnValueOnce(applyRequest.promise)
+    const client = createClient(fetchSessionIndex)
+    const { ref } = renderStateProbe(client)
+
+    await waitFor(() =>
+      expect(readState()).toEqual({
+        status: 'success',
+        sessions: initialPayload.data,
+        meta: initialPayload.meta,
+      }),
+    )
+
+    const nextRange = {
+      from: '2026-05-01',
+      to: '2026-05-07',
+    }
+
+    let applyPromise!: Promise<unknown>
+    await act(async () => {
+      applyPromise = applyRange(ref, nextRange)
+    })
+
+    expect(readAppliedRange()).toEqual(nextRange)
+    expect(readState()).toEqual({ status: 'loading' })
+
+    await act(async () => {
+      applyRequest.resolve({ status: 'success', data: nextPayload })
+
+      await expect(applyPromise).resolves.toEqual({
+        status: 'success',
+        sessions: nextPayload.data,
+        meta: nextPayload.meta,
+      })
+    })
+
+    await waitFor(() =>
+      expect(readState()).toEqual({
+        status: 'success',
+        sessions: nextPayload.data,
+        meta: nextPayload.meta,
+      }),
+    )
+
+    expect(fetchSessionIndex).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        query: {
+          from: '2026-05-01T00:00:00+09:00',
+          to: '2026-05-07T23:59:59.999999+09:00',
+        },
+        signal: expect.any(AbortSignal),
+      }),
+    )
+  })
+
+  it('resolves an empty apply back to the explicit default 7-day range', async () => {
+    const defaultPayload = buildIndexResponse()
+    const selectedPayload = buildIndexResponse([
+      {
+        ...defaultPayload.data[0],
+        id: 'session-filtered',
+      },
+    ])
+    const resetPayload = buildIndexResponse([])
+    const selectRequest = deferred<SessionApiResult<SessionIndexResponse>>()
+    const resetRequest = deferred<SessionApiResult<SessionIndexResponse>>()
+    const fetchSessionIndex = vi
+      .fn<SessionApiClient['fetchSessionIndex']>()
+      .mockResolvedValueOnce({ status: 'success', data: defaultPayload })
+      .mockReturnValueOnce(selectRequest.promise)
+      .mockReturnValueOnce(resetRequest.promise)
+    const client = createClient(fetchSessionIndex)
+    const { ref } = renderStateProbe(client)
+
+    await waitFor(() =>
+      expect(readState()).toEqual({
+        status: 'success',
+        sessions: defaultPayload.data,
+        meta: defaultPayload.meta,
+      }),
+    )
+
+    await act(async () => {
+      const applyPromise = applyRange(ref, {
+        from: '2026-05-01',
+        to: '2026-05-07',
+      })
+
+      selectRequest.resolve({ status: 'success', data: selectedPayload })
+      await applyPromise
+    })
+
+    await waitFor(() =>
+      expect(readState()).toEqual({
+        status: 'success',
+        sessions: selectedPayload.data,
+        meta: selectedPayload.meta,
+      }),
+    )
+
+    let resetPromise!: Promise<unknown>
+    await act(async () => {
+      resetPromise = applyRange(ref, { from: '', to: '' })
+    })
+
+    expect(readAppliedRange()).toEqual(DEFAULT_RANGE)
+    expect(readState()).toEqual({ status: 'loading' })
+
+    await act(async () => {
+      resetRequest.resolve({ status: 'success', data: resetPayload })
+      await expect(resetPromise).resolves.toEqual({ status: 'empty' })
+    })
+
+    await waitFor(() => expect(readState()).toEqual({ status: 'empty' }))
+    expect(fetchSessionIndex).toHaveBeenNthCalledWith(
+      3,
+      expect.objectContaining({
+        query: DEFAULT_QUERY,
+        signal: expect.any(AbortSignal),
+      }),
+    )
+  })
+
+  it('keeps the attempted range when a different-range apply fails', async () => {
+    const initialPayload = buildIndexResponse()
+    const applyError = {
+      status: 'error' as const,
+      error: {
+        kind: 'backend' as const,
         httpStatus: 503,
         code: 'root_missing',
         message: 'history root does not exist',
@@ -312,48 +446,50 @@ describe('useSessionIndex', () => {
         },
       },
     }
-    const pendingRequest = deferred<SessionApiResult<SessionIndexResponse>>()
-    const fetchEmptyIndex = vi
+    const applyRequest = deferred<SessionApiResult<SessionIndexResponse>>()
+    const fetchSessionIndex = vi
       .fn<SessionApiClient['fetchSessionIndex']>()
-      .mockResolvedValueOnce({ status: 'success', data: emptyPayload })
-      .mockReturnValueOnce(pendingRequest.promise)
-    const emptyClient = createClient(fetchEmptyIndex)
+      .mockResolvedValueOnce({ status: 'success', data: initialPayload })
+      .mockReturnValueOnce(applyRequest.promise)
+    const client = createClient(fetchSessionIndex)
+    const { ref } = renderStateProbe(client)
 
-    const emptyRender = renderStateProbe(emptyClient)
+    await waitFor(() =>
+      expect(readState()).toEqual({
+        status: 'success',
+        sessions: initialPayload.data,
+        meta: initialPayload.meta,
+      }),
+    )
 
-    await waitFor(() => expect(readState()).toEqual({ status: 'empty' }))
-    emptyRender.unmount()
-    renderStateProbe(emptyClient)
+    const attemptedRange = {
+      from: '2026-05-10',
+      to: '',
+    }
 
-    expect(readState()).toEqual({ status: 'empty' })
+    let applyPromise!: Promise<unknown>
+    await act(async () => {
+      applyPromise = applyRange(ref, attemptedRange)
+    })
 
-    cleanup()
-
-    const fetchErrorIndex = vi
-      .fn<SessionApiClient['fetchSessionIndex']>()
-      .mockResolvedValueOnce(errorPayload)
-      .mockReturnValueOnce(pendingRequest.promise)
-    const errorClient = createClient(fetchErrorIndex)
-    const errorRender = renderStateProbe(errorClient)
-
-    await waitFor(() => expect(readState()).toEqual(errorPayload))
-    errorRender.unmount()
-    renderStateProbe(errorClient)
-
+    expect(readAppliedRange()).toEqual(attemptedRange)
     expect(readState()).toEqual({ status: 'loading' })
+
+    await act(async () => {
+      applyRequest.resolve(applyError)
+      await expect(applyPromise).resolves.toEqual(applyError)
+    })
+
+    await waitFor(() => expect(readState()).toEqual(applyError))
+    expect(readAppliedRange()).toEqual(attemptedRange)
   })
 
-  it('reloads the session index and preserves the previous snapshot while refreshing', async () => {
+  it('preserves the previous same-range snapshot while reload is in flight', async () => {
     const initialPayload = buildIndexResponse()
     const refreshedPayload = buildIndexResponse([
       {
         ...initialPayload.data[0],
-        id: 'session-c',
-        updated_at: '2026-04-27T11:15:00Z',
-      },
-      {
-        ...initialPayload.data[0],
-        id: 'session-b',
+        id: 'session-refreshed',
       },
     ])
     const reloadRequest = deferred<SessionApiResult<SessionIndexResponse>>()
@@ -362,7 +498,6 @@ describe('useSessionIndex', () => {
       .mockResolvedValueOnce({ status: 'success', data: initialPayload })
       .mockReturnValueOnce(reloadRequest.promise)
     const client = createClient(fetchSessionIndex)
-
     const { ref } = renderStateProbe(client)
 
     await waitFor(() =>
@@ -379,6 +514,7 @@ describe('useSessionIndex', () => {
     })
 
     expect(readRefreshing()).toBe(true)
+    expect(readAppliedRange()).toEqual(DEFAULT_RANGE)
     expect(readState()).toEqual({
       status: 'success',
       sessions: initialPayload.data,
@@ -394,23 +530,44 @@ describe('useSessionIndex', () => {
         meta: refreshedPayload.meta,
       })
     })
+
     await waitFor(() => expect(readRefreshing()).toBe(false))
     expect(readState()).toEqual({
       status: 'success',
       sessions: refreshedPayload.data,
       meta: refreshedPayload.meta,
     })
+    expect(fetchSessionIndex).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        query: DEFAULT_QUERY,
+        signal: expect.any(AbortSignal),
+      }),
+    )
   })
 
-  it('returns an empty reload outcome without treating it as loading or error', async () => {
+  it('reads the latest applied range during reload even when the callback was captured earlier', async () => {
     const initialPayload = buildIndexResponse()
+    const appliedPayload = buildIndexResponse([
+      {
+        ...initialPayload.data[0],
+        id: 'session-applied',
+      },
+    ])
+    const refreshedPayload = buildIndexResponse([
+      {
+        ...appliedPayload.data[0],
+        id: 'session-after-sync',
+      },
+    ])
+    const applyRequest = deferred<SessionApiResult<SessionIndexResponse>>()
     const reloadRequest = deferred<SessionApiResult<SessionIndexResponse>>()
     const fetchSessionIndex = vi
       .fn<SessionApiClient['fetchSessionIndex']>()
       .mockResolvedValueOnce({ status: 'success', data: initialPayload })
+      .mockReturnValueOnce(applyRequest.promise)
       .mockReturnValueOnce(reloadRequest.promise)
     const client = createClient(fetchSessionIndex)
-
     const { ref } = renderStateProbe(client)
 
     await waitFor(() =>
@@ -421,98 +578,77 @@ describe('useSessionIndex', () => {
       }),
     )
 
-    let reloadPromise!: Promise<unknown>
-    await act(async () => {
-      reloadPromise = reloadSessions(ref)
-    })
+    if (ref.current == null) {
+      throw new Error('Hook result is not available yet')
+    }
 
-    expect(readRefreshing()).toBe(true)
+    const staleReload = ref.current.reloadSessions
+
     await act(async () => {
-      reloadRequest.resolve({
-        status: 'success',
-        data: buildIndexResponse([]),
+      const applyPromise = applyRange(ref, {
+        from: '',
+        to: '2026-05-02',
       })
 
-      await expect(reloadPromise).resolves.toEqual({ status: 'empty' })
+      applyRequest.resolve({ status: 'success', data: appliedPayload })
+      await applyPromise
     })
-    await waitFor(() => expect(readRefreshing()).toBe(false))
-    expect(readState()).toEqual({ status: 'empty' })
-  })
-
-  it('returns a reload error outcome without replacing the current snapshot', async () => {
-    const initialPayload = buildIndexResponse()
-    const reloadError: SessionApiResult<SessionIndexResponse> = {
-      status: 'error',
-      error: {
-        kind: 'backend',
-        httpStatus: 503,
-        code: 'root_missing',
-        message: 'history root does not exist',
-        details: {
-          path: '/tmp/.copilot',
-        },
-      },
-    }
-    const reloadRequest = deferred<SessionApiResult<SessionIndexResponse>>()
-    const fetchSessionIndex = vi
-      .fn<SessionApiClient['fetchSessionIndex']>()
-      .mockResolvedValueOnce({ status: 'success', data: initialPayload })
-      .mockReturnValueOnce(reloadRequest.promise)
-    const client = createClient(fetchSessionIndex)
-
-    const { ref } = renderStateProbe(client)
 
     await waitFor(() =>
       expect(readState()).toEqual({
         status: 'success',
-        sessions: initialPayload.data,
-        meta: initialPayload.meta,
+        sessions: appliedPayload.data,
+        meta: appliedPayload.meta,
       }),
     )
 
     let reloadPromise!: Promise<unknown>
     await act(async () => {
-      reloadPromise = reloadSessions(ref)
+      reloadPromise = staleReload()
     })
 
     await act(async () => {
-      reloadRequest.resolve(reloadError)
+      reloadRequest.resolve({ status: 'success', data: refreshedPayload })
+      await expect(reloadPromise).resolves.toEqual({
+        status: 'success',
+        sessions: refreshedPayload.data,
+        meta: refreshedPayload.meta,
+      })
+    })
 
-      await expect(reloadPromise).resolves.toEqual(reloadError)
-    })
-    await waitFor(() => expect(readRefreshing()).toBe(false))
-    expect(readState()).toEqual({
-      status: 'success',
-      sessions: initialPayload.data,
-      meta: initialPayload.meta,
-    })
+    expect(fetchSessionIndex).toHaveBeenNthCalledWith(
+      3,
+      expect.objectContaining({
+        query: {
+          to: '2026-05-02T23:59:59.999999+09:00',
+        },
+        signal: expect.any(AbortSignal),
+      }),
+    )
   })
 
-  it('ignores stale reload responses and keeps the superseded request on the prior settled state', async () => {
+  it('ignores stale apply responses and keeps the latest range result visible', async () => {
     const initialPayload = buildIndexResponse()
-    const staleReloadRequest = deferred<SessionApiResult<SessionIndexResponse>>()
-    const latestReloadRequest = deferred<SessionApiResult<SessionIndexResponse>>()
+    const staleApplyRequest = deferred<SessionApiResult<SessionIndexResponse>>()
+    const latestApplyRequest = deferred<SessionApiResult<SessionIndexResponse>>()
     const latestPayload = buildIndexResponse([
       {
         ...initialPayload.data[0],
         id: 'session-latest',
-        updated_at: '2026-04-27T11:15:00Z',
       },
     ])
     const stalePayload = buildIndexResponse([
       {
         ...initialPayload.data[0],
         id: 'session-stale',
-        updated_at: '2026-04-27T11:10:00Z',
       },
     ])
     const fetchSessionIndex = vi
       .fn<SessionApiClient['fetchSessionIndex']>()
       .mockResolvedValueOnce({ status: 'success', data: initialPayload })
-      .mockReturnValueOnce(staleReloadRequest.promise)
-      .mockReturnValueOnce(latestReloadRequest.promise)
+      .mockReturnValueOnce(staleApplyRequest.promise)
+      .mockReturnValueOnce(latestApplyRequest.promise)
     const client = createClient(fetchSessionIndex)
-
     const { ref } = renderStateProbe(client)
 
     await waitFor(() =>
@@ -523,22 +659,28 @@ describe('useSessionIndex', () => {
       }),
     )
 
-    let staleReloadPromise!: Promise<unknown>
-    let latestReloadPromise!: Promise<unknown>
+    let staleApplyPromise!: Promise<unknown>
+    let latestApplyPromise!: Promise<unknown>
     await act(async () => {
-      staleReloadPromise = reloadSessions(ref)
-      latestReloadPromise = reloadSessions(ref)
+      staleApplyPromise = applyRange(ref, {
+        from: '2026-05-01',
+        to: '2026-05-03',
+      })
+      latestApplyPromise = applyRange(ref, {
+        from: '2026-05-05',
+        to: '2026-05-07',
+      })
     })
 
     await act(async () => {
-      latestReloadRequest.resolve({ status: 'success', data: latestPayload })
-
-      await expect(latestReloadPromise).resolves.toEqual({
+      latestApplyRequest.resolve({ status: 'success', data: latestPayload })
+      await expect(latestApplyPromise).resolves.toEqual({
         status: 'success',
         sessions: latestPayload.data,
         meta: latestPayload.meta,
       })
     })
+
     await waitFor(() =>
       expect(readState()).toEqual({
         status: 'success',
@@ -548,54 +690,18 @@ describe('useSessionIndex', () => {
     )
 
     await act(async () => {
-      staleReloadRequest.resolve({ status: 'success', data: stalePayload })
+      staleApplyRequest.resolve({ status: 'success', data: stalePayload })
+      await staleApplyPromise
+    })
 
-      await expect(staleReloadPromise).resolves.toEqual({
-        status: 'success',
-        sessions: initialPayload.data,
-        meta: initialPayload.meta,
-      })
+    expect(readAppliedRange()).toEqual({
+      from: '2026-05-05',
+      to: '2026-05-07',
     })
     expect(readState()).toEqual({
       status: 'success',
       sessions: latestPayload.data,
       meta: latestPayload.meta,
-    })
-  })
-
-  it('keeps the prior settled state when the hook unmounts before a reload completes', async () => {
-    const initialPayload = buildIndexResponse()
-    const reloadRequest = deferred<SessionApiResult<SessionIndexResponse>>()
-    const fetchSessionIndex = vi
-      .fn<SessionApiClient['fetchSessionIndex']>()
-      .mockResolvedValueOnce({ status: 'success', data: initialPayload })
-      .mockReturnValueOnce(reloadRequest.promise)
-    const client = createClient(fetchSessionIndex)
-
-    const view = renderStateProbe(client)
-
-    await waitFor(() =>
-      expect(readState()).toEqual({
-        status: 'success',
-        sessions: initialPayload.data,
-        meta: initialPayload.meta,
-      }),
-    )
-
-    let reloadPromise!: Promise<unknown>
-    await act(async () => {
-      reloadPromise = reloadSessions(view.ref)
-    })
-
-    view.unmount()
-    await act(async () => {
-      reloadRequest.resolve({ status: 'success', data: buildIndexResponse([]) })
-
-      await expect(reloadPromise).resolves.toEqual({
-        status: 'success',
-        sessions: initialPayload.data,
-        meta: initialPayload.meta,
-      })
     })
   })
 })

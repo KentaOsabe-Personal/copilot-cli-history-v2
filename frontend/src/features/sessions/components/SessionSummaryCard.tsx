@@ -12,6 +12,8 @@ interface SessionSummaryCardProps {
 
 function SessionSummaryCard({ session }: SessionSummaryCardProps) {
   const metadataItems = buildSessionMetadataItems({
+    surface: 'summary',
+    createdAt: session.created_at,
     updatedAt: session.updated_at,
     workContext: session.work_context,
     selectedModel: session.selected_model,
@@ -27,7 +29,9 @@ function SessionSummaryCard({ session }: SessionSummaryCardProps) {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-3">
-            <h3 className="font-mono text-lg font-semibold text-cyan-200">{session.id}</h3>
+            <h3 className="min-w-0 break-all font-mono text-lg font-semibold text-cyan-200">
+              {session.id}
+            </h3>
             {signals.map((signal) => (
               <span
                 key={signal.label}
@@ -43,7 +47,7 @@ function SessionSummaryCard({ session }: SessionSummaryCardProps) {
           </div>
 
           <div className="mt-4 rounded-2xl border border-slate-700/70 bg-slate-950/30 p-4">
-            <p className="text-sm font-medium text-white">
+            <p className="whitespace-pre-wrap break-words text-sm font-medium text-white">
               {session.conversation_summary.preview ?? '表示できる会話本文はありません'}
             </p>
             <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-slate-300">
@@ -56,11 +60,11 @@ function SessionSummaryCard({ session }: SessionSummaryCardProps) {
           {metadataItems.length > 0 ? (
             <dl className="mt-4 grid gap-3 text-sm text-slate-300 sm:grid-cols-2">
               {metadataItems.map((item) => (
-                <div key={item.label}>
+                <div key={item.label} className="min-w-0">
                   <dt className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
                     {item.label}
                   </dt>
-                  <dd className="mt-1">{item.value}</dd>
+                  <dd className="mt-1 break-words">{item.value}</dd>
                 </div>
               ))}
             </dl>

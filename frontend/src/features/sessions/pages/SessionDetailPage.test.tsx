@@ -273,6 +273,142 @@ describe('SessionDetailPage', () => {
     expect(screen.queryByText('モデル不明')).not.toBeInTheDocument()
   })
 
+  it('applies a wrap-safe class to the route-level session id', () => {
+    const longSessionId =
+      'route-session-id-with-an-extremely-long-identifier-that-should-wrap-without-requiring-page-scroll'
+
+    mockedUseSessionDetail.mockReturnValue({
+      state: {
+        status: 'success',
+        sessionId: longSessionId,
+        rawStatus: 'idle',
+        detail: buildDetail({
+          id: longSessionId,
+        }),
+      },
+      requestRaw,
+    })
+
+    renderDetailPage(`/sessions/${longSessionId}`)
+
+    expect(screen.getAllByText(longSessionId)[0]).toHaveClass('break-all')
+  })
+
+  it('keeps overflow-sensitive detail surfaces block-local and wrap-safe in the rendered page', async () => {
+    const user = userEvent.setup()
+    const longSessionId =
+      'detail-session-id-with-an-extremely-long-identifier-that-should-wrap-without-requiring-page-scroll'
+    const longRepositoryLabel =
+      'octo/copilot-cli-history-with-an-exceptionally-long-repository-name-for-wrap-testing @ feature/detail-page-overflow-safe-rendering-with-very-long-branch-identifiers'
+    const longProse =
+      'Readable prose keeps aVeryLongTokenWithoutNaturalBreakpointsThatShouldWrapWithinTheTimelineSurface'
+    const longIssueMessage =
+      'issue-message-with-aVeryLongTokenWithoutNaturalBreakpointsThatShouldWrapInsideTheDetailSurface'
+    const longIssuePath =
+      '/tmp/copilot/session/a/very/long/path/with/no/natural/breakpoints/that/should/not/overflow/the/page/events.jsonl'
+    const codeLine =
+      'const extremelyLongValue = "super-long-token-without-natural-breakpoints-super-long-token-without-natural-breakpoints"'
+    const rawPayloadToken =
+      'raw-payload-with-a-very-long-token-without-natural-breakpoints-raw-payload-with-a-very-long-token'
+
+    mockedUseSessionDetail.mockReturnValue({
+      state: {
+        status: 'success',
+        sessionId: longSessionId,
+        rawStatus: 'included',
+        detail: buildDetail({
+          id: longSessionId,
+          raw_included: true,
+          work_context: {
+            cwd: '/workspace/some/really/long/path/that/should/not/force/page-level-horizontal-scroll',
+            git_root:
+              '/workspace/some/really/long/path/that/should/not/force/page-level-horizontal-scroll',
+            repository:
+              'octo/copilot-cli-history-with-an-exceptionally-long-repository-name-for-wrap-testing',
+            branch:
+              'feature/detail-page-overflow-safe-rendering-with-very-long-branch-identifiers',
+          },
+          selected_model: 'gpt-5.4-with-a-very-long-suffix-for-overflow-checking',
+          issues: [
+            {
+              code: 'session.partial',
+              severity: 'warning',
+              message: longIssueMessage,
+              source_path: longIssuePath,
+              scope: 'session',
+              event_sequence: null,
+            },
+          ],
+          conversation: {
+            entries: [
+              {
+                sequence: 1,
+                role: 'assistant',
+                content: `${longProse}\n\`\`\`ts\n${codeLine}\n\`\`\``,
+                occurred_at: '2026-04-26T09:00:02Z',
+                tool_calls: [],
+                degraded: false,
+                issues: [],
+              },
+            ],
+            message_count: 1,
+            empty_reason: null,
+            summary: {
+              has_conversation: true,
+              message_count: 1,
+              preview: longProse,
+              activity_count: 1,
+            },
+          },
+          activity: {
+            entries: [
+              {
+                sequence: 2,
+                category: 'tool_execution',
+                title: 'tool.execution_start',
+                summary: 'functions.bash / tool-1',
+                raw_type: 'tool.execution_start',
+                mapping_status: 'partial',
+                occurred_at: '2026-04-26T09:00:03Z',
+                source_path: longIssuePath,
+                raw_available: true,
+                raw_payload: {
+                  token: rawPayloadToken,
+                },
+                degraded: true,
+                issues: [],
+              },
+            ],
+          },
+        }),
+      },
+      requestRaw,
+    })
+
+    renderDetailPage(`/sessions/${longSessionId}`)
+
+    const routeSessionId = screen
+      .getAllByText(longSessionId)
+      .find((element) => element.tagName.toLowerCase() === 'p')
+
+    expect(routeSessionId).toHaveClass('break-all')
+    expect(screen.getByText(longRepositoryLabel)).toHaveClass('break-words')
+    expect(screen.getByText(longProse)).toHaveClass('whitespace-pre-wrap', 'break-words')
+    expect(screen.getByText(codeLine).closest('pre')).toHaveClass('overflow-x-auto', 'whitespace-pre')
+
+    await user.click(screen.getByRole('button', { name: 'セッションの issue を表示' }))
+    await user.click(screen.getByRole('button', { name: '内部 activity を表示' }))
+
+    expect(screen.getByText(longIssueMessage)).toHaveClass('whitespace-pre-wrap', 'break-words')
+    expect(screen.getByText(longIssuePath)).toHaveClass('break-all')
+    expect(
+      screen.getByText((content) => content.includes(rawPayloadToken)).closest('pre'),
+    ).toHaveClass(
+      'overflow-x-auto',
+      'whitespace-pre',
+    )
+  })
+
   it('keeps tool, code, partial, and unknown timeline events readable in sequence order', async () => {
     mockedUseSessionDetail.mockReturnValue({
       state: {
