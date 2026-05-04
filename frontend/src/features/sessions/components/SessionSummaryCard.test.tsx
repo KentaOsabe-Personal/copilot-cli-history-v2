@@ -43,7 +43,7 @@ describe('SessionSummaryCard', () => {
     expect(screen.queryByText('正常')).not.toBeInTheDocument()
   })
 
-  it('shows only exceptional source-state and degradation signals', () => {
+  it('shows only exceptional source-state signals on the summary card', () => {
     const { rerender } = render(
       <MemoryRouter>
         <SessionSummaryCard
@@ -71,7 +71,7 @@ describe('SessionSummaryCard', () => {
       </MemoryRouter>,
     )
 
-    expect(screen.getByText('一部欠損あり')).toBeInTheDocument()
+    expect(screen.queryByText('一部欠損あり')).not.toBeInTheDocument()
     expect(screen.queryByText('degraded')).not.toBeInTheDocument()
     expect(screen.queryByText('正常')).not.toBeInTheDocument()
   })

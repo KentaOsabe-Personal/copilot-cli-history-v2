@@ -282,7 +282,7 @@ describe('SessionIndexPage', () => {
       '/sessions/session-b',
       '/sessions/session-a',
     ])
-    expect(screen.getAllByText('一部欠損あり')).toHaveLength(1)
+    expect(screen.queryByText('一部欠損あり')).not.toBeInTheDocument()
     expect(screen.getByText('2026-04-26 18:00:00 JST')).toBeInTheDocument()
     expect(screen.queryByText('作業コンテキスト不明')).not.toBeInTheDocument()
     expect(screen.queryByText('モデル不明')).not.toBeInTheDocument()
