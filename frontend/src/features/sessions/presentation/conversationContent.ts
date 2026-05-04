@@ -104,6 +104,44 @@ export function shouldDefaultHideConversationEntryContent(content: string | null
   return content.trimStart().startsWith(SKILL_CONTEXT_PREFIX)
 }
 
+export function shouldDefaultHideConversationEntry(
+  entry: Pick<SessionConversationEntry, 'content' | 'tool_calls'>,
+): boolean {
+  return shouldDefaultHideByBlocks([
+    ...extractContentBlocks(entry.content),
+    ...extractToolHintBlocks(entry.tool_calls),
+  ])
+}
+
+export function shouldDefaultHideConversationEntryModel(
+  model: ConversationEntryContentModel,
+): boolean {
+  return shouldDefaultHideByBlocks(model.blocks)
+}
+
+function shouldDefaultHideByBlocks(blocks: readonly ConversationVisualBlock[]): boolean {
+  const firstBlock = blocks[0]
+  if (firstBlock?.kind === 'text' && firstBlock.text.trimStart().startsWith(SKILL_CONTEXT_PREFIX)) {
+    return true
+  }
+
+  if (!blocks.some((b) => b.kind === 'tool_hint')) {
+    return false
+  }
+
+  return !blocks.some((b) => {
+    if (b.kind === 'code') {
+      return true
+    }
+
+    if (b.kind !== 'text') {
+      return false
+    }
+
+    return b.text.trim().length > 0
+  })
+}
+
 function resolveToolCollapseReason(toolCall: SessionTimelineToolCall): ToolCollapseReason {
   if (toolCall.name === 'skill-context') {
     return 'skill_context'

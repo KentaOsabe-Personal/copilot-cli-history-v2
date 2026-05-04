@@ -273,6 +273,72 @@ describe('SessionDetailPage', () => {
     expect(screen.queryByText('モデル不明')).not.toBeInTheDocument()
   })
 
+  it('starts tool-only conversation entries hidden by default in the detail page', async () => {
+    const user = userEvent.setup()
+
+    mockedUseSessionDetail.mockReturnValue({
+      state: {
+        status: 'success',
+        sessionId: 'session-123',
+        rawStatus: 'idle',
+        detail: buildDetail({
+          conversation: {
+            entries: [
+              {
+                sequence: 4,
+                role: 'assistant',
+                content: '',
+                occurred_at: '2026-04-26T09:00:04Z',
+                tool_calls: [
+                  {
+                    name: 'functions.view',
+                    arguments_preview: '{"path":"/tmp/session.json"}',
+                    is_truncated: false,
+                    status: 'complete',
+                  },
+                ],
+                degraded: false,
+                issues: [],
+              },
+            ],
+            message_count: 1,
+            empty_reason: null,
+            summary: {
+              has_conversation: true,
+              message_count: 1,
+              preview: null,
+              activity_count: 0,
+            },
+          },
+          activity: {
+            entries: [],
+          },
+          timeline: [],
+        }),
+      },
+      requestRaw,
+    })
+
+    renderDetailPage()
+
+    const entry = screen.getByTestId('conversation-entry-4')
+
+    expect(screen.getByRole('button', { name: '発話 #4 を表示' })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    )
+    expect(entry).not.toHaveTextContent('functions.view')
+    expect(entry).not.toHaveTextContent('{"path":"/tmp/session.json"}')
+
+    await user.click(screen.getByRole('button', { name: '発話 #4 を表示' }))
+
+    expect(screen.getByRole('button', { name: '発話 #4 を非表示' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    )
+    expect(entry).toHaveTextContent('functions.view')
+  })
+
   it('applies a wrap-safe class to the route-level session id', () => {
     const longSessionId =
       'route-session-id-with-an-extremely-long-identifier-that-should-wrap-without-requiring-page-scroll'
