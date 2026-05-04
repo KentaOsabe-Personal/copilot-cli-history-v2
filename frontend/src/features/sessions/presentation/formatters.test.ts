@@ -154,6 +154,13 @@ describe('formatters', () => {
       }),
     ).toEqual([{ label: 'workspace-only', tone: 'warning' }])
     expect(
+      buildSessionSummarySignals({
+        hasConversation: true,
+        degraded: true,
+        sourceState: 'degraded',
+      }),
+    ).toEqual([])
+    expect(
       buildSessionDetailSignals({
         degraded: true,
         sourceState: 'degraded',

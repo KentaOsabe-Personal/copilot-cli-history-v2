@@ -159,10 +159,14 @@ export function buildSessionSummarySignals(input: {
     })
   }
 
-  const constraintBadge = buildSessionConstraintBadge(input)
-
-  if (constraintBadge != null && !badges.some((badge) => badge.label === constraintBadge.label)) {
-    badges.push(constraintBadge)
+  if (
+    input.sourceState === 'workspace_only' &&
+    !badges.some((badge) => badge.label === 'workspace-only')
+  ) {
+    badges.push({
+      label: 'workspace-only',
+      tone: 'warning',
+    })
   }
 
   return badges
@@ -210,7 +214,7 @@ function buildSessionConstraintBadge(input: {
 }): SessionSignalBadge | null {
   if (input.degraded || input.sourceState === 'degraded') {
     return {
-      label: '一部欠損あり',
+      label: formatDegradedLabel(true),
       tone: 'warning',
     }
   }
