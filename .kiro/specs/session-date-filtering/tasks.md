@@ -12,22 +12,22 @@
   - 一覧取得が current / legacy を区別せず同じ `/api/sessions` 契約を使い続けることを自動テストで確認できる。
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 2.2, 5.4_
 
-- [ ] 2. 日付フィルタの状態管理と入力 UI を実装する
-- [ ] 2.1 (P) 一覧 hook が query key 単位の snapshot、stale response 防止、最新範囲 refresh を管理する
+- [x] 2. 日付フィルタの状態管理と入力 UI を実装する
+- [x] 2.1 (P) 一覧 hook が query key 単位の snapshot、stale response 防止、最新範囲 refresh を管理する
   - 初期表示と空入力適用は、常に解決済みの直近 7 日範囲を current applied range として取得する。
   - request id と abort 制御で stale response を current result に混ぜず、新しい条件の読み込みでは別条件の成功結果を残さない。
   - 同一条件の再取得だけ直前 snapshot を維持し、同期完了後の refresh は latest applied range を使う。
   - hook テストで query key 再利用、new-range loading、same-range reload、sync 後 latest range refresh を確認できる。
   - _Requirements: 1.1, 1.5, 1.6, 2.1, 2.2, 2.5, 5.4_
   - _Boundary: useSessionIndex_
-- [ ] 2.2 (P) 日付フィルタフォームが開始日・終了日だけを扱い、無効範囲を送信前に防ぐ
+- [x] 2.2 (P) 日付フィルタフォームが開始日・終了日だけを扱い、無効範囲を送信前に防ぐ
   - 開始日と終了日の 2 項目だけを表示し、現在の適用範囲を補助表示する。
   - 無効範囲では理由メッセージが表示され Apply を押せず、修正後は再度適用できる。
   - 両入力空の送信は「直近 7 日へ戻す」として許可される。
   - component テストで invalid、修正後 valid、片側指定、空入力 reset を確認できる。
   - _Requirements: 1.2, 1.3, 1.4, 1.5, 1.6, 3.1, 3.2, 3.3, 3.4, 3.5, 5.1_
   - _Boundary: SessionDateFilterForm_
-- [ ] 2.3 (P) 絞り込み専用の empty 表示が現在の適用範囲を示し、同期補助文言と責務を分ける
+- [x] 2.3 (P) 絞り込み専用の empty 表示が現在の適用範囲を示し、同期補助文言と責務を分ける
   - 0 件は current applied range に一致する結果だけを意味し、履歴全体が空とは断定しない。
   - empty panel でも現在の開始日・終了日を同じ表現で確認できる。
   - `synced_empty` は copy 上の補助文言としてだけ扱い、refresh の state 遷移判断は抱え込まない。

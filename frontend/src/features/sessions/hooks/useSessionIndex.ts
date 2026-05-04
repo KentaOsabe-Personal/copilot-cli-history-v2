@@ -9,6 +9,13 @@ import type {
   SessionIndexResponse,
   SessionSummary,
 } from '../api/sessionApi.types.ts'
+import {
+  buildDefaultRange,
+  buildQueryKey,
+  resolveAppliedRange,
+  toSessionIndexQuery,
+  type SessionDateRangeDraft,
+} from '../presentation/sessionDateFilter.ts'
 
 export type SessionIndexState =
   | { status: 'loading' }
@@ -25,11 +32,14 @@ export type SessionIndexState =
 
 export interface UseSessionIndexOptions {
   client?: SessionApiClient
+  now?: () => Date
 }
 
 export interface UseSessionIndexResult {
   state: SessionIndexState
+  appliedRange: SessionDateRangeDraft
   isRefreshing: boolean
+  applyRange(range: SessionDateRangeDraft): Promise<SessionIndexSettledState>
   reloadSessions(): Promise<SessionIndexSettledState>
 }
 
@@ -39,6 +49,7 @@ type SettledSessionIndexState = SessionIndexSettledState
 type ReusableSessionIndexState = Extract<SessionIndexState, { status: 'success' | 'empty' }>
 type SettledStateEnvelope = {
   client: SessionApiClient
+  queryKey: string
   state: SettledSessionIndexState
 }
 type ActiveRequest = {
@@ -46,36 +57,56 @@ type ActiveRequest = {
   controller: AbortController
 }
 
-let lastReusableSnapshot: {
-  client: SessionApiClient
-  state: ReusableSessionIndexState
-} | null = null
+const reusableSnapshots = new WeakMap<
+  SessionApiClient,
+  Map<string, ReusableSessionIndexState>
+>()
+const defaultNow = () => new Date()
 
 export function useSessionIndex(
   options: UseSessionIndexOptions = {},
 ): UseSessionIndexResult {
   const client = options.client ?? sessionApiClient
-  const [settledState, setSettledState] = useState<SettledStateEnvelope | null>(() => lastReusableSnapshot)
+  const now = options.now ?? defaultNow
+  const [appliedRange, setAppliedRange] = useState<SessionDateRangeDraft>(() => buildDefaultRange(now()))
+  const [settledState, setSettledState] = useState<SettledStateEnvelope | null>(() => {
+    const initialRange = buildDefaultRange(now())
+    const queryKey = buildQueryKey(initialRange)
+    const snapshot = readReusableSnapshot(client, queryKey)
+
+    if (snapshot == null) {
+      return null
+    }
+
+    return {
+      client,
+      queryKey,
+      state: snapshot,
+    }
+  })
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const settledStateRef = useRef<SettledStateEnvelope | null>(lastReusableSnapshot)
+  const appliedRangeRef = useRef(appliedRange)
+  const settledStateRef = useRef<SettledStateEnvelope | null>(settledState)
   const activeRequestRef = useRef<ActiveRequest | null>(null)
   const requestIdRef = useRef(0)
+
+  useEffect(() => {
+    appliedRangeRef.current = appliedRange
+  }, [appliedRange])
 
   useEffect(() => {
     settledStateRef.current = settledState
   }, [settledState])
 
   const applySettledState = useCallback(
-    (nextState: SettledSessionIndexState) => {
+    (queryKey: string, nextState: SettledSessionIndexState) => {
       if (isReusableSessionIndexState(nextState)) {
-        lastReusableSnapshot = {
-          client,
-          state: nextState,
-        }
+        writeReusableSnapshot(client, queryKey, nextState)
       }
 
       const nextEnvelope = {
         client,
+        queryKey,
         state: nextState,
       }
 
@@ -85,7 +116,17 @@ export function useSessionIndex(
     [client],
   )
 
-  const reloadSessions = useCallback(async (): Promise<SessionIndexSettledState> => {
+  const performRequest = useCallback(async ({
+    range,
+    queryKey,
+    preserveVisibleState,
+    preserveSnapshotOnError,
+  }: {
+    range: SessionDateRangeDraft
+    queryKey: string
+    preserveVisibleState: boolean
+    preserveSnapshotOnError: boolean
+  }): Promise<SessionIndexSettledState> => {
     requestIdRef.current += 1
     const requestId = requestIdRef.current
     const controller = new AbortController()
@@ -94,9 +135,17 @@ export function useSessionIndex(
 
     activeRequestRef.current = { id: requestId, controller }
     previousRequest?.controller.abort()
-    setIsRefreshing(true)
+    setIsRefreshing(preserveVisibleState)
 
-    const result = await client.fetchSessionIndex({ signal: controller.signal })
+    if (!preserveVisibleState) {
+      settledStateRef.current = null
+      setSettledState(null)
+    }
+
+    const result = await client.fetchSessionIndex({
+      signal: controller.signal,
+      query: toSessionIndexQuery(range),
+    })
 
     if (controller.signal.aborted || activeRequestRef.current?.id !== requestId) {
       if (activeRequestRef.current?.id === requestId) {
@@ -114,59 +163,77 @@ export function useSessionIndex(
 
     if (
       nextState.status === 'error' &&
+      preserveSnapshotOnError &&
       previousState != null &&
       isReusableSessionIndexState(previousState)
     ) {
       return nextState
     }
 
-    applySettledState(nextState)
+    applySettledState(queryKey, nextState)
 
     return nextState
   }, [applySettledState, client])
 
+  const applyRange = useCallback(async (range: SessionDateRangeDraft): Promise<SessionIndexSettledState> => {
+    const nextRange = resolveAppliedRange(range, now())
+    const queryKey = buildQueryKey(nextRange)
+
+    appliedRangeRef.current = nextRange
+    setAppliedRange(nextRange)
+
+    return performRequest({
+      range: nextRange,
+      queryKey,
+      preserveVisibleState: false,
+      preserveSnapshotOnError: false,
+    })
+  }, [now, performRequest])
+
+  const reloadSessions = useCallback(async (): Promise<SessionIndexSettledState> => {
+    const nextRange = appliedRangeRef.current
+
+    return performRequest({
+      range: nextRange,
+      queryKey: buildQueryKey(nextRange),
+      preserveVisibleState: true,
+      preserveSnapshotOnError: true,
+    })
+  }, [performRequest])
+
   useEffect(() => {
-    requestIdRef.current += 1
-    const requestId = requestIdRef.current
-    const controller = new AbortController()
-    const previousRequest = activeRequestRef.current
+    const initialRange = appliedRangeRef.current
+    const initialQueryKey = buildQueryKey(initialRange)
+    const hasReusableSnapshot = readReusableSnapshot(client, initialQueryKey) != null
 
-    activeRequestRef.current = { id: requestId, controller }
-    previousRequest?.controller.abort()
-
-    void client.fetchSessionIndex({ signal: controller.signal }).then((result) => {
-      if (controller.signal.aborted || activeRequestRef.current?.id !== requestId) {
-        if (activeRequestRef.current?.id === requestId) {
-          activeRequestRef.current = null
-          setIsRefreshing(false)
-        }
-
-        return
-      }
-
-      activeRequestRef.current = null
-      setIsRefreshing(false)
-      applySettledState(toSettledState(result))
+    void performRequest({
+      range: initialRange,
+      queryKey: initialQueryKey,
+      preserveVisibleState: hasReusableSnapshot,
+      preserveSnapshotOnError: hasReusableSnapshot,
     })
 
     return () => {
-      controller.abort()
       activeRequestRef.current?.controller.abort()
       activeRequestRef.current = null
     }
-  }, [applySettledState, client])
+  }, [client, performRequest])
 
   if (settledState == null || settledState.client !== client) {
     return {
       state: { status: 'loading' },
+      appliedRange,
       isRefreshing: false,
+      applyRange,
       reloadSessions,
     }
   }
 
   return {
     state: settledState.state,
+    appliedRange,
     isRefreshing,
+    applyRange,
     reloadSessions,
   }
 }
@@ -186,6 +253,29 @@ function isReusableSessionIndexState(
   state: SettledSessionIndexState,
 ): state is ReusableSessionIndexState {
   return state.status === 'success' || state.status === 'empty'
+}
+
+function readReusableSnapshot(
+  client: SessionApiClient,
+  queryKey: string,
+): ReusableSessionIndexState | null {
+  return reusableSnapshots.get(client)?.get(queryKey) ?? null
+}
+
+function writeReusableSnapshot(
+  client: SessionApiClient,
+  queryKey: string,
+  state: ReusableSessionIndexState,
+) {
+  const clientSnapshots = reusableSnapshots.get(client)
+
+  if (clientSnapshots != null) {
+    clientSnapshots.set(queryKey, state)
+
+    return
+  }
+
+  reusableSnapshots.set(client, new Map([[queryKey, state]]))
 }
 
 function toSettledState(

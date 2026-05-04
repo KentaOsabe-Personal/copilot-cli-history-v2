@@ -8,6 +8,7 @@ import type { HistorySyncState, UseHistorySyncResult } from '../hooks/useHistory
 import { useHistorySync } from '../hooks/useHistorySync.ts'
 import type { SessionIndexState, UseSessionIndexResult } from '../hooks/useSessionIndex.ts'
 import { useSessionIndex } from '../hooks/useSessionIndex.ts'
+import type { SessionDateRangeDraft } from '../presentation/sessionDateFilter.ts'
 import SessionIndexPage from './SessionIndexPage.tsx'
 
 vi.mock('../hooks/useHistorySync.ts', () => ({
@@ -20,8 +21,15 @@ vi.mock('../hooks/useSessionIndex.ts', () => ({
 
 const mockedUseHistorySync = vi.mocked(useHistorySync)
 const mockedUseSessionIndex = vi.mocked(useSessionIndex)
+const DEFAULT_APPLIED_RANGE: SessionDateRangeDraft = {
+  from: '2026-04-28',
+  to: '2026-05-04',
+}
 
-function buildUseSessionIndexResult(state: SessionIndexState): UseSessionIndexResult {
+function buildUseSessionIndexResult(
+  state: SessionIndexState,
+  appliedRange: SessionDateRangeDraft = DEFAULT_APPLIED_RANGE,
+): UseSessionIndexResult {
   const reloadOutcome =
     state.status === 'loading'
       ? ({ status: 'empty' } as const)
@@ -29,7 +37,9 @@ function buildUseSessionIndexResult(state: SessionIndexState): UseSessionIndexRe
 
   return {
     state,
+    appliedRange,
     isRefreshing: false,
+    applyRange: vi.fn(async () => reloadOutcome),
     reloadSessions: async () => reloadOutcome,
   }
 }
@@ -105,8 +115,29 @@ describe('SessionIndexPage', () => {
     )
 
     expect(screen.getByRole('button', { name: '履歴を最新化' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'まだ表示できるセッションがありません' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'この日付範囲に一致するセッションはありません' })).toBeInTheDocument()
+    expect(screen.getByText('現在の表示範囲: 2026-04-28 〜 2026-05-04')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '履歴を取り込む' })).toBeInTheDocument()
+  })
+
+  it('keeps a user-selected empty range visible in the empty state copy', () => {
+    mockedUseSessionIndex.mockReturnValue(
+      buildUseSessionIndexResult(
+        { status: 'empty' },
+        {
+          from: '2026-05-01',
+          to: '2026-05-07',
+        },
+      ),
+    )
+
+    render(
+      <MemoryRouter>
+        <SessionIndexPage />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByText('現在の表示範囲: 2026-05-01 〜 2026-05-07')).toBeInTheDocument()
   })
 
   it('renders ordered session cards without placeholder-only work context or model metadata', () => {
@@ -378,6 +409,7 @@ describe('SessionIndexPage', () => {
 
     expect(screen.getByRole('heading', { name: '履歴の同期は完了しました' })).toBeInTheDocument()
     expect(screen.getByText('取り込みは完了しましたが、表示できるセッションはまだありません。')).toBeInTheDocument()
+    expect(screen.getByText('現在の表示範囲: 2026-04-28 〜 2026-05-04')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '履歴を取り込む' })).toBeInTheDocument()
   })
 
