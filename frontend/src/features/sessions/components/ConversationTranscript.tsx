@@ -3,7 +3,7 @@ import { useState } from 'react'
 import type { SessionConversation } from '../api/sessionApi.types.ts'
 import {
   formatConversationEntryContent,
-  shouldDefaultHideConversationEntry,
+  shouldDefaultHideConversationEntryModel,
 } from '../presentation/conversationContent.ts'
 import { formatTimestamp } from '../presentation/formatters.ts'
 import IssueList from './IssueList.tsx'
@@ -50,7 +50,7 @@ function ConversationTranscript({ conversation, stateScopeKey }: ConversationTra
           {conversation.entries.map((entry) => {
             const content = formatConversationEntryContent(entry)
             const isVisible =
-              visibleEntries[entry.sequence] ?? !shouldDefaultHideConversationEntry(entry)
+              visibleEntries[entry.sequence] ?? !shouldDefaultHideConversationEntryModel(content)
             const entryContentId = `${stateScopeKey}-entry-${entry.sequence}-content`
             const roleCardClass =
               entry.role === 'assistant'

@@ -107,24 +107,38 @@ export function shouldDefaultHideConversationEntryContent(content: string | null
 export function shouldDefaultHideConversationEntry(
   entry: Pick<SessionConversationEntry, 'content' | 'tool_calls'>,
 ): boolean {
-  if (shouldDefaultHideConversationEntryContent(entry.content)) {
+  return shouldDefaultHideByBlocks([
+    ...extractContentBlocks(entry.content),
+    ...extractToolHintBlocks(entry.tool_calls),
+  ])
+}
+
+export function shouldDefaultHideConversationEntryModel(
+  model: ConversationEntryContentModel,
+): boolean {
+  return shouldDefaultHideByBlocks(model.blocks)
+}
+
+function shouldDefaultHideByBlocks(blocks: readonly ConversationVisualBlock[]): boolean {
+  const firstBlock = blocks[0]
+  if (firstBlock?.kind === 'text' && firstBlock.text.trimStart().startsWith(SKILL_CONTEXT_PREFIX)) {
     return true
   }
 
-  if (entry.tool_calls.length === 0) {
+  if (!blocks.some((b) => b.kind === 'tool_hint')) {
     return false
   }
 
-  return !extractContentBlocks(entry.content).some((block) => {
-    if (block.kind === 'code') {
+  return !blocks.some((b) => {
+    if (b.kind === 'code') {
       return true
     }
 
-    if (block.kind !== 'text') {
+    if (b.kind !== 'text') {
       return false
     }
 
-    return block.text.trim().length > 0
+    return b.text.trim().length > 0
   })
 }
 
