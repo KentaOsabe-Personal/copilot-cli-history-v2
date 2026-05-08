@@ -1,6 +1,9 @@
 .DS_Store
 
+.hatch-pet-runs
+
 frontend/.pnpm-store
+frontend/.vite
 frontend/node_modules
 frontend/dist
 frontend/coverage
