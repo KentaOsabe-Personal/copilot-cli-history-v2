@@ -116,7 +116,7 @@ module CopilotHistory
             CopilotSession.create!(record_attributes(session:, fingerprint:))
             counts[:inserted_count] += 1
             counts[:saved_count] += 1
-          elsif existing.source_fingerprint == fingerprint
+          elsif existing.source_fingerprint == fingerprint && search_projection_created?(existing)
             counts[:skipped_count] += 1
           else
             existing.update!(record_attributes(session:, fingerprint:))
@@ -130,6 +130,10 @@ module CopilotHistory
 
       def record_attributes(session:, fingerprint:)
         record_builder.call(session:, indexed_at: current_time, source_fingerprint: fingerprint)
+      end
+
+      def search_projection_created?(record)
+        record.search_text_version == CopilotHistory::Persistence::SessionSearchTextBuilder::VERSION
       end
 
       def handle_persistence_failure(sync_run:, error:)

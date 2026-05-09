@@ -11,11 +11,15 @@ import type {
 } from '../api/sessionApi.types.ts'
 import {
   buildDefaultRange,
-  buildQueryKey,
   resolveAppliedRange,
-  toSessionIndexQuery,
   type SessionDateRangeDraft,
 } from '../presentation/sessionDateFilter.ts'
+import {
+  buildCriteriaKey,
+  normalizeSearchTerm,
+  toSessionIndexQuery,
+  type SessionIndexCriteria,
+} from '../presentation/sessionIndexCriteria.ts'
 
 export type SessionIndexState =
   | { status: 'loading' }
@@ -38,8 +42,11 @@ export interface UseSessionIndexOptions {
 export interface UseSessionIndexResult {
   state: SessionIndexState
   appliedRange: SessionDateRangeDraft
+  appliedSearchTerm: string
   isRefreshing: boolean
   applyRange(range: SessionDateRangeDraft): Promise<SessionIndexSettledState>
+  applySearch(searchTerm: string): Promise<SessionIndexSettledState>
+  clearSearch(): Promise<SessionIndexSettledState>
   reloadSessions(): Promise<SessionIndexSettledState>
 }
 
@@ -70,11 +77,15 @@ export function useSessionIndex(
   const now = options.now ?? defaultNow
   const [initialState] = useState(() => {
     const initialRange = buildDefaultRange(now())
-    const queryKey = buildQueryKey(initialRange)
+    const initialCriteria = {
+      range: initialRange,
+      searchTerm: '',
+    }
+    const queryKey = buildCriteriaKey(initialCriteria)
     const snapshot = readReusableSnapshot(client, queryKey)
 
     return {
-      appliedRange: initialRange,
+      appliedCriteria: initialCriteria,
       settledState:
         snapshot == null
           ? null
@@ -85,19 +96,19 @@ export function useSessionIndex(
             } satisfies SettledStateEnvelope),
     }
   })
-  const [appliedRange, setAppliedRange] = useState<SessionDateRangeDraft>(initialState.appliedRange)
+  const [appliedCriteria, setAppliedCriteria] = useState<SessionIndexCriteria>(initialState.appliedCriteria)
   const [settledState, setSettledState] = useState<SettledStateEnvelope | null>(
     initialState.settledState,
   )
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const appliedRangeRef = useRef(appliedRange)
+  const appliedCriteriaRef = useRef(appliedCriteria)
   const settledStateRef = useRef<SettledStateEnvelope | null>(settledState)
   const activeRequestRef = useRef<ActiveRequest | null>(null)
   const requestIdRef = useRef(0)
 
   useEffect(() => {
-    appliedRangeRef.current = appliedRange
-  }, [appliedRange])
+    appliedCriteriaRef.current = appliedCriteria
+  }, [appliedCriteria])
 
   useEffect(() => {
     settledStateRef.current = settledState
@@ -122,12 +133,12 @@ export function useSessionIndex(
   )
 
   const performRequest = useCallback(async ({
-    range,
+    criteria,
     queryKey,
     preserveVisibleState,
     preserveSnapshotOnError,
   }: {
-    range: SessionDateRangeDraft
+    criteria: SessionIndexCriteria
     queryKey: string
     preserveVisibleState: boolean
     preserveSnapshotOnError: boolean
@@ -149,7 +160,7 @@ export function useSessionIndex(
 
     const result = await client.fetchSessionIndex({
       signal: controller.signal,
-      query: toSessionIndexQuery(range),
+      query: toSessionIndexQuery(criteria),
     })
 
     if (controller.signal.aborted || activeRequestRef.current?.id !== requestId) {
@@ -182,25 +193,51 @@ export function useSessionIndex(
 
   const applyRange = useCallback(async (range: SessionDateRangeDraft): Promise<SessionIndexSettledState> => {
     const nextRange = resolveAppliedRange(range, now())
-    const queryKey = buildQueryKey(nextRange)
+    const nextCriteria = {
+      range: nextRange,
+      searchTerm: appliedCriteriaRef.current.searchTerm,
+    }
+    const queryKey = buildCriteriaKey(nextCriteria)
 
-    appliedRangeRef.current = nextRange
-    setAppliedRange(nextRange)
+    appliedCriteriaRef.current = nextCriteria
+    setAppliedCriteria(nextCriteria)
 
     return performRequest({
-      range: nextRange,
+      criteria: nextCriteria,
       queryKey,
       preserveVisibleState: false,
       preserveSnapshotOnError: false,
     })
   }, [now, performRequest])
 
-  const reloadSessions = useCallback(async (): Promise<SessionIndexSettledState> => {
-    const nextRange = appliedRangeRef.current
+  const applySearch = useCallback(async (searchTerm: string): Promise<SessionIndexSettledState> => {
+    const nextCriteria = {
+      range: appliedCriteriaRef.current.range,
+      searchTerm: normalizeSearchTerm(searchTerm),
+    }
+    const queryKey = buildCriteriaKey(nextCriteria)
+
+    appliedCriteriaRef.current = nextCriteria
+    setAppliedCriteria(nextCriteria)
 
     return performRequest({
-      range: nextRange,
-      queryKey: buildQueryKey(nextRange),
+      criteria: nextCriteria,
+      queryKey,
+      preserveVisibleState: false,
+      preserveSnapshotOnError: false,
+    })
+  }, [performRequest])
+
+  const clearSearch = useCallback(async (): Promise<SessionIndexSettledState> => {
+    return applySearch('')
+  }, [applySearch])
+
+  const reloadSessions = useCallback(async (): Promise<SessionIndexSettledState> => {
+    const nextCriteria = appliedCriteriaRef.current
+
+    return performRequest({
+      criteria: nextCriteria,
+      queryKey: buildCriteriaKey(nextCriteria),
       preserveVisibleState: true,
       preserveSnapshotOnError: true,
     })
@@ -208,12 +245,12 @@ export function useSessionIndex(
 
   useEffect(() => {
     let disposed = false
-    const initialRange = appliedRangeRef.current
-    const initialQueryKey = buildQueryKey(initialRange)
+    const initialCriteria = appliedCriteriaRef.current
+    const initialQueryKey = buildCriteriaKey(initialCriteria)
     const hasReusableSnapshot = readReusableSnapshot(client, initialQueryKey) != null
 
     void performRequest({
-      range: initialRange,
+      criteria: initialCriteria,
       queryKey: initialQueryKey,
       preserveVisibleState: hasReusableSnapshot,
       preserveSnapshotOnError: hasReusableSnapshot,
@@ -233,18 +270,24 @@ export function useSessionIndex(
   if (settledState == null || settledState.client !== client) {
     return {
       state: { status: 'loading' },
-      appliedRange,
+      appliedRange: appliedCriteria.range,
+      appliedSearchTerm: appliedCriteria.searchTerm,
       isRefreshing: false,
       applyRange,
+      applySearch,
+      clearSearch,
       reloadSessions,
     }
   }
 
   return {
     state: settledState.state,
-    appliedRange,
+    appliedRange: appliedCriteria.range,
+    appliedSearchTerm: appliedCriteria.searchTerm,
     isRefreshing,
     applyRange,
+    applySearch,
+    clearSearch,
     reloadSessions,
   }
 }

@@ -133,6 +133,10 @@ function buildRequestUrl(path: string, baseUrl: URL, query?: SessionIndexQuery):
     url.searchParams.set('to', query.to)
   }
 
+  if (isPresentQueryValue(query?.search)) {
+    url.searchParams.set('search', query.search)
+  }
+
   return url
 }
 

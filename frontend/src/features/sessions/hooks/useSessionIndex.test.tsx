@@ -65,6 +65,7 @@ const StateProbe = forwardRef<
     <>
       <pre data-testid="state">{JSON.stringify(hookResult.state)}</pre>
       <pre data-testid="range">{JSON.stringify(hookResult.appliedRange)}</pre>
+      <pre data-testid="search">{JSON.stringify(hookResult.appliedSearchTerm)}</pre>
       <pre data-testid="refreshing">{JSON.stringify(hookResult.isRefreshing)}</pre>
     </>
   )
@@ -80,6 +81,10 @@ function readAppliedRange() {
 
 function readRefreshing() {
   return JSON.parse(screen.getByTestId('refreshing').textContent ?? 'false')
+}
+
+function readAppliedSearchTerm() {
+  return JSON.parse(screen.getByTestId('search').textContent ?? '""')
 }
 
 function renderStateProbe(client: SessionApiClient, now?: () => Date) {
@@ -106,6 +111,25 @@ function applyRange(
   }
 
   return ref.current.applyRange(range)
+}
+
+function applySearch(
+  ref: RefObject<ReturnType<typeof useSessionIndex> | null>,
+  searchTerm: string,
+) {
+  if (ref.current == null) {
+    throw new Error('Hook result is not available yet')
+  }
+
+  return ref.current.applySearch(searchTerm)
+}
+
+function clearSearch(ref: RefObject<ReturnType<typeof useSessionIndex> | null>) {
+  if (ref.current == null) {
+    throw new Error('Hook result is not available yet')
+  }
+
+  return ref.current.clearSearch()
 }
 
 function buildIndexResponse(
@@ -703,5 +727,166 @@ describe('useSessionIndex', () => {
       sessions: latestPayload.data,
       meta: latestPayload.meta,
     })
+  })
+
+  it('applies a search term while preserving the current date range', async () => {
+    const initialPayload = buildIndexResponse()
+    const searchPayload = buildIndexResponse([
+      {
+        ...initialPayload.data[0],
+        id: 'search-result',
+      },
+    ])
+    const searchRequest = deferred<SessionApiResult<SessionIndexResponse>>()
+    const fetchSessionIndex = vi
+      .fn<SessionApiClient['fetchSessionIndex']>()
+      .mockResolvedValueOnce({ status: 'success', data: initialPayload })
+      .mockReturnValueOnce(searchRequest.promise)
+    const client = createClient(fetchSessionIndex)
+    const { ref } = renderStateProbe(client)
+
+    await waitFor(() =>
+      expect(readState()).toEqual({
+        status: 'success',
+        sessions: initialPayload.data,
+        meta: initialPayload.meta,
+      }),
+    )
+
+    let searchPromise!: Promise<unknown>
+    await act(async () => {
+      searchPromise = applySearch(ref, '  apply   patch  ')
+    })
+
+    expect(readAppliedRange()).toEqual(DEFAULT_RANGE)
+    expect(readAppliedSearchTerm()).toBe('apply patch')
+    expect(readState()).toEqual({ status: 'loading' })
+
+    await act(async () => {
+      searchRequest.resolve({ status: 'success', data: searchPayload })
+      await expect(searchPromise).resolves.toEqual({
+        status: 'success',
+        sessions: searchPayload.data,
+        meta: searchPayload.meta,
+      })
+    })
+
+    expect(fetchSessionIndex).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        query: {
+          ...DEFAULT_QUERY,
+          search: 'apply patch',
+        },
+        signal: expect.any(AbortSignal),
+      }),
+    )
+  })
+
+  it('clears the search term while preserving the current date range', async () => {
+    const initialPayload = buildIndexResponse()
+    const searchPayload = buildIndexResponse([{ ...initialPayload.data[0], id: 'search-result' }])
+    const clearedPayload = buildIndexResponse([{ ...initialPayload.data[0], id: 'cleared-result' }])
+    const searchRequest = deferred<SessionApiResult<SessionIndexResponse>>()
+    const clearRequest = deferred<SessionApiResult<SessionIndexResponse>>()
+    const fetchSessionIndex = vi
+      .fn<SessionApiClient['fetchSessionIndex']>()
+      .mockResolvedValueOnce({ status: 'success', data: initialPayload })
+      .mockReturnValueOnce(searchRequest.promise)
+      .mockReturnValueOnce(clearRequest.promise)
+    const client = createClient(fetchSessionIndex)
+    const { ref } = renderStateProbe(client)
+
+    await waitFor(() => expect(readState().status).toBe('success'))
+
+    await act(async () => {
+      const searchPromise = applySearch(ref, 'issue message')
+      searchRequest.resolve({ status: 'success', data: searchPayload })
+      await searchPromise
+    })
+
+    let clearPromise!: Promise<unknown>
+    await act(async () => {
+      clearPromise = clearSearch(ref)
+    })
+
+    expect(readAppliedRange()).toEqual(DEFAULT_RANGE)
+    expect(readAppliedSearchTerm()).toBe('')
+    expect(readState()).toEqual({ status: 'loading' })
+
+    await act(async () => {
+      clearRequest.resolve({ status: 'success', data: clearedPayload })
+      await clearPromise
+    })
+
+    expect(fetchSessionIndex).toHaveBeenNthCalledWith(
+      3,
+      expect.objectContaining({
+        query: DEFAULT_QUERY,
+        signal: expect.any(AbortSignal),
+      }),
+    )
+  })
+
+  it('preserves search while applying a new date range and while reloading after sync', async () => {
+    const initialPayload = buildIndexResponse()
+    const searchPayload = buildIndexResponse([{ ...initialPayload.data[0], id: 'search-result' }])
+    const rangePayload = buildIndexResponse([{ ...initialPayload.data[0], id: 'range-result' }])
+    const reloadPayload = buildIndexResponse([{ ...initialPayload.data[0], id: 'reload-result' }])
+    const searchRequest = deferred<SessionApiResult<SessionIndexResponse>>()
+    const rangeRequest = deferred<SessionApiResult<SessionIndexResponse>>()
+    const reloadRequest = deferred<SessionApiResult<SessionIndexResponse>>()
+    const fetchSessionIndex = vi
+      .fn<SessionApiClient['fetchSessionIndex']>()
+      .mockResolvedValueOnce({ status: 'success', data: initialPayload })
+      .mockReturnValueOnce(searchRequest.promise)
+      .mockReturnValueOnce(rangeRequest.promise)
+      .mockReturnValueOnce(reloadRequest.promise)
+    const client = createClient(fetchSessionIndex)
+    const { ref } = renderStateProbe(client)
+
+    await waitFor(() => expect(readState().status).toBe('success'))
+
+    await act(async () => {
+      const searchPromise = applySearch(ref, 'gpt-5')
+      searchRequest.resolve({ status: 'success', data: searchPayload })
+      await searchPromise
+    })
+
+    await act(async () => {
+      const rangePromise = applyRange(ref, { from: '2026-05-01', to: '2026-05-07' })
+      rangeRequest.resolve({ status: 'success', data: rangePayload })
+      await rangePromise
+    })
+
+    await act(async () => {
+      const reloadPromise = reloadSessions(ref)
+      reloadRequest.resolve({ status: 'success', data: reloadPayload })
+      await reloadPromise
+    })
+
+    expect(readAppliedSearchTerm()).toBe('gpt-5')
+    expect(fetchSessionIndex).toHaveBeenNthCalledWith(
+      3,
+      expect.objectContaining({
+        query: {
+          from: '2026-05-01T00:00:00+09:00',
+          to: '2026-05-07T23:59:59.999999+09:00',
+          search: 'gpt-5',
+        },
+        signal: expect.any(AbortSignal),
+      }),
+    )
+    expect(fetchSessionIndex).toHaveBeenNthCalledWith(
+      4,
+      expect.objectContaining({
+        query: {
+          from: '2026-05-01T00:00:00+09:00',
+          to: '2026-05-07T23:59:59.999999+09:00',
+          search: 'gpt-5',
+        },
+        signal: expect.any(AbortSignal),
+      }),
+    )
   })
 })

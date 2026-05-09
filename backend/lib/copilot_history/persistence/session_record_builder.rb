@@ -4,17 +4,20 @@ module CopilotHistory
       def initialize(
         summary_presenter: CopilotHistory::Api::Presenters::SessionIndexPresenter.new,
         detail_presenter: CopilotHistory::Api::Presenters::SessionDetailPresenter.new,
-        fingerprint_builder: SourceFingerprintBuilder.new
+        fingerprint_builder: SourceFingerprintBuilder.new,
+        search_text_builder: SessionSearchTextBuilder.new
       )
         @summary_presenter = summary_presenter
         @detail_presenter = detail_presenter
         @fingerprint_builder = fingerprint_builder
+        @search_text_builder = search_text_builder
       end
 
       def call(session:, indexed_at: Time.current, source_fingerprint: nil)
         summary_payload = build_summary_payload(session)
         detail_payload = build_detail_payload(session)
         conversation_summary = summary_payload.fetch(:conversation_summary, {})
+        scalar_metadata = metadata_for(session)
 
         {
           session_id: session.session_id,
@@ -32,6 +35,12 @@ module CopilotHistory
           issue_count: session.issues.length,
           degraded: session.issues.any?,
           conversation_preview: conversation_summary[:preview],
+          search_text: search_text_builder.call(
+            summary_payload: summary_payload,
+            detail_payload: detail_payload,
+            metadata: scalar_metadata
+          ),
+          search_text_version: CopilotHistory::Persistence::SessionSearchTextBuilder::VERSION,
           message_count: conversation_summary.fetch(:message_count, 0),
           activity_count: conversation_summary.fetch(:activity_count, 0),
           source_paths: stringify_source_paths(session.source_paths),
@@ -44,7 +53,17 @@ module CopilotHistory
 
       private
 
-      attr_reader :summary_presenter, :detail_presenter, :fingerprint_builder
+      attr_reader :summary_presenter, :detail_presenter, :fingerprint_builder, :search_text_builder
+
+      def metadata_for(session)
+        {
+          cwd: path_or_nil(session.cwd),
+          git_root: path_or_nil(session.git_root),
+          repository: session.repository,
+          branch: session.branch,
+          selected_model: session.selected_model
+        }
+      end
 
       def build_summary_payload(session)
         result = CopilotHistory::Types::ReadResult::Success.new(root: nil, sessions: [ session ])

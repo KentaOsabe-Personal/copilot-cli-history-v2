@@ -73,4 +73,28 @@ describe('SessionEmptyState', () => {
     expect(screen.getByText('現在の表示範囲: 2026-05-01 〜 2026-05-07')).toBeInTheDocument()
     expect(screen.getByText('この条件では、まだ一致するセッションが見つかっていません。')).toBeInTheDocument()
   })
+
+  it('renders a search-scoped empty state without offering edit, delete, or share actions', async () => {
+    const user = userEvent.setup()
+    const onClearSearch = vi.fn()
+
+    render(
+      <SessionEmptyState
+        appliedRangeLabel="2026-05-01 〜 2026-05-07"
+        appliedSearchTerm="apply patch"
+        syncState={{ status: 'idle' }}
+        isSyncing={false}
+        onSync={vi.fn()}
+        onClearSearch={onClearSearch}
+      />,
+    )
+
+    expect(screen.getByRole('heading', { name: '検索条件に一致するセッションはありません' })).toBeInTheDocument()
+    expect(screen.getByText('現在の表示条件: 2026-05-01 〜 2026-05-07 / 検索: apply patch')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /編集|削除|共有/ })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '検索を解除' }))
+
+    expect(onClearSearch).toHaveBeenCalledTimes(1)
+  })
 })

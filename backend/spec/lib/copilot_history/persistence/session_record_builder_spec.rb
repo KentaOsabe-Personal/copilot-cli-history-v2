@@ -114,6 +114,8 @@ RSpec.describe CopilotHistory::Persistence::SessionRecordBuilder do
         issue_count: 1,
         degraded: true,
         conversation_preview: "hello",
+        search_text: include("hello", "hi", "event payload matched partially"),
+        search_text_version: CopilotHistory::Persistence::SessionSearchTextBuilder::VERSION,
         message_count: 2,
         activity_count: 0,
         source_paths: {
@@ -129,7 +131,56 @@ RSpec.describe CopilotHistory::Persistence::SessionRecordBuilder do
           "events" => include("path" => events_path.to_s, "status" => "ok")
         )
       )
+      expect(attributes.fetch(:search_text)).not_to include(
+        "/workspace/current",
+        "octo/example",
+        "feature/history-db",
+        "gpt-5-current"
+      )
       expect(CopilotSession.new(attributes)).to be_valid
+    end
+
+    it "builds search text from presenter conversation payloads without tool or scalar metadata noise" do
+      source_path = write_source("current/events.jsonl", "{}\n")
+      session = build_session(
+        session_id: "searchable-session",
+        source_format: :current,
+        cwd: "/workspace/searchable",
+        repository: "octo/searchable",
+        selected_model: "gpt-5-search",
+        source_paths: { events: source_path },
+        events: [
+          build_event(
+            sequence: 1,
+            raw_type: "assistant.message",
+            occurred_at: "2026-04-28T01:00:00Z",
+            role: "assistant",
+            content: "Use ripgrep to find migration errors",
+            tool_calls: [
+              {
+                name: "shell",
+                arguments_preview: "rg migration",
+                is_truncated: false,
+                status: :complete
+              }
+            ]
+          )
+        ]
+      )
+
+      attributes = described_class.new.call(session:, indexed_at: Time.zone.parse("2026-04-30 12:00:00"))
+
+      expect(attributes.fetch(:search_text)).to include(
+        "Use ripgrep to find migration errors"
+      )
+      expect(attributes.fetch(:search_text)).not_to include(
+        "shell",
+        "rg migration",
+        "/workspace/searchable",
+        "octo/searchable",
+        "gpt-5-search"
+      )
+      expect(attributes.fetch(:search_text_version)).to eq(CopilotHistory::Persistence::SessionSearchTextBuilder::VERSION)
     end
 
     it "preserves missing history dates and maps legacy sessions through the shared contract" do
@@ -201,6 +252,7 @@ RSpec.describe CopilotHistory::Persistence::SessionRecordBuilder do
       expect(original_attributes.fetch(:session_id)).to eq(regenerated_attributes.fetch(:session_id))
       expect(regenerated_attributes.fetch(:summary_payload)).not_to eq(original_attributes.fetch(:summary_payload))
       expect(regenerated_attributes.fetch(:conversation_preview)).to eq("updated")
+      expect(regenerated_attributes.fetch(:search_text)).to include("updated")
       expect(CopilotSession.where(session_id: "replaceable-session")).not_to exist
       expect(regenerated_attributes.keys).not_to include(:skip, :upsert, :delete, :raw_files_primary_source)
     end
@@ -308,7 +360,7 @@ RSpec.describe CopilotHistory::Persistence::SessionRecordBuilder do
     )
   end
 
-  def build_event(sequence:, raw_type:, occurred_at:, role:, content:, kind: :message, raw_payload: {})
+  def build_event(sequence:, raw_type:, occurred_at:, role:, content:, kind: :message, raw_payload: {}, tool_calls: [])
     CopilotHistory::Types::NormalizedEvent.new(
       sequence:,
       kind:,
@@ -316,6 +368,7 @@ RSpec.describe CopilotHistory::Persistence::SessionRecordBuilder do
       occurred_at:,
       role:,
       content:,
+      tool_calls:,
       raw_payload:
     )
   end

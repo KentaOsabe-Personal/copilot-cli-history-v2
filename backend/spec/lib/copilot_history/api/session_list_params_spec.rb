@@ -62,6 +62,37 @@ RSpec.describe CopilotHistory::Api::SessionListParams do
       expect(result.limit).to eq(25)
     end
 
+    it "normalizes search text by trimming and collapsing whitespace" do
+      result = parser.call(params: { search: "  apply   patch\nfailure  " }, now: now)
+
+      expect(result).to be_a(described_class::Result)
+      expect(result.search_term).to eq("apply patch failure")
+    end
+
+    it "treats blank search text as omitted" do
+      result = parser.call(params: { search: " \t\n " }, now: now)
+
+      expect(result).to be_a(described_class::Result)
+      expect(result.search_term).to be_nil
+    end
+
+    it "keeps search text together with date range and limit criteria" do
+      result = parser.call(
+        params: {
+          from: "2026-04-01",
+          to: "2026-04-30",
+          limit: "25",
+          search: "gpt-5"
+        },
+        now: now
+      )
+
+      expect(result.from_time).to eq(Time.zone.parse("2026-04-01T00:00:00Z"))
+      expect(result.to_time).to eq(Time.zone.local(2026, 4, 30).end_of_day)
+      expect(result.limit).to eq(25)
+      expect(result.search_term).to eq("gpt-5")
+    end
+
     it "treats an omitted limit as unlimited" do
       result = parser.call(params: { from: "2026-04-01" }, now: now)
 
@@ -102,6 +133,18 @@ RSpec.describe CopilotHistory::Api::SessionListParams do
       result = parser.call(params: { limit: "1.5" }, now: now)
 
       expect(result).to be_invalid_query(field: "limit", reason: "positive_integer_required")
+    end
+
+    it "returns a client error for search text over the maximum length" do
+      result = parser.call(params: { search: "a" * 201 }, now: now)
+
+      expect(result).to be_invalid_query(field: "search", reason: "too_long")
+    end
+
+    it "returns a client error for search text containing display-hostile control characters" do
+      result = parser.call(params: { search: "hello\u0000world" }, now: now)
+
+      expect(result).to be_invalid_query(field: "search", reason: "control_character")
     end
   end
 

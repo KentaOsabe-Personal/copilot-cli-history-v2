@@ -43,3 +43,4 @@
 ## Follow-up Specs
 
 - [ ] session-date-filtering -- セッション一覧に日付フィルタ UI を追加し、初期表示を直近 1 週間へ絞り、長い履歴表示によるページ全体の横スクロールを抑制する。Dependencies: session-api-db-query, frontend-session-ui, frontend-history-sync-ui
+- [ ] session-full-text-search -- セッション一覧に全文検索を追加し、保存済み read model から会話本文・関連メタ情報に一致するセッションを探せるようにする。Dependencies: session-api-db-query, session-date-filtering, history-sync-api

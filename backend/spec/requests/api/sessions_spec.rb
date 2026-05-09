@@ -132,6 +132,95 @@ RSpec.describe "API Sessions", type: :request do
       )
     end
 
+    it "filters sessions by search text while preserving the existing response shape" do
+      create_copilot_session(
+        session_id: "matching",
+        updated_at_source: "2026-04-26T10:00:00Z",
+        search_text: "tool call apply_patch failed",
+        summary_payload: {
+          "id" => "matching",
+          "degraded" => true,
+          "issues" => [ { "code" => "partial" } ]
+        }
+      )
+      create_copilot_session(
+        session_id: "missing",
+        updated_at_source: "2026-04-27T10:00:00Z",
+        search_text: "unrelated history",
+        summary_payload: {
+          "id" => "missing",
+          "degraded" => false,
+          "issues" => []
+        }
+      )
+
+      get "/api/sessions", params: { search: "apply_patch" }
+
+      expect(response).to have_http_status(:ok)
+      expect(JSON.parse(response.body, symbolize_names: true)).to eq(
+        data: [
+          {
+            id: "matching",
+            degraded: true,
+            issues: [ { code: "partial" } ]
+          }
+        ],
+        meta: {
+          count: 1,
+          partial_results: true
+        }
+      )
+    end
+
+    it "combines search text with date range and returns an empty success for no matches" do
+      create_copilot_session(session_id: "outside-date", updated_at_source: "2026-03-31T23:59:59Z", search_text: "gpt-5 tokenizer")
+      create_copilot_session(session_id: "inside-date", updated_at_source: "2026-04-20T00:00:00Z", search_text: "gpt-5 tokenizer")
+      create_copilot_session(session_id: "inside-missing", updated_at_source: "2026-04-21T00:00:00Z", search_text: "unrelated")
+
+      get "/api/sessions", params: { from: "2026-04-01", to: "2026-04-30", search: "gpt-5" }
+      expect(response).to have_http_status(:ok)
+      expect(JSON.parse(response.body, symbolize_names: true)[:data].map { |payload| payload[:id] }).to eq(%w[inside-date])
+
+      get "/api/sessions", params: { from: "2026-04-01", to: "2026-04-30", search: "missing" }
+      expect(response).to have_http_status(:ok)
+      expect(JSON.parse(response.body, symbolize_names: true)).to eq(
+        data: [],
+        meta: {
+          count: 0,
+          partial_results: false
+        }
+      )
+    end
+
+    it "returns a 400 error envelope for invalid search text before running the query" do
+      expect(CopilotHistory::Api::SessionIndexQuery).not_to receive(:new)
+
+      get "/api/sessions", params: { search: "hello\u0000world" }
+
+      expect(response).to have_http_status(:bad_request)
+      expect(JSON.parse(response.body, symbolize_names: true)).to eq(
+        error: {
+          code: "invalid_session_list_query",
+          message: "session list query is invalid",
+          details: {
+            field: "search",
+            reason: "control_character",
+            value: "hello\u0000world"
+          }
+        }
+      )
+    end
+
+    it "does not read raw files for search requests" do
+      create_copilot_session(session_id: "matching", search_text: "saved read model")
+      expect(CopilotHistory::SessionCatalogReader).not_to receive(:new)
+
+      get "/api/sessions", params: { search: "saved" }
+
+      expect(response).to have_http_status(:ok)
+      expect(JSON.parse(response.body, symbolize_names: true)[:data].map { |payload| payload[:id] }).to eq(%w[matching])
+    end
+
     it "returns 400 error envelopes before running the query for invalid list params" do
       [
         [ { from: "not-a-date" }, { field: "from", reason: "invalid_datetime", value: "not-a-date" } ],
@@ -318,7 +407,7 @@ RSpec.describe "API Sessions", type: :request do
     end
   end
 
-  def create_copilot_session(session_id:, source_format: "current", created_at_source: nil, updated_at_source: nil, summary_payload: nil, detail_payload: nil, no_display_time: false)
+  def create_copilot_session(session_id:, source_format: "current", created_at_source: nil, updated_at_source: nil, summary_payload: nil, detail_payload: nil, no_display_time: false, search_text: nil)
     CopilotSession.create!(
       session_id: session_id,
       source_format: source_format,
@@ -335,6 +424,8 @@ RSpec.describe "API Sessions", type: :request do
       issue_count: 0,
       degraded: false,
       conversation_preview: "summary",
+      search_text: search_text || "summary #{session_id}",
+      search_text_version: CopilotHistory::Persistence::SessionSearchTextBuilder::VERSION,
       message_count: 1,
       activity_count: 1,
       source_paths: { "source" => "/tmp/#{session_id}.json" },

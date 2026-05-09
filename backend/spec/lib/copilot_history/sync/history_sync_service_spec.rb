@@ -147,6 +147,40 @@ RSpec.describe CopilotHistory::Sync::HistorySyncService do
     )
   end
 
+  it "updates matching-fingerprint sessions when the search projection version is stale" do
+    session = build_session(session_id: "stale-search-text-session")
+    old_indexed_at = Time.zone.parse("2026-04-29 09:00:00")
+    fingerprint = fingerprint_for("same")
+    create_session(
+      session_id: "stale-search-text-session",
+      source_fingerprint: fingerprint,
+      indexed_at: old_indexed_at,
+      search_text: "old noisy projection",
+      search_text_version: 1
+    )
+    allow(reader).to receive(:call).and_return(success_result(session))
+    allow(fingerprint_builder).to receive(:call).with(source_paths: session.source_paths).and_return(fingerprint)
+    allow(record_builder).to receive(:call)
+      .with(session:, indexed_at: now, source_fingerprint: fingerprint)
+      .and_return(attributes_for(session, fingerprint, conversation_preview: "updated projection", search_text: "updated projection text"))
+
+    result = service.call
+
+    expect(result).to be_succeeded
+    expect(CopilotSession.find_by!(session_id: "stale-search-text-session")).to have_attributes(
+      source_fingerprint: fingerprint,
+      indexed_at: now,
+      conversation_preview: "updated projection",
+      search_text: "updated projection text",
+      search_text_version: CopilotHistory::Persistence::SessionSearchTextBuilder::VERSION
+    )
+    expect(result.sync_run).to have_attributes(
+      updated_count: 1,
+      saved_count: 1,
+      skipped_count: 0
+    )
+  end
+
   it "does not modify raw source files or delete sessions missing from the latest read result" do
     Tempfile.create([ "history-sync-service", ".jsonl" ]) do |raw_file|
       raw_file.write("raw event payload\n")
@@ -324,8 +358,23 @@ RSpec.describe CopilotHistory::Sync::HistorySyncService do
     }
   end
 
-  def create_session(session_id:, source_fingerprint:, indexed_at:)
-    CopilotSession.create!(attributes_for(build_session(session_id:), source_fingerprint, indexed_at:, conversation_preview: "existing #{session_id}"))
+  def create_session(
+    session_id:,
+    source_fingerprint:,
+    indexed_at:,
+    search_text: "search text #{session_id}",
+    search_text_version: CopilotHistory::Persistence::SessionSearchTextBuilder::VERSION
+  )
+    CopilotSession.create!(
+      attributes_for(
+        build_session(session_id:),
+        source_fingerprint,
+        indexed_at:,
+        conversation_preview: "existing #{session_id}",
+        search_text:,
+        search_text_version:
+      )
+    )
   end
 
   def attributes_for(
@@ -333,9 +382,11 @@ RSpec.describe CopilotHistory::Sync::HistorySyncService do
     source_fingerprint,
     indexed_at: now,
     conversation_preview: "preview #{session.session_id}",
+    search_text: "search text #{session.session_id}",
     source_state: session.source_state.to_s,
     degraded: session.issues.any?,
-    issue_count: session.issues.length
+    issue_count: session.issues.length,
+    search_text_version: CopilotHistory::Persistence::SessionSearchTextBuilder::VERSION
   )
     {
       session_id: session.session_id,
@@ -348,6 +399,8 @@ RSpec.describe CopilotHistory::Sync::HistorySyncService do
       issue_count: issue_count,
       degraded: degraded,
       conversation_preview: conversation_preview,
+      search_text: search_text,
+      search_text_version: search_text_version,
       message_count: 0,
       activity_count: 0,
       source_paths: { "events" => session.source_paths.fetch(:events).to_s },
