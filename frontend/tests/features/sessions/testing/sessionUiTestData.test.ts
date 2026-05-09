@@ -15,6 +15,14 @@ function hasDisplayableWorkContext(workContext: {
 }
 
 describe('sessionUiTestData', () => {
+  /**
+   * 概要・目的: 「provides list scenarios for present metadata, missing metadata, metadata-only, workspace-only,
+   *   and degraded sessions」を通じて、同期処理の状態管理と副作用を検証する。
+   * テストケース: 「provides list scenarios for present metadata, missing metadata, metadata-only, workspace-only,
+   *   and degraded sessions」の条件・入力・操作を実行する。
+   * 期待値: 「provides list scenarios for present metadata, missing metadata, metadata-only, workspace-only, and
+   *   degraded sessions」で示す状態または振る舞いが成立すること。
+   */
   it('provides list scenarios for present metadata, missing metadata, metadata-only, workspace-only, and degraded sessions', () => {
     expect(sessionUiSummaryScenarios.withWorkContextAndModel).toMatchObject({
       source_format: 'current',
@@ -60,6 +68,13 @@ describe('sessionUiTestData', () => {
     expect(sessionUiSummaryScenarios.degraded.issues).toHaveLength(1)
   })
 
+  /**
+   * 概要・目的: 「keeps model display assertions based on actual data presence instead of storage
+   *   format」を通じて、テスト fixture の代表データ契約を検証する。
+   * テストケース: 「keeps model display assertions based on actual data presence instead of storage
+   *   format」の条件・入力・操作を実行する。
+   * 期待値: model 表示の期待値が source_format ではなく selected_model の有無で決まること。
+   */
   it('keeps model display assertions based on actual data presence instead of storage format', () => {
     expect(sessionUiSummaryScenarios.withWorkContextAndModel.source_format).toBe('current')
     expect(sessionUiSummaryScenarios.legacyWithModel.source_format).toBe('legacy')
@@ -71,6 +86,14 @@ describe('sessionUiTestData', () => {
     expect(sessionUiSummaryScenarios.legacyWithoutModel.selected_model).toBeNull()
   })
 
+  /**
+   * 概要・目的: 「provides detail scenarios that isolate session issues, utterance issues, tool calls,
+   *   skill-context, and activity」を通じて、reader と fixture の読取・劣化時の扱いを検証する。
+   * テストケース: 「provides detail scenarios that isolate session issues, utterance issues, tool calls,
+   *   skill-context, and activity」の条件・入力・操作を実行する。
+   * 期待値: 「provides detail scenarios that isolate session issues, utterance issues, tool calls, skill-context,
+   *   and activity」で示す状態または振る舞いが成立すること。
+   */
   it('provides detail scenarios that isolate session issues, utterance issues, tool calls, skill-context, and activity', () => {
     const detail = sessionUiDetailScenarios.interactionSurface
 
@@ -118,6 +141,14 @@ describe('sessionUiTestData', () => {
     ])
   })
 
+  /**
+   * 概要・目的: 「provides detail scenarios for metadata-only and workspace-only empty conversation
+   *   states」を通じて、reader と fixture の読取・劣化時の扱いを検証する。
+   * テストケース: 「provides detail scenarios for metadata-only and workspace-only empty conversation
+   *   states」の条件・入力・操作を実行する。
+   * 期待値: 「provides detail scenarios for metadata-only and workspace-only empty conversation
+   *   states」で示す状態または振る舞いが成立すること。
+   */
   it('provides detail scenarios for metadata-only and workspace-only empty conversation states', () => {
     expect(sessionUiDetailScenarios.metadataOnly).toMatchObject({
       source_state: 'complete',

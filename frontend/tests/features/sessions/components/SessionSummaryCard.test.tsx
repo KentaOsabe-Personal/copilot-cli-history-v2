@@ -8,6 +8,13 @@ import {
 import SessionSummaryCard from '../../../../src/features/sessions/components/SessionSummaryCard.tsx'
 
 describe('SessionSummaryCard', () => {
+  /**
+   * 概要・目的: 「keeps ordinary sessions focused on preview, message count, and real metadata
+   *   only」を通じて、否定条件・例外条件の分岐を検証する。
+   * テストケース: 「keeps ordinary sessions focused on preview, message count, and real metadata
+   *   only」の条件・入力・操作を実行する。
+   * 期待値: ordinary sessions focused on preview, message count, が維持され、real metadata onlyこと。
+   */
   it('keeps ordinary sessions focused on preview, message count, and real metadata only', () => {
     render(
       <MemoryRouter>
@@ -25,6 +32,13 @@ describe('SessionSummaryCard', () => {
     expect(screen.queryByText('1 件の内部 activity')).not.toBeInTheDocument()
   })
 
+  /**
+   * 概要・目的: 「shows metadata-only as an exception signal when a complete session has no
+   *   conversation」を通じて、正規化・projection・presenter の変換契約を検証する。
+   * テストケース: 「shows metadata-only as an exception signal when a complete session has no
+   *   conversation」の条件・入力・操作を実行する。
+   * 期待値: metadata-only as an exception signal when a complete session has no conversation が表示されること。
+   */
   it('shows metadata-only as an exception signal when a complete session has no conversation', () => {
     render(
       <MemoryRouter>
@@ -43,6 +57,12 @@ describe('SessionSummaryCard', () => {
     expect(screen.queryByText('正常')).not.toBeInTheDocument()
   })
 
+  /**
+   * 概要・目的: 「shows only exceptional source-state signals on the summary card」を通じて、reader と fixture
+   *   の読取・劣化時の扱いを検証する。
+   * テストケース: 「shows only exceptional source-state signals on the summary card」の条件・入力・操作を実行する。
+   * 期待値: only exceptional source-state signals on the summary card が表示されること。
+   */
   it('shows only exceptional source-state signals on the summary card', () => {
     const { rerender } = render(
       <MemoryRouter>
@@ -76,6 +96,12 @@ describe('SessionSummaryCard', () => {
     expect(screen.queryByText('正常')).not.toBeInTheDocument()
   })
 
+  /**
+   * 概要・目的: 「falls back to created_at and applies wrap-safe classes for long values」を通じて、検索・日付条件と query
+   *   組み立てを検証する。
+   * テストケース: 「falls back to created_at and applies wrap-safe classes for long values」の条件・入力・操作を実行する。
+   * 期待値: created_at and applies wrap-safe classes for long values に fallback すること。
+   */
   it('falls back to created_at and applies wrap-safe classes for long values', () => {
     render(
       <MemoryRouter>

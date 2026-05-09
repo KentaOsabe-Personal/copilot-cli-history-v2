@@ -2,6 +2,9 @@ require "rails_helper"
 
 RSpec.describe CopilotHistory::Types::ReadResult do
   describe CopilotHistory::Types::ResolvedHistoryRoot do
+    # 概要・目的: 「normalizes root paths into Pathname values」を通じて、reader と fixture の読取・劣化時の扱いを検証する。
+    # テストケース: 「normalizes root paths into Pathname values」の条件・入力・操作を実行する。
+    # 期待値: root paths into Pathname values が正規化されること。
     it "normalizes root paths into Pathname values" do
       root = described_class.new(
         root_path: "/tmp/copilot",
@@ -16,6 +19,9 @@ RSpec.describe CopilotHistory::Types::ReadResult do
   end
 
   describe CopilotHistory::Types::SessionSource do
+    # 概要・目的: 「captures common source descriptor fields for readers」を通じて、reader と fixture の読取・劣化時の扱いを検証する。
+    # テストケース: 「captures common source descriptor fields for readers」の条件・入力・操作を実行する。
+    # 期待値: common source descriptor fields for readers が保持されること。
     it "captures common source descriptor fields for readers" do
       source = described_class.new(
         format: :current,
@@ -38,6 +44,9 @@ RSpec.describe CopilotHistory::Types::ReadResult do
   end
 
   describe CopilotHistory::Types::ReadFailure do
+    # 概要・目的: 「captures fatal root failures with stable payload fields」を通じて、DB 保存・validation・一意性制約を検証する。
+    # テストケース: 「captures fatal root failures with stable payload fields」の条件・入力・操作を実行する。
+    # 期待値: fatal root failures with stable payload fields が保持されること。
     it "captures fatal root failures with stable payload fields" do
       failure = described_class.new(
         code: CopilotHistory::Errors::ReadErrorCode::ROOT_PERMISSION_DENIED,
@@ -50,6 +59,9 @@ RSpec.describe CopilotHistory::Types::ReadResult do
       expect(failure.message).to eq("permission denied")
     end
 
+    # 概要・目的: 「rejects non-root failure codes」を通じて、DB 保存・validation・一意性制約を検証する。
+    # テストケース: 「rejects non-root failure codes」の条件・入力・操作を実行する。
+    # 期待値: non-root failure codes が拒否されること。
     it "rejects non-root failure codes" do
       expect do
         described_class.new(
@@ -62,6 +74,9 @@ RSpec.describe CopilotHistory::Types::ReadResult do
   end
 
   describe CopilotHistory::Types::ReadIssue do
+    # 概要・目的: 「captures session-level issues without promoting them to fatal failures」を通じて、同期処理の状態管理と副作用を検証する。
+    # テストケース: 「captures session-level issues without promoting them to fatal failures」の条件・入力・操作を実行する。
+    # 期待値: session-level issues without promoting them to fatal failures が保持されること。
     it "captures session-level issues without promoting them to fatal failures" do
       issue = described_class.new(
         code: CopilotHistory::Errors::ReadErrorCode::CURRENT_EVENT_PARSE_FAILED,
@@ -80,6 +95,10 @@ RSpec.describe CopilotHistory::Types::ReadResult do
   end
 
   describe CopilotHistory::Types::ReadResult::Success do
+    # 概要・目的: 「wraps resolved root and sessions in the public success envelope」を通じて、reader と fixture
+    #   の読取・劣化時の扱いを検証する。
+    # テストケース: 「wraps resolved root and sessions in the public success envelope」の条件・入力・操作を実行する。
+    # 期待値: resolved root and sessions in the public success envelope が公開用 envelope に包まれること。
     it "wraps resolved root and sessions in the public success envelope" do
       root = CopilotHistory::Types::ResolvedHistoryRoot.new(
         root_path: "/tmp/copilot",
@@ -97,6 +116,9 @@ RSpec.describe CopilotHistory::Types::ReadResult do
   end
 
   describe CopilotHistory::Types::ReadResult::Failure do
+    # 概要・目的: 「wraps fatal root failures in the public failure envelope」を通じて、同期処理の状態管理と副作用を検証する。
+    # テストケース: 「wraps fatal root failures in the public failure envelope」の条件・入力・操作を実行する。
+    # 期待値: fatal root failures in the public failure envelope が公開用 envelope に包まれること。
     it "wraps fatal root failures in the public failure envelope" do
       failure = CopilotHistory::Types::ReadFailure.new(
         code: CopilotHistory::Errors::ReadErrorCode::ROOT_MISSING,

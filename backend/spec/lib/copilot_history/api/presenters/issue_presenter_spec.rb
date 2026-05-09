@@ -4,6 +4,10 @@ RSpec.describe CopilotHistory::Api::Presenters::IssuePresenter do
   describe "#call" do
     subject(:presenter) { described_class.new }
 
+    # 概要・目的: 「maps session-level issues to the shared JSON-compatible payload」を通じて、reader と fixture
+    #   の読取・劣化時の扱いを検証する。
+    # テストケース: 「maps session-level issues to the shared JSON-compatible payload」の条件・入力・操作を実行する。
+    # 期待値: session-level issues が the shared JSON-compatible payload に変換されること。
     it "maps session-level issues to the shared JSON-compatible payload" do
       issue = CopilotHistory::Types::ReadIssue.new(
         code: CopilotHistory::Errors::ReadErrorCode::CURRENT_WORKSPACE_PARSE_FAILED,
@@ -22,6 +26,10 @@ RSpec.describe CopilotHistory::Api::Presenters::IssuePresenter do
       )
     end
 
+    # 概要・目的: 「maps event-level issues to the same payload with event location fields」を通じて、reader と fixture
+    #   の読取・劣化時の扱いを検証する。
+    # テストケース: 「maps event-level issues to the same payload with event location fields」の条件・入力・操作を実行する。
+    # 期待値: event-level issues が the same payload with event location fields に変換されること。
     it "maps event-level issues to the same payload with event location fields" do
       issue = CopilotHistory::Types::ReadIssue.new(
         code: CopilotHistory::Errors::ReadErrorCode::EVENT_PARTIAL_MAPPING,

@@ -48,6 +48,14 @@ function buildConversation(): SessionConversation {
 }
 
 describe('ConversationTranscript', () => {
+  /**
+   * 概要・目的: 「marks user and assistant entries with role-specific visual state beyond the role badge」を通じて、hook
+   *   の状態遷移と非同期制御を検証する。
+   * テストケース: 「marks user and assistant entries with role-specific visual state beyond the role
+   *   badge」の条件・入力・操作を実行する。
+   * 期待値: 「marks user and assistant entries with role-specific visual state beyond the role
+   *   badge」で示す状態または振る舞いが成立すること。
+   */
   it('marks user and assistant entries with role-specific visual state beyond the role badge', () => {
     render(<ConversationTranscript conversation={buildConversation()} stateScopeKey="session-1" />)
 
@@ -57,6 +65,11 @@ describe('ConversationTranscript', () => {
     expect(screen.getByTestId('conversation-entry-2')).toHaveClass('border-cyan-300/35')
   })
 
+  /**
+   * 概要・目的: 「keeps degraded and issue indicators readable with assistant role styling」を通じて、同期処理の状態管理と副作用を検証する。
+   * テストケース: 「keeps degraded and issue indicators readable with assistant role styling」の条件・入力・操作を実行する。
+   * 期待値: degraded が維持され、issue indicators readable with assistant role stylingこと。
+   */
   it('keeps degraded and issue indicators readable with assistant role styling', () => {
     render(<ConversationTranscript conversation={buildConversation()} stateScopeKey="session-1" />)
 
@@ -67,6 +80,14 @@ describe('ConversationTranscript', () => {
     expect(assistantEntry).toHaveTextContent('message was incomplete')
   })
 
+  /**
+   * 概要・目的: 「hides and restores entry body, code, tool hints, and issue details while keeping metadata
+   *   visible」を通じて、DB 保存・validation・一意性制約を検証する。
+   * テストケース: 「hides and restores entry body, code, tool hints, and issue details while keeping metadata
+   *   visible」の条件・入力・操作を実行する。
+   * 期待値: 「hides and restores entry body, code, tool hints, and issue details while keeping metadata
+   *   visible」で示す状態または振る舞いが成立すること。
+   */
   it('hides and restores entry body, code, tool hints, and issue details while keeping metadata visible', async () => {
     const user = userEvent.setup()
     const conversation: SessionConversation = {
@@ -137,6 +158,12 @@ describe('ConversationTranscript', () => {
     expect(screen.getByRole('button', { name: '発話 #7 を非表示' })).toHaveAttribute('aria-expanded', 'true')
   })
 
+  /**
+   * 概要・目的: 「does not add an empty-body placeholder when a tool-only entry is expanded」を通じて、検索・日付条件と query
+   *   組み立てを検証する。
+   * テストケース: 「does not add an empty-body placeholder when a tool-only entry is expanded」の条件・入力・操作を実行する。
+   * 期待値: add an empty-body placeholder when a tool-only entry is expanded しないこと。
+   */
   it('does not add an empty-body placeholder when a tool-only entry is expanded', async () => {
     const user = userEvent.setup()
     const conversation: SessionConversation = {
@@ -182,6 +209,12 @@ describe('ConversationTranscript', () => {
     expect(entry).not.toHaveTextContent('表示できる会話本文はありません')
   })
 
+  /**
+   * 概要・目的: 「starts tool-only entries hidden by default and reveals them after expanding」を通じて、検索・日付条件と query
+   *   組み立てを検証する。
+   * テストケース: 「starts tool-only entries hidden by default and reveals them after expanding」の条件・入力・操作を実行する。
+   * 期待値: 「starts tool-only entries hidden by default and reveals them after expanding」で示す状態または振る舞いが成立すること。
+   */
   it('starts tool-only entries hidden by default and reveals them after expanding', async () => {
     const user = userEvent.setup()
     const conversation: SessionConversation = {
@@ -226,6 +259,12 @@ describe('ConversationTranscript', () => {
     expect(entry).toHaveTextContent('functions.bash')
   })
 
+  /**
+   * 概要・目的: 「starts entries that begin with a skill-context tag hidden by default」を通じて、ユーザー操作と callback
+   *   の発火を検証する。
+   * テストケース: 「starts entries that begin with a skill-context tag hidden by default」の条件・入力・操作を実行する。
+   * 期待値: 「starts entries that begin with a skill-context tag hidden by default」で示す状態または振る舞いが成立すること。
+   */
   it('starts entries that begin with a skill-context tag hidden by default', async () => {
     const user = userEvent.setup()
     const conversation: SessionConversation = {
@@ -266,6 +305,14 @@ describe('ConversationTranscript', () => {
     expect(entry).toHaveTextContent('Visible after expand')
   })
 
+  /**
+   * 概要・目的: 「resets entry visibility when the scope changes to a different session with the same
+   *   payload」を通じて、正規化・projection・presenter の変換契約を検証する。
+   * テストケース: 「resets entry visibility when the scope changes to a different session with the same
+   *   payload」の条件・入力・操作を実行する。
+   * 期待値: 「resets entry visibility when the scope changes to a different session with the same
+   *   payload」で示す状態または振る舞いが成立すること。
+   */
   it('resets entry visibility when the scope changes to a different session with the same payload', async () => {
     const user = userEvent.setup()
     const conversation = buildConversation()

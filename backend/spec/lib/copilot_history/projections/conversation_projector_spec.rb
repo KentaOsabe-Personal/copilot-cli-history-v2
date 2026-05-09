@@ -4,6 +4,12 @@ RSpec.describe CopilotHistory::Projections::ConversationProjector, :copilot_hist
   subject(:projector) { described_class.new }
 
   describe "#call" do
+    # 概要・目的: 「projects user and assistant messages with content or tool calls in source sequence
+    #   order」を通じて、reader と fixture の読取・劣化時の扱いを検証する。
+    # テストケース: 「projects user and assistant messages with content or tool calls in source sequence
+    #   order」の条件・入力・操作を実行する。
+    # 期待値: 「projects user and assistant messages with content or tool calls in source sequence
+    #   order」で示す状態または振る舞いが成立すること。
     it "projects user and assistant messages with content or tool calls in source sequence order" do
       with_copilot_history_fixture("current_schema_valid") do |root|
         session = read_first_current_session(root)
@@ -23,6 +29,10 @@ RSpec.describe CopilotHistory::Projections::ConversationProjector, :copilot_hist
       end
     end
 
+    # 概要・目的: 「keeps legacy user and assistant messages in the same projection contract」を通じて、reader と fixture
+    #   の読取・劣化時の扱いを検証する。
+    # テストケース: 「keeps legacy user and assistant messages in the same projection contract」の条件・入力・操作を実行する。
+    # 期待値: legacy user が維持され、assistant messages in the same projection contractこと。
     it "keeps legacy user and assistant messages in the same projection contract" do
       with_copilot_history_fixture("current_schema_mixed_root") do |root|
         session = read_session(root, "legacy-schema-mixed")
@@ -43,6 +53,11 @@ RSpec.describe CopilotHistory::Projections::ConversationProjector, :copilot_hist
       end
     end
 
+    # 概要・目的: 「returns a stable empty reason when events exist but no conversation messages qualify」を通じて、DB
+    #   保存・validation・一意性制約を検証する。
+    # テストケース: 「returns a stable empty reason when events exist but no conversation messages
+    #   qualify」の条件・入力・操作を実行する。
+    # 期待値: a stable empty reason when events exist but no conversation messages qualify を返すこと。
     it "returns a stable empty reason when events exist but no conversation messages qualify" do
       session = CopilotHistory::Types::NormalizedSession.new(
         session_id: "activity-only",
@@ -68,6 +83,10 @@ RSpec.describe CopilotHistory::Projections::ConversationProjector, :copilot_hist
       )
     end
 
+    # 概要・目的: 「uses no_events as the empty reason when a session has no normalized events」を通じて、reader と fixture
+    #   の読取・劣化時の扱いを検証する。
+    # テストケース: 「uses no_events as the empty reason when a session has no normalized events」の条件・入力・操作を実行する。
+    # 期待値: no_events as the empty reason when a session has no normalized events が使われること。
     it "uses no_events as the empty reason when a session has no normalized events" do
       session = CopilotHistory::Types::NormalizedSession.new(
         session_id: "workspace-only",
@@ -82,6 +101,10 @@ RSpec.describe CopilotHistory::Projections::ConversationProjector, :copilot_hist
       expect(projector.call(session).empty_reason).to eq("no_events")
     end
 
+    # 概要・目的: 「uses events_unavailable when current events could not be normalized」を通じて、reader と fixture
+    #   の読取・劣化時の扱いを検証する。
+    # テストケース: 「uses events_unavailable when current events could not be normalized」の条件・入力・操作を実行する。
+    # 期待値: events_unavailable when current events could not be normalized が使われること。
     it "uses events_unavailable when current events could not be normalized" do
       session = CopilotHistory::Types::NormalizedSession.new(
         session_id: "unreadable-events",
@@ -103,6 +126,12 @@ RSpec.describe CopilotHistory::Projections::ConversationProjector, :copilot_hist
       expect(projector.call(session).empty_reason).to eq("events_unavailable")
     end
 
+    # 概要・目的: 「projects tool-only user and assistant messages from the shared current model fixture」を通じて、reader
+    #   と fixture の読取・劣化時の扱いを検証する。
+    # テストケース: 「projects tool-only user and assistant messages from the shared current model
+    #   fixture」の条件・入力・操作を実行する。
+    # 期待値: 「projects tool-only user and assistant messages from the shared current model
+    #   fixture」で示す状態または振る舞いが成立すること。
     it "projects tool-only user and assistant messages from the shared current model fixture" do
       with_copilot_history_fixture("current_model") do |root|
         session = read_session(root, "current-model-with-values")
@@ -122,6 +151,11 @@ RSpec.describe CopilotHistory::Projections::ConversationProjector, :copilot_hist
       end
     end
 
+    # 概要・目的: 「keeps tool-only messages with their utterance issues and excludes empty messages without tool
+    #   calls」を通じて、reader と fixture の読取・劣化時の扱いを検証する。
+    # テストケース: 「keeps tool-only messages with their utterance issues and excludes empty messages without tool
+    #   calls」の条件・入力・操作を実行する。
+    # 期待値: tool-only messages with their utterance issues が維持され、excludes empty messages without tool callsこと。
     it "keeps tool-only messages with their utterance issues and excludes empty messages without tool calls" do
       utterance_issue = CopilotHistory::Types::ReadIssue.new(
         code: CopilotHistory::Errors::ReadErrorCode::EVENT_PARTIAL_MAPPING,

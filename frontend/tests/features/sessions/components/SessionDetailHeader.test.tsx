@@ -8,6 +8,11 @@ import {
 import SessionDetailHeader from '../../../../src/features/sessions/components/SessionDetailHeader.tsx'
 
 describe('SessionDetailHeader', () => {
+  /**
+   * 概要・目的: 「shows only real metadata values for an ordinary complete session」を通じて、表示内容とアクセシビリティ上の見え方を検証する。
+   * テストケース: 「shows only real metadata values for an ordinary complete session」の条件・入力・操作を実行する。
+   * 期待値: only real metadata values for an ordinary complete session が表示されること。
+   */
   it('shows only real metadata values for an ordinary complete session', () => {
     render(
       <MemoryRouter>
@@ -28,6 +33,12 @@ describe('SessionDetailHeader', () => {
     expect(screen.queryByText('workspace-only')).not.toBeInTheDocument()
   })
 
+  /**
+   * 概要・目的: 「omits placeholder-only metadata without leaving normal-state badges behind」を通じて、hook
+   *   の状態遷移と非同期制御を検証する。
+   * テストケース: 「omits placeholder-only metadata without leaving normal-state badges behind」の条件・入力・操作を実行する。
+   * 期待値: placeholder-only metadata without leaving normal-state badges behind が含まれないこと。
+   */
   it('omits placeholder-only metadata without leaving normal-state badges behind', () => {
     render(
       <MemoryRouter>
@@ -40,6 +51,11 @@ describe('SessionDetailHeader', () => {
     expect(screen.queryByText('正常')).not.toBeInTheDocument()
   })
 
+  /**
+   * 概要・目的: 「keeps degraded and workspace-only constraints visible in the header」を通じて、同期処理の状態管理と副作用を検証する。
+   * テストケース: 「keeps degraded and workspace-only constraints visible in the header」の条件・入力・操作を実行する。
+   * 期待値: degraded が維持され、workspace-only constraints visible in the headerこと。
+   */
   it('keeps degraded and workspace-only constraints visible in the header', () => {
     const { rerender } = render(
       <MemoryRouter>
@@ -59,6 +75,11 @@ describe('SessionDetailHeader', () => {
     expect(screen.getByText('一部欠損あり')).toBeInTheDocument()
   })
 
+  /**
+   * 概要・目的: 「applies wrap-safe classes to long ids and metadata values」を通じて、検索・日付条件と query 組み立てを検証する。
+   * テストケース: 「applies wrap-safe classes to long ids and metadata values」の条件・入力・操作を実行する。
+   * 期待値: wrap-safe classes to long ids and metadata values が適用されること。
+   */
   it('applies wrap-safe classes to long ids and metadata values', () => {
     render(
       <MemoryRouter>
@@ -95,6 +116,11 @@ describe('SessionDetailHeader', () => {
     ).toHaveClass('break-words')
   })
 
+  /**
+   * 概要・目的: 「shows created_at as 作成日時 when the session has never been updated」を通じて、同期処理の状態管理と副作用を検証する。
+   * テストケース: 「shows created_at as 作成日時 when the session has never been updated」の条件・入力・操作を実行する。
+   * 期待値: created_at as 作成日時 when the session has never been updated が表示されること。
+   */
   it('shows created_at as 作成日時 when the session has never been updated', () => {
     render(
       <MemoryRouter>

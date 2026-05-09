@@ -2,6 +2,10 @@ require "rails_helper"
 
 RSpec.describe "CopilotHistory normalized contracts" do
   describe CopilotHistory::Types::NormalizedEvent do
+    # 概要・目的: 「retains canonical event fields, helper defaults, and raw payload」を通じて、正規化・projection・presenter
+    #   の変換契約を検証する。
+    # テストケース: 「retains canonical event fields, helper defaults, and raw payload」の条件・入力・操作を実行する。
+    # 期待値: 「retains canonical event fields, helper defaults, and raw payload」で示す状態または振る舞いが成立すること。
     it "retains canonical event fields, helper defaults, and raw payload" do
       event = described_class.new(
         sequence: 7,
@@ -31,6 +35,10 @@ RSpec.describe "CopilotHistory normalized contracts" do
   end
 
   describe CopilotHistory::Types::NormalizedToolCall do
+    # 概要・目的: 「normalizes one tool request summary into the fixed backend helper
+    #   shape」を通じて、正規化・projection・presenter の変換契約を検証する。
+    # テストケース: 「normalizes one tool request summary into the fixed backend helper shape」の条件・入力・操作を実行する。
+    # 期待値: one tool request summary into the fixed backend helper shape が正規化されること。
     it "normalizes one tool request summary into the fixed backend helper shape" do
       tool_call = described_class.new(
         name: "functions.bash",
@@ -47,6 +55,10 @@ RSpec.describe "CopilotHistory normalized contracts" do
   end
 
   describe CopilotHistory::Types::MessageSnapshot do
+    # 概要・目的: 「preserves supplemental transcript entries apart from canonical events」を通じて、reader と fixture
+    #   の読取・劣化時の扱いを検証する。
+    # テストケース: 「preserves supplemental transcript entries apart from canonical events」の条件・入力・操作を実行する。
+    # 期待値: supplemental transcript entries apart from canonical events が保持されること。
     it "preserves supplemental transcript entries apart from canonical events" do
       snapshot = described_class.new(
         role: "user",
@@ -64,6 +76,10 @@ RSpec.describe "CopilotHistory normalized contracts" do
   end
 
   describe CopilotHistory::Types::NormalizationResult do
+    # 概要・目的: 「wraps one normalized event with any read issues emitted during mapping」を通じて、reader と fixture
+    #   の読取・劣化時の扱いを検証する。
+    # テストケース: 「wraps one normalized event with any read issues emitted during mapping」の条件・入力・操作を実行する。
+    # 期待値: one normalized event with any read issues emitted during mapping が公開用 envelope に包まれること。
     it "wraps one normalized event with any read issues emitted during mapping" do
       event = CopilotHistory::Types::NormalizedEvent.new(
         sequence: 2,
@@ -93,6 +109,10 @@ RSpec.describe "CopilotHistory normalized contracts" do
   end
 
   describe CopilotHistory::Types::NormalizedSession do
+    # 概要・目的: 「keeps canonical events separate from supplemental message snapshots」を通じて、reader と fixture
+    #   の読取・劣化時の扱いを検証する。
+    # テストケース: 「keeps canonical events separate from supplemental message snapshots」の条件・入力・操作を実行する。
+    # 期待値: canonical events separate from supplemental message snapshots が維持されること。
     it "keeps canonical events separate from supplemental message snapshots" do
       event = CopilotHistory::Types::NormalizedEvent.new(
         sequence: 1,
@@ -156,6 +176,10 @@ RSpec.describe "CopilotHistory normalized contracts" do
       )
     end
 
+    # 概要・目的: 「defaults source state to complete and rejects unsupported states」を通じて、DB
+    #   保存・validation・一意性制約を検証する。
+    # テストケース: 「defaults source state to complete and rejects unsupported states」の条件・入力・操作を実行する。
+    # 期待値: 「defaults source state to complete and rejects unsupported states」で示す状態または振る舞いが成立すること。
     it "defaults source state to complete and rejects unsupported states" do
       event = CopilotHistory::Types::NormalizedEvent.new(
         sequence: 1,

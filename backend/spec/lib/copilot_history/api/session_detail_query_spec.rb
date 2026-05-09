@@ -4,6 +4,11 @@ RSpec.describe CopilotHistory::Api::SessionDetailQuery do
   subject(:query) { described_class.new }
 
   describe "#call" do
+    # 概要・目的: 「returns the stored detail payload for an exact session_id match without reconstructing
+    #   fields」を通じて、DB 保存・validation・一意性制約を検証する。
+    # テストケース: 「returns the stored detail payload for an exact session_id match without reconstructing
+    #   fields」の条件・入力・操作を実行する。
+    # 期待値: the stored detail payload for an exact session_id match without reconstructing fields を返すこと。
     it "returns the stored detail payload for an exact session_id match without reconstructing fields" do
       create_session(
         session_id: "session-12",
@@ -37,6 +42,10 @@ RSpec.describe CopilotHistory::Api::SessionDetailQuery do
       expect(result).not_to respond_to(:status)
     end
 
+    # 概要・目的: 「returns legacy detail payloads through the same found result contract」を通じて、reader と fixture
+    #   の読取・劣化時の扱いを検証する。
+    # テストケース: 「returns legacy detail payloads through the same found result contract」の条件・入力・操作を実行する。
+    # 期待値: legacy detail payloads through the same found result contract を返すこと。
     it "returns legacy detail payloads through the same found result contract" do
       detail_payload = {
         "id" => "legacy-session",
@@ -55,6 +64,11 @@ RSpec.describe CopilotHistory::Api::SessionDetailQuery do
       )
     end
 
+    # 概要・目的: 「returns not_found when the stored read model does not include the requested session id」を通じて、DB
+    #   保存・validation・一意性制約を検証する。
+    # テストケース: 「returns not_found when the stored read model does not include the requested session
+    #   id」の条件・入力・操作を実行する。
+    # 期待値: not_found when the stored read model does not include the requested session id を返すこと。
     it "returns not_found when the stored read model does not include the requested session id" do
       create_session(session_id: "session-123", source_format: "current")
 
@@ -63,12 +77,19 @@ RSpec.describe CopilotHistory::Api::SessionDetailQuery do
       )
     end
 
+    # 概要・目的: 「returns not_found when the read model is empty」を通じて、HTTP レスポンスとエラー契約を検証する。
+    # テストケース: 「returns not_found when the read model is empty」の条件・入力・操作を実行する。
+    # 期待値: not_found when the read model is empty を返すこと。
     it "returns not_found when the read model is empty" do
       expect(query.call(session_id: "missing-session")).to eq(
         CopilotHistory::Api::Types::SessionLookupResult::NotFound.new(session_id: "missing-session")
       )
     end
 
+    # 概要・目的: 「does not call the raw session catalog reader when detail is requested」を通じて、reader と fixture
+    #   の読取・劣化時の扱いを検証する。
+    # テストケース: 「does not call the raw session catalog reader when detail is requested」の条件・入力・操作を実行する。
+    # 期待値: call the raw session catalog reader when detail is requested しないこと。
     it "does not call the raw session catalog reader when detail is requested" do
       detail_payload = { "id" => "session-123", "conversation" => [] }
       create_session(session_id: "session-123", detail_payload: detail_payload)

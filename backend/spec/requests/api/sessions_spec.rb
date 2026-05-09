@@ -8,6 +8,11 @@ RSpec.describe "API Sessions", type: :request do
   end
 
   describe "GET /api/sessions" do
+    # 概要・目的: 「returns current and legacy stored summary payloads through the existing top-level
+    #   structure」を通じて、DB 保存・validation・一意性制約を検証する。
+    # テストケース: 「returns current and legacy stored summary payloads through the existing top-level
+    #   structure」の条件・入力・操作を実行する。
+    # 期待値: current and legacy stored summary payloads through the existing top-level structure を返すこと。
     it "returns current and legacy stored summary payloads through the existing top-level structure" do
       create_copilot_session(
         session_id: "legacy-session",
@@ -81,6 +86,11 @@ RSpec.describe "API Sessions", type: :request do
       )
     end
 
+    # 概要・目的: 「applies date ranges, display-time ordering, tie-break ordering, and limit at request
+    #   level」を通じて、検索・日付条件と query 組み立てを検証する。
+    # テストケース: 「applies date ranges, display-time ordering, tie-break ordering, and limit at request
+    #   level」の条件・入力・操作を実行する。
+    # 期待値: date ranges, display-time ordering, tie-break ordering, and limit at request level が適用されること。
     it "applies date ranges, display-time ordering, tie-break ordering, and limit at request level" do
       create_copilot_session(session_id: "outside", updated_at_source: "2026-03-31T23:59:59Z")
       create_copilot_session(session_id: "same-b", updated_at_source: "2026-04-26T10:00:00Z")
@@ -96,6 +106,9 @@ RSpec.describe "API Sessions", type: :request do
       expect(parsed[:meta]).to eq(count: 3, partial_results: false)
     end
 
+    # 概要・目的: 「supports one-sided date ranges without mixing default date bounds」を通じて、検索・日付条件と query 組み立てを検証する。
+    # テストケース: 「supports one-sided date ranges without mixing default date bounds」の条件・入力・操作を実行する。
+    # 期待値: 「supports one-sided date ranges without mixing default date bounds」で示す状態または振る舞いが成立すること。
     it "supports one-sided date ranges without mixing default date bounds" do
       create_copilot_session(session_id: "before", updated_at_source: "2026-04-01T00:00:00Z")
       create_copilot_session(session_id: "after", updated_at_source: "2026-05-01T00:00:00Z")
@@ -107,6 +120,9 @@ RSpec.describe "API Sessions", type: :request do
       expect(JSON.parse(response.body, symbolize_names: true)[:data].map { |payload| payload[:id] }).to eq(%w[before])
     end
 
+    # 概要・目的: 「uses the latest 30 days as the default request range」を通じて、検索・日付条件と query 組み立てを検証する。
+    # テストケース: 「uses the latest 30 days as the default request range」の条件・入力・操作を実行する。
+    # 期待値: the latest 30 days as the default request range が使われること。
     it "uses the latest 30 days as the default request range" do
       travel_to Time.zone.parse("2026-05-03T12:00:00Z") do
         create_copilot_session(session_id: "inside-default", updated_at_source: "2026-04-20T00:00:00Z")
@@ -119,6 +135,10 @@ RSpec.describe "API Sessions", type: :request do
       expect(JSON.parse(response.body, symbolize_names: true)[:data].map { |payload| payload[:id] }).to eq(%w[inside-default])
     end
 
+    # 概要・目的: 「returns an empty success response when the read model has no sessions」を通じて、HTTP
+    #   レスポンスとエラー契約を検証する。
+    # テストケース: 「returns an empty success response when the read model has no sessions」の条件・入力・操作を実行する。
+    # 期待値: an empty success response when the read model has no sessions を返すこと。
     it "returns an empty success response when the read model has no sessions" do
       get "/api/sessions", params: { from: "2026-04-01", to: "2026-04-30" }
 
@@ -132,6 +152,10 @@ RSpec.describe "API Sessions", type: :request do
       )
     end
 
+    # 概要・目的: 「filters sessions by search text while preserving the existing response shape」を通じて、HTTP
+    #   レスポンスとエラー契約を検証する。
+    # テストケース: 「filters sessions by search text while preserving the existing response shape」の条件・入力・操作を実行する。
+    # 期待値: sessions by search text while preserving the existing response shape で絞り込まれること。
     it "filters sessions by search text while preserving the existing response shape" do
       create_copilot_session(
         session_id: "matching",
@@ -172,6 +196,11 @@ RSpec.describe "API Sessions", type: :request do
       )
     end
 
+    # 概要・目的: 「combines search text with date range and returns an empty success for no matches」を通じて、検索・日付条件と
+    #   query 組み立てを検証する。
+    # テストケース: 「combines search text with date range and returns an empty success for no
+    #   matches」の条件・入力・操作を実行する。
+    # 期待値: search text と date range and returns an empty success for no matches が組み合わせて処理されること。
     it "combines search text with date range and returns an empty success for no matches" do
       create_copilot_session(session_id: "outside-date", updated_at_source: "2026-03-31T23:59:59Z", search_text: "gpt-5 tokenizer")
       create_copilot_session(session_id: "inside-date", updated_at_source: "2026-04-20T00:00:00Z", search_text: "gpt-5 tokenizer")
@@ -192,6 +221,10 @@ RSpec.describe "API Sessions", type: :request do
       )
     end
 
+    # 概要・目的: 「returns a 400 error envelope for invalid search text before running the query」を通じて、DB
+    #   保存・validation・一意性制約を検証する。
+    # テストケース: 「returns a 400 error envelope for invalid search text before running the query」の条件・入力・操作を実行する。
+    # 期待値: a 400 error envelope for invalid search text before running the query を返すこと。
     it "returns a 400 error envelope for invalid search text before running the query" do
       expect(CopilotHistory::Api::SessionIndexQuery).not_to receive(:new)
 
@@ -211,6 +244,9 @@ RSpec.describe "API Sessions", type: :request do
       )
     end
 
+    # 概要・目的: 「does not read raw files for search requests」を通じて、reader と fixture の読取・劣化時の扱いを検証する。
+    # テストケース: 「does not read raw files for search requests」の条件・入力・操作を実行する。
+    # 期待値: read raw files for search requests しないこと。
     it "does not read raw files for search requests" do
       create_copilot_session(session_id: "matching", search_text: "saved read model")
       expect(CopilotHistory::SessionCatalogReader).not_to receive(:new)
@@ -221,6 +257,10 @@ RSpec.describe "API Sessions", type: :request do
       expect(JSON.parse(response.body, symbolize_names: true)[:data].map { |payload| payload[:id] }).to eq(%w[matching])
     end
 
+    # 概要・目的: 「returns 400 error envelopes before running the query for invalid list params」を通じて、DB
+    #   保存・validation・一意性制約を検証する。
+    # テストケース: 「returns 400 error envelopes before running the query for invalid list params」の条件・入力・操作を実行する。
+    # 期待値: 400 error envelopes before running the query for invalid list params を返すこと。
     it "returns 400 error envelopes before running the query for invalid list params" do
       [
         [ { from: "not-a-date" }, { field: "from", reason: "invalid_datetime", value: "not-a-date" } ],
@@ -245,6 +285,11 @@ RSpec.describe "API Sessions", type: :request do
   end
 
   describe "GET /api/sessions/:id" do
+    # 概要・目的: 「returns current stored detail payloads without rereading raw files when include_raw is
+    #   requested」を通じて、DB 保存・validation・一意性制約を検証する。
+    # テストケース: 「returns current stored detail payloads without rereading raw files when include_raw is
+    #   requested」の条件・入力・操作を実行する。
+    # 期待値: current stored detail payloads without rereading raw files when include_raw is requested を返すこと。
     it "returns current stored detail payloads without rereading raw files when include_raw is requested" do
       detail_payload = {
         "id" => "current-session",
@@ -331,6 +376,10 @@ RSpec.describe "API Sessions", type: :request do
       )
     end
 
+    # 概要・目的: 「returns legacy stored detail payloads through the same detail contract」を通じて、DB
+    #   保存・validation・一意性制約を検証する。
+    # テストケース: 「returns legacy stored detail payloads through the same detail contract」の条件・入力・操作を実行する。
+    # 期待値: legacy stored detail payloads through the same detail contract を返すこと。
     it "returns legacy stored detail payloads through the same detail contract" do
       detail_payload = {
         "id" => "legacy-session",
@@ -363,6 +412,11 @@ RSpec.describe "API Sessions", type: :request do
       )
     end
 
+    # 概要・目的: 「returns session_not_found with the requested session id for missing read model rows」を通じて、DB
+    #   保存・validation・一意性制約を検証する。
+    # テストケース: 「returns session_not_found with the requested session id for missing read model
+    #   rows」の条件・入力・操作を実行する。
+    # 期待値: session_not_found with the requested session id for missing read model rows を返すこと。
     it "returns session_not_found with the requested session id for missing read model rows" do
       get "/api/sessions/missing-session"
 
@@ -378,6 +432,9 @@ RSpec.describe "API Sessions", type: :request do
       )
     end
 
+    # 概要・目的: 「returns session_not_found when the read model is empty」を通じて、HTTP レスポンスとエラー契約を検証する。
+    # テストケース: 「returns session_not_found when the read model is empty」の条件・入力・操作を実行する。
+    # 期待値: session_not_found when the read model is empty を返すこと。
     it "returns session_not_found when the read model is empty" do
       get "/api/sessions/missing-session"
 
@@ -395,6 +452,9 @@ RSpec.describe "API Sessions", type: :request do
   end
 
   describe "read-only contract" do
+    # 概要・目的: 「does not expose mutating session routes」を通じて、HTTP レスポンスとエラー契約を検証する。
+    # テストケース: 「does not expose mutating session routes」の条件・入力・操作を実行する。
+    # 期待値: expose mutating session routes しないこと。
     it "does not expose mutating session routes" do
       post "/api/sessions"
       expect(response).to have_http_status(:not_found)

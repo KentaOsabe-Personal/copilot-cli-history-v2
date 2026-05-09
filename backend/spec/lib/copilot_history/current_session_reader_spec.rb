@@ -2,6 +2,10 @@ require "rails_helper"
 
 RSpec.describe CopilotHistory::CurrentSessionReader, :copilot_history do
   describe "#call" do
+    # 概要・目的: 「builds one normalized session from workspace.yaml and events.jsonl」を通じて、reader と fixture
+    #   の読取・劣化時の扱いを検証する。
+    # テストケース: 「builds one normalized session from workspace.yaml and events.jsonl」の条件・入力・操作を実行する。
+    # 期待値: one normalized session from workspace.yaml and events.jsonl が構築されること。
     it "builds one normalized session from workspace.yaml and events.jsonl" do
       with_copilot_history_fixture("current_valid") do |root|
         session = described_class.new.call(build_source(root, "current-valid"))
@@ -58,6 +62,10 @@ RSpec.describe CopilotHistory::CurrentSessionReader, :copilot_history do
       end
     end
 
+    # 概要・目的: 「keeps readable events when workspace.yaml cannot be parsed」を通じて、reader と fixture
+    #   の読取・劣化時の扱いを検証する。
+    # テストケース: 「keeps readable events when workspace.yaml cannot be parsed」の条件・入力・操作を実行する。
+    # 期待値: readable events when workspace.yaml cannot be parsed が維持されること。
     it "keeps readable events when workspace.yaml cannot be parsed" do
       with_copilot_history_fixture("current_invalid_yaml") do |root|
         session = described_class.new.call(build_source(root, "current-invalid-yaml"))
@@ -95,6 +103,10 @@ RSpec.describe CopilotHistory::CurrentSessionReader, :copilot_history do
       end
     end
 
+    # 概要・目的: 「keeps readable lines and reports invalid JSONL lines and unknown events」を通じて、DB
+    #   保存・validation・一意性制約を検証する。
+    # テストケース: 「keeps readable lines and reports invalid JSONL lines and unknown events」の条件・入力・操作を実行する。
+    # 期待値: readable lines が維持され、reports invalid JSONL lines and unknown eventsこと。
     it "keeps readable lines and reports invalid JSONL lines and unknown events" do
       with_copilot_history_fixture("current_invalid_jsonl") do |root|
         session = described_class.new.call(build_source(root, "current-invalid-jsonl"))
@@ -122,6 +134,10 @@ RSpec.describe CopilotHistory::CurrentSessionReader, :copilot_history do
       end
     end
 
+    # 概要・目的: 「keeps reading when a JSONL line parses into a non-hash payload」を通じて、reader と fixture
+    #   の読取・劣化時の扱いを検証する。
+    # テストケース: 「keeps reading when a JSONL line parses into a non-hash payload」の条件・入力・操作を実行する。
+    # 期待値: reading when a JSONL line parses into a non-hash payload が維持されること。
     it "keeps reading when a JSONL line parses into a non-hash payload" do
       with_copilot_history_fixture("current_valid") do |root|
         events_path = root.join("session-state/current-valid/events.jsonl")
@@ -157,6 +173,11 @@ RSpec.describe CopilotHistory::CurrentSessionReader, :copilot_history do
       end
     end
 
+    # 概要・目的: 「falls back to events.jsonl mtime when readable current events do not contain
+    #   timestamps」を通じて、reader と fixture の読取・劣化時の扱いを検証する。
+    # テストケース: 「falls back to events.jsonl mtime when readable current events do not contain
+    #   timestamps」の条件・入力・操作を実行する。
+    # 期待値: events.jsonl mtime when readable current events do not contain timestamps に fallback すること。
     it "falls back to events.jsonl mtime when readable current events do not contain timestamps" do
       with_copilot_history_fixture("current_valid") do |root|
         events_path = root.join("session-state/current-valid/events.jsonl")
@@ -174,6 +195,11 @@ RSpec.describe CopilotHistory::CurrentSessionReader, :copilot_history do
       end
     end
 
+    # 概要・目的: 「returns a session issue when workspace.yaml is unreadable but still keeps readable
+    #   events」を通じて、reader と fixture の読取・劣化時の扱いを検証する。
+    # テストケース: 「returns a session issue when workspace.yaml is unreadable but still keeps readable
+    #   events」の条件・入力・操作を実行する。
+    # 期待値: a session issue when workspace.yaml is unreadable but still keeps readable events を返すこと。
     it "returns a session issue when workspace.yaml is unreadable but still keeps readable events" do
       with_copilot_history_fixture("current_unreadable") do |root|
         workspace_path = root.join("session-state/current-unreadable/workspace.yaml")
@@ -198,6 +224,11 @@ RSpec.describe CopilotHistory::CurrentSessionReader, :copilot_history do
       end
     end
 
+    # 概要・目的: 「returns a session issue when events.jsonl is unreadable while keeping workspace
+    #   metadata」を通じて、reader と fixture の読取・劣化時の扱いを検証する。
+    # テストケース: 「returns a session issue when events.jsonl is unreadable while keeping workspace
+    #   metadata」の条件・入力・操作を実行する。
+    # 期待値: a session issue when events.jsonl is unreadable while keeping workspace metadata を返すこと。
     it "returns a session issue when events.jsonl is unreadable while keeping workspace metadata" do
       with_copilot_history_fixture("current_unreadable") do |root|
         events_path = root.join("session-state/current-unreadable/events.jsonl")
@@ -222,6 +253,12 @@ RSpec.describe CopilotHistory::CurrentSessionReader, :copilot_history do
       end
     end
 
+    # 概要・目的: 「normalizes current dotted schema fixtures into message, detail, and unknown events with helper
+    #   fields」を通じて、reader と fixture の読取・劣化時の扱いを検証する。
+    # テストケース: 「normalizes current dotted schema fixtures into message, detail, and unknown events with helper
+    #   fields」の条件・入力・操作を実行する。
+    # 期待値: current dotted schema fixtures into message, detail, and unknown events with helper fields
+    #   が正規化されること。
     it "normalizes current dotted schema fixtures into message, detail, and unknown events with helper fields" do
       with_copilot_history_fixture("current_schema_valid") do |root|
         session = described_class.new.call(build_source(root, "current-schema-valid"))
@@ -276,6 +313,12 @@ RSpec.describe CopilotHistory::CurrentSessionReader, :copilot_history do
       end
     end
 
+    # 概要・目的: 「keeps readable current dotted events while surfacing partial tool summaries, unknown events, and
+    #   invalid jsonl lines」を通じて、DB 保存・validation・一意性制約を検証する。
+    # テストケース: 「keeps readable current dotted events while surfacing partial tool summaries, unknown events,
+    #   and invalid jsonl lines」の条件・入力・操作を実行する。
+    # 期待値: readable current dotted events while surfacing partial tool summaries, unknown events,
+    #   が維持され、invalid jsonl linesこと。
     it "keeps readable current dotted events while surfacing partial tool summaries, unknown events, and invalid jsonl lines" do
       with_copilot_history_fixture("current_schema_degraded") do |root|
         session = described_class.new.call(build_source(root, "current-schema-degraded"))
@@ -331,6 +374,12 @@ RSpec.describe CopilotHistory::CurrentSessionReader, :copilot_history do
       end
     end
 
+    # 概要・目的: 「marks workspace-only current sessions with a dedicated issue when events.jsonl is
+    #   missing」を通じて、reader と fixture の読取・劣化時の扱いを検証する。
+    # テストケース: 「marks workspace-only current sessions with a dedicated issue when events.jsonl is
+    #   missing」の条件・入力・操作を実行する。
+    # 期待値: 「marks workspace-only current sessions with a dedicated issue when events.jsonl is
+    #   missing」で示す状態または振る舞いが成立すること。
     it "marks workspace-only current sessions with a dedicated issue when events.jsonl is missing" do
       with_copilot_history_fixture("current_schema_workspace_only") do |root|
         session = described_class.new.call(build_source(root, "current-schema-workspace-only"))
@@ -352,6 +401,12 @@ RSpec.describe CopilotHistory::CurrentSessionReader, :copilot_history do
       end
     end
 
+    # 概要・目的: 「extracts selected_model from the shared current model fixture and ignores lower-priority later
+    #   candidates」を通じて、reader と fixture の読取・劣化時の扱いを検証する。
+    # テストケース: 「extracts selected_model from the shared current model fixture and ignores lower-priority later
+    #   candidates」の条件・入力・操作を実行する。
+    # 期待値: 「extracts selected_model from the shared current model fixture and ignores lower-priority later
+    #   candidates」で示す状態または振る舞いが成立すること。
     it "extracts selected_model from the shared current model fixture and ignores lower-priority later candidates" do
       with_copilot_history_fixture("current_model") do |root|
         with_model_session = described_class.new.call(build_source(root, "current-model-with-values"))
@@ -360,6 +415,11 @@ RSpec.describe CopilotHistory::CurrentSessionReader, :copilot_history do
       end
     end
 
+    # 概要・目的: 「falls back to tool.execution_complete data.model when shutdown currentModel is
+    #   unavailable」を通じて、reader と fixture の読取・劣化時の扱いを検証する。
+    # テストケース: 「falls back to tool.execution_complete data.model when shutdown currentModel is
+    #   unavailable」の条件・入力・操作を実行する。
+    # 期待値: tool.execution_complete data.model when shutdown currentModel is unavailable に fallback すること。
     it "falls back to tool.execution_complete data.model when shutdown currentModel is unavailable" do
       with_copilot_history_fixture("current_model") do |root|
         session = described_class.new.call(build_source(root, "current-model-tool-fallback"))
@@ -368,6 +428,9 @@ RSpec.describe CopilotHistory::CurrentSessionReader, :copilot_history do
       end
     end
 
+    # 概要・目的: 「uses the later non-empty model candidate within the same priority」を通じて、検索・日付条件と query 組み立てを検証する。
+    # テストケース: 「uses the later non-empty model candidate within the same priority」の条件・入力・操作を実行する。
+    # 期待値: the later non-empty model candidate within the same priority が使われること。
     it "uses the later non-empty model candidate within the same priority" do
       with_copilot_history_fixture("current_model") do |root|
         session = described_class.new.call(build_source(root, "current-model-same-priority-later"))
@@ -376,6 +439,9 @@ RSpec.describe CopilotHistory::CurrentSessionReader, :copilot_history do
       end
     end
 
+    # 概要・目的: 「trims confirmed model candidates before storing selected_model」を通じて、検索・日付条件と query 組み立てを検証する。
+    # テストケース: 「trims confirmed model candidates before storing selected_model」の条件・入力・操作を実行する。
+    # 期待値: 「trims confirmed model candidates before storing selected_model」で示す状態または振る舞いが成立すること。
     it "trims confirmed model candidates before storing selected_model" do
       with_copilot_history_fixture("current_model") do |root|
         session = described_class.new.call(build_source(root, "current-model-trimmed"))
@@ -384,6 +450,12 @@ RSpec.describe CopilotHistory::CurrentSessionReader, :copilot_history do
       end
     end
 
+    # 概要・目的: 「prefers saved assistant.usage data.model over a root model when higher-priority candidates are
+    #   unavailable」を通じて、reader と fixture の読取・劣化時の扱いを検証する。
+    # テストケース: 「prefers saved assistant.usage data.model over a root model when higher-priority candidates are
+    #   unavailable」の条件・入力・操作を実行する。
+    # 期待値: 「prefers saved assistant.usage data.model over a root model when higher-priority candidates are
+    #   unavailable」で示す状態または振る舞いが成立すること。
     it "prefers saved assistant.usage data.model over a root model when higher-priority candidates are unavailable" do
       with_copilot_history_fixture("current_model") do |root|
         session = described_class.new.call(build_source(root, "current-model-usage-fallback"))
@@ -392,6 +464,11 @@ RSpec.describe CopilotHistory::CurrentSessionReader, :copilot_history do
       end
     end
 
+    # 概要・目的: 「falls back to a saved root model when higher-priority candidates are unavailable」を通じて、reader と
+    #   fixture の読取・劣化時の扱いを検証する。
+    # テストケース: 「falls back to a saved root model when higher-priority candidates are
+    #   unavailable」の条件・入力・操作を実行する。
+    # 期待値: a saved root model when higher-priority candidates are unavailable に fallback すること。
     it "falls back to a saved root model when higher-priority candidates are unavailable" do
       with_copilot_history_fixture("current_model") do |root|
         session = described_class.new.call(build_source(root, "current-model-root-fallback"))
@@ -400,6 +477,11 @@ RSpec.describe CopilotHistory::CurrentSessionReader, :copilot_history do
       end
     end
 
+    # 概要・目的: 「returns nil when the current model fixture has only missing or unusable candidates」を通じて、reader と
+    #   fixture の読取・劣化時の扱いを検証する。
+    # テストケース: 「returns nil when the current model fixture has only missing or unusable
+    #   candidates」の条件・入力・操作を実行する。
+    # 期待値: nil when the current model fixture has only missing or unusable candidates を返すこと。
     it "returns nil when the current model fixture has only missing or unusable candidates" do
       with_copilot_history_fixture("current_model") do |root|
         without_model_session = described_class.new.call(build_source(root, "current-model-without-values"))

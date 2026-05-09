@@ -4,6 +4,10 @@ RSpec.describe CopilotHistory::Api::Presenters::HistorySyncPresenter do
   subject(:presenter) { described_class.new }
 
   describe "#call" do
+    # 概要・目的: 「presents successful sync runs as an ok data payload with sync run and
+    #   counts」を通じて、同期処理の状態管理と副作用を検証する。
+    # テストケース: 「presents successful sync runs as an ok data payload with sync run and counts」の条件・入力・操作を実行する。
+    # 期待値: 「presents successful sync runs as an ok data payload with sync run and counts」で示す状態または振る舞いが成立すること。
     it "presents successful sync runs as an ok data payload with sync run and counts" do
       sync_run = build_sync_run(
         id: 201,
@@ -42,6 +46,12 @@ RSpec.describe CopilotHistory::Api::Presenters::HistorySyncPresenter do
       )
     end
 
+    # 概要・目的: 「presents completed_with_issues as a successful payload instead of an error envelope」を通じて、HTTP
+    #   レスポンスとエラー契約を検証する。
+    # テストケース: 「presents completed_with_issues as a successful payload instead of an error
+    #   envelope」の条件・入力・操作を実行する。
+    # 期待値: 「presents completed_with_issues as a successful payload instead of an error
+    #   envelope」で示す状態または振る舞いが成立すること。
     it "presents completed_with_issues as a successful payload instead of an error envelope" do
       sync_run = build_sync_run(
         id: 202,
@@ -60,6 +70,12 @@ RSpec.describe CopilotHistory::Api::Presenters::HistorySyncPresenter do
       expect(payload.fetch(:data).fetch(:counts).fetch(:degraded_count)).to eq(1)
     end
 
+    # 概要・目的: 「presents running conflicts as the shared error envelope with existing run
+    #   details」を通じて、同期処理の状態管理と副作用を検証する。
+    # テストケース: 「presents running conflicts as the shared error envelope with existing run
+    #   details」の条件・入力・操作を実行する。
+    # 期待値: 「presents running conflicts as the shared error envelope with existing run
+    #   details」で示す状態または振る舞いが成立すること。
     it "presents running conflicts as the shared error envelope with existing run details" do
       running_run = HistorySyncRun.new(
         id: 203,
@@ -84,6 +100,12 @@ RSpec.describe CopilotHistory::Api::Presenters::HistorySyncPresenter do
       )
     end
 
+    # 概要・目的: 「presents root failures with the upstream failure code and path as service
+    #   unavailable」を通じて、同期処理の状態管理と副作用を検証する。
+    # テストケース: 「presents root failures with the upstream failure code and path as service
+    #   unavailable」の条件・入力・操作を実行する。
+    # 期待値: 「presents root failures with the upstream failure code and path as service
+    #   unavailable」で示す状態または振る舞いが成立すること。
     it "presents root failures with the upstream failure code and path as service unavailable" do
       failed_run = build_sync_run(id: 204, status: "failed", failed_count: 1)
       result = CopilotHistory::Sync::SyncResult::Failed.new(
@@ -124,6 +146,12 @@ RSpec.describe CopilotHistory::Api::Presenters::HistorySyncPresenter do
       )
     end
 
+    # 概要・目的: 「presents persistence failures as internal server errors with failure class details」を通じて、DB
+    #   保存・validation・一意性制約を検証する。
+    # テストケース: 「presents persistence failures as internal server errors with failure class
+    #   details」の条件・入力・操作を実行する。
+    # 期待値: 「presents persistence failures as internal server errors with failure class
+    #   details」で示す状態または振る舞いが成立すること。
     it "presents persistence failures as internal server errors with failure class details" do
       failed_run = build_sync_run(id: 205, status: "failed", failed_count: 1)
       result = CopilotHistory::Sync::SyncResult::Failed.new(

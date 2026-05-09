@@ -4,6 +4,12 @@ RSpec.describe CopilotHistory::Api::Presenters::SessionIndexPresenter do
   subject(:presenter) { described_class.new }
 
   describe "#call" do
+    # 概要・目的: 「maps mixed current and legacy sessions to the shared summary schema with partial_results
+    #   metadata」を通じて、reader と fixture の読取・劣化時の扱いを検証する。
+    # テストケース: 「maps mixed current and legacy sessions to the shared summary schema with partial_results
+    #   metadata」の条件・入力・操作を実行する。
+    # 期待値: mixed current and legacy sessions が the shared summary schema with partial_results metadata
+    #   に変換されること。
     it "maps mixed current and legacy sessions to the shared summary schema with partial_results metadata" do
       event_issue = CopilotHistory::Types::ReadIssue.new(
         code: CopilotHistory::Errors::ReadErrorCode::EVENT_UNKNOWN_SHAPE,
@@ -126,6 +132,10 @@ RSpec.describe CopilotHistory::Api::Presenters::SessionIndexPresenter do
       )
     end
 
+    # 概要・目的: 「keeps current selected_model values in the existing summary schema」を通じて、reader と fixture
+    #   の読取・劣化時の扱いを検証する。
+    # テストケース: 「keeps current selected_model values in the existing summary schema」の条件・入力・操作を実行する。
+    # 期待値: current selected_model values in the existing summary schema が維持されること。
     it "keeps current selected_model values in the existing summary schema" do
       result = CopilotHistory::Types::ReadResult::Success.new(
         root: build_root,

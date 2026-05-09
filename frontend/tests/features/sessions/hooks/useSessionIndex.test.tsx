@@ -174,6 +174,12 @@ afterEach(() => {
 })
 
 describe('useSessionIndex', () => {
+  /**
+   * 概要・目的: 「loads the default 7-day range on mount and exposes it as the applied range」を通じて、検索・日付条件と query
+   *   組み立てを検証する。
+   * テストケース: 「loads the default 7-day range on mount and exposes it as the applied range」の条件・入力・操作を実行する。
+   * 期待値: the default 7-day range on mount and exposes it as the applied range が読み込まれること。
+   */
   it('loads the default 7-day range on mount and exposes it as the applied range', async () => {
     const payload = buildIndexResponse()
     const fetchSessionIndex = vi.fn<SessionApiClient['fetchSessionIndex']>(async () => ({
@@ -203,6 +209,12 @@ describe('useSessionIndex', () => {
     )
   })
 
+  /**
+   * 概要・目的: 「captures the initial default range from now() only once during startup」を通じて、検索・日付条件と query
+   *   組み立てを検証する。
+   * テストケース: 「captures the initial default range from now() only once during startup」の条件・入力・操作を実行する。
+   * 期待値: the initial default range from now() only once during startup が保持されること。
+   */
   it('captures the initial default range from now() only once during startup', async () => {
     const payload = buildIndexResponse()
     const fetchSessionIndex = vi.fn<SessionApiClient['fetchSessionIndex']>(async () => ({
@@ -241,6 +253,11 @@ describe('useSessionIndex', () => {
     )
   })
 
+  /**
+   * 概要・目的: 「reuses only the same-query snapshot immediately on remount」を通じて、検索・日付条件と query 組み立てを検証する。
+   * テストケース: 「reuses only the same-query snapshot immediately on remount」の条件・入力・操作を実行する。
+   * 期待値: 「reuses only the same-query snapshot immediately on remount」で示す状態または振る舞いが成立すること。
+   */
   it('reuses only the same-query snapshot immediately on remount', async () => {
     const firstPayload = buildIndexResponse()
     const nextRequest = deferred<SessionApiResult<SessionIndexResponse>>()
@@ -279,6 +296,14 @@ describe('useSessionIndex', () => {
     )
   })
 
+  /**
+   * 概要・目的: 「surfaces a remount revalidation error instead of silently keeping a stale snapshot」を通じて、DB
+   *   保存・validation・一意性制約を検証する。
+   * テストケース: 「surfaces a remount revalidation error instead of silently keeping a stale
+   *   snapshot」の条件・入力・操作を実行する。
+   * 期待値: 「surfaces a remount revalidation error instead of silently keeping a stale
+   *   snapshot」で示す状態または振る舞いが成立すること。
+   */
   it('surfaces a remount revalidation error instead of silently keeping a stale snapshot', async () => {
     const payload = buildIndexResponse()
     const revalidationError = {
@@ -320,6 +345,14 @@ describe('useSessionIndex', () => {
     await waitFor(() => expect(readState()).toEqual(revalidationError))
   })
 
+  /**
+   * 概要・目的: 「treats an apply for a different range as a new loading state instead of keeping the old success
+   *   visible」を通じて、検索・日付条件と query 組み立てを検証する。
+   * テストケース: 「treats an apply for a different range as a new loading state instead of keeping the old success
+   *   visible」の条件・入力・操作を実行する。
+   * 期待値: an apply for a different range が a new loading state instead of keeping the old success visible
+   *   として扱われること。
+   */
   it('treats an apply for a different range as a new loading state instead of keeping the old success visible', async () => {
     const initialPayload = buildIndexResponse()
     const nextPayload = buildIndexResponse([
@@ -388,6 +421,11 @@ describe('useSessionIndex', () => {
     )
   })
 
+  /**
+   * 概要・目的: 「resolves an empty apply back to the explicit default 7-day range」を通じて、検索・日付条件と query 組み立てを検証する。
+   * テストケース: 「resolves an empty apply back to the explicit default 7-day range」の条件・入力・操作を実行する。
+   * 期待値: 「resolves an empty apply back to the explicit default 7-day range」で示す状態または振る舞いが成立すること。
+   */
   it('resolves an empty apply back to the explicit default 7-day range', async () => {
     const defaultPayload = buildIndexResponse()
     const selectedPayload = buildIndexResponse([
@@ -456,6 +494,11 @@ describe('useSessionIndex', () => {
     )
   })
 
+  /**
+   * 概要・目的: 「keeps the attempted range when a different-range apply fails」を通じて、検索・日付条件と query 組み立てを検証する。
+   * テストケース: 「keeps the attempted range when a different-range apply fails」の条件・入力・操作を実行する。
+   * 期待値: the attempted range when a different-range apply fails が維持されること。
+   */
   it('keeps the attempted range when a different-range apply fails', async () => {
     const initialPayload = buildIndexResponse()
     const applyError = {
@@ -508,6 +551,12 @@ describe('useSessionIndex', () => {
     expect(readAppliedRange()).toEqual(attemptedRange)
   })
 
+  /**
+   * 概要・目的: 「preserves the previous same-range snapshot while reload is in flight」を通じて、検索・日付条件と query
+   *   組み立てを検証する。
+   * テストケース: 「preserves the previous same-range snapshot while reload is in flight」の条件・入力・操作を実行する。
+   * 期待値: the previous same-range snapshot while reload is in flight が保持されること。
+   */
   it('preserves the previous same-range snapshot while reload is in flight', async () => {
     const initialPayload = buildIndexResponse()
     const refreshedPayload = buildIndexResponse([
@@ -570,6 +619,13 @@ describe('useSessionIndex', () => {
     )
   })
 
+  /**
+   * 概要・目的: 「reads the latest applied range during reload even when the callback was captured
+   *   earlier」を通じて、reader と fixture の読取・劣化時の扱いを検証する。
+   * テストケース: 「reads the latest applied range during reload even when the callback was captured
+   *   earlier」の条件・入力・操作を実行する。
+   * 期待値: the latest applied range during reload even when the callback was captured earlier が読み取られること。
+   */
   it('reads the latest applied range during reload even when the callback was captured earlier', async () => {
     const initialPayload = buildIndexResponse()
     const appliedPayload = buildIndexResponse([
@@ -651,6 +707,12 @@ describe('useSessionIndex', () => {
     )
   })
 
+  /**
+   * 概要・目的: 「ignores stale apply responses and keeps the latest range result visible」を通じて、HTTP
+   *   レスポンスとエラー契約を検証する。
+   * テストケース: 「ignores stale apply responses and keeps the latest range result visible」の条件・入力・操作を実行する。
+   * 期待値: stale apply responses and keeps the latest range result visible が無視されること。
+   */
   it('ignores stale apply responses and keeps the latest range result visible', async () => {
     const initialPayload = buildIndexResponse()
     const staleApplyRequest = deferred<SessionApiResult<SessionIndexResponse>>()
@@ -729,6 +791,12 @@ describe('useSessionIndex', () => {
     })
   })
 
+  /**
+   * 概要・目的: 「applies a search term while preserving the current date range」を通じて、reader と fixture
+   *   の読取・劣化時の扱いを検証する。
+   * テストケース: 「applies a search term while preserving the current date range」の条件・入力・操作を実行する。
+   * 期待値: a search term while preserving the current date range が適用されること。
+   */
   it('applies a search term while preserving the current date range', async () => {
     const initialPayload = buildIndexResponse()
     const searchPayload = buildIndexResponse([
@@ -783,6 +851,12 @@ describe('useSessionIndex', () => {
     )
   })
 
+  /**
+   * 概要・目的: 「clears the search term while preserving the current date range」を通じて、reader と fixture
+   *   の読取・劣化時の扱いを検証する。
+   * テストケース: 「clears the search term while preserving the current date range」の条件・入力・操作を実行する。
+   * 期待値: 「clears the search term while preserving the current date range」で示す状態または振る舞いが成立すること。
+   */
   it('clears the search term while preserving the current date range', async () => {
     const initialPayload = buildIndexResponse()
     const searchPayload = buildIndexResponse([{ ...initialPayload.data[0], id: 'search-result' }])
@@ -828,6 +902,12 @@ describe('useSessionIndex', () => {
     )
   })
 
+  /**
+   * 概要・目的: 「preserves search while applying a new date range and while reloading after
+   *   sync」を通じて、同期処理の状態管理と副作用を検証する。
+   * テストケース: 「preserves search while applying a new date range and while reloading after sync」の条件・入力・操作を実行する。
+   * 期待値: search while applying a new date range が保持され、while reloading after syncこと。
+   */
   it('preserves search while applying a new date range and while reloading after sync', async () => {
     const initialPayload = buildIndexResponse()
     const searchPayload = buildIndexResponse([{ ...initialPayload.data[0], id: 'search-result' }])

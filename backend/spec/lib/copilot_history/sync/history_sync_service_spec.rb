@@ -22,6 +22,11 @@ RSpec.describe CopilotHistory::Sync::HistorySyncService do
     allow(reader).to receive(:call)
   end
 
+  # 概要・目的: 「creates a running run before reading and returns conflict without changing an existing running
+  #   run」を通じて、同期処理の状態管理と副作用を検証する。
+  # テストケース: 「creates a running run before reading and returns conflict without changing an existing running
+  #   run」の条件・入力・操作を実行する。
+  # 期待値: a running run before reading and returns conflict without changing an existing running run が作成されること。
   it "creates a running run before reading and returns conflict without changing an existing running run" do
     running_run = HistorySyncRun.create!(
       status: "running",
@@ -43,6 +48,9 @@ RSpec.describe CopilotHistory::Sync::HistorySyncService do
     )
   end
 
+  # 概要・目的: 「converts a root failure into a failed run and does not mutate sessions」を通じて、同期処理の状態管理と副作用を検証する。
+  # テストケース: 「converts a root failure into a failed run and does not mutate sessions」の条件・入力・操作を実行する。
+  # 期待値: a root failure が a failed run and does not mutate sessions に変換されること。
   it "converts a root failure into a failed run and does not mutate sessions" do
     indexed_at = Time.zone.parse("2026-04-29 09:00:00")
     existing = create_session(
@@ -77,6 +85,9 @@ RSpec.describe CopilotHistory::Sync::HistorySyncService do
     )
   end
 
+  # 概要・目的: 「inserts new sessions and records succeeded counts」を通じて、同期処理の状態管理と副作用を検証する。
+  # テストケース: 「inserts new sessions and records succeeded counts」の条件・入力・操作を実行する。
+  # 期待値: new sessions and records succeeded counts が追加されること。
   it "inserts new sessions and records succeeded counts" do
     session = build_session(session_id: "new-session", issues: [])
     fingerprint = fingerprint_for("new")
@@ -104,6 +115,11 @@ RSpec.describe CopilotHistory::Sync::HistorySyncService do
     )
   end
 
+  # 概要・目的: 「updates changed sessions, skips matching sessions, and does not rewrite skipped
+  #   payloads」を通じて、同期処理の状態管理と副作用を検証する。
+  # テストケース: 「updates changed sessions, skips matching sessions, and does not rewrite skipped
+  #   payloads」の条件・入力・操作を実行する。
+  # 期待値: changed sessions, skips matching sessions, and does not rewrite skipped payloads が更新されること。
   it "updates changed sessions, skips matching sessions, and does not rewrite skipped payloads" do
     changed = build_session(session_id: "changed-session")
     skipped = build_session(session_id: "skipped-session")
@@ -147,6 +163,10 @@ RSpec.describe CopilotHistory::Sync::HistorySyncService do
     )
   end
 
+  # 概要・目的: 「updates matching-fingerprint sessions when the search projection version is
+  #   stale」を通じて、同期処理の状態管理と副作用を検証する。
+  # テストケース: 「updates matching-fingerprint sessions when the search projection version is stale」の条件・入力・操作を実行する。
+  # 期待値: matching-fingerprint sessions when the search projection version is stale が更新されること。
   it "updates matching-fingerprint sessions when the search projection version is stale" do
     session = build_session(session_id: "stale-search-text-session")
     old_indexed_at = Time.zone.parse("2026-04-29 09:00:00")
@@ -181,6 +201,11 @@ RSpec.describe CopilotHistory::Sync::HistorySyncService do
     )
   end
 
+  # 概要・目的: 「does not modify raw source files or delete sessions missing from the latest read
+  #   result」を通じて、reader と fixture の読取・劣化時の扱いを検証する。
+  # テストケース: 「does not modify raw source files or delete sessions missing from the latest read
+  #   result」の条件・入力・操作を実行する。
+  # 期待値: modify raw source files or delete sessions missing from the latest read result しないこと。
   it "does not modify raw source files or delete sessions missing from the latest read result" do
     Tempfile.create([ "history-sync-service", ".jsonl" ]) do |raw_file|
       raw_file.write("raw event payload\n")
@@ -212,6 +237,9 @@ RSpec.describe CopilotHistory::Sync::HistorySyncService do
     end
   end
 
+  # 概要・目的: 「persists degraded sessions and completes with issues」を通じて、DB 保存・validation・一意性制約を検証する。
+  # テストケース: 「persists degraded sessions and completes with issues」の条件・入力・操作を実行する。
+  # 期待値: degraded sessions and completes with issues が永続化されること。
   it "persists degraded sessions and completes with issues" do
     issue = CopilotHistory::Types::ReadIssue.new(
       code: CopilotHistory::Errors::ReadErrorCode::EVENT_PARTIAL_MAPPING,
@@ -244,6 +272,12 @@ RSpec.describe CopilotHistory::Sync::HistorySyncService do
     )
   end
 
+  # 概要・目的: 「counts sessions with degraded source state as degraded even when issue details are
+  #   empty」を通じて、同期処理の状態管理と副作用を検証する。
+  # テストケース: 「counts sessions with degraded source state as degraded even when issue details are
+  #   empty」の条件・入力・操作を実行する。
+  # 期待値: 「counts sessions with degraded source state as degraded even when issue details are
+  #   empty」で示す状態または振る舞いが成立すること。
   it "counts sessions with degraded source state as degraded even when issue details are empty" do
     session = build_session(session_id: "state-degraded-session", source_state: :degraded, issues: [])
     fingerprint = fingerprint_for("state-degraded")
@@ -268,6 +302,11 @@ RSpec.describe CopilotHistory::Sync::HistorySyncService do
     )
   end
 
+  # 概要・目的: 「rolls back session mutations on persistence failure and releases the running lock」を通じて、DB
+  #   保存・validation・一意性制約を検証する。
+  # テストケース: 「rolls back session mutations on persistence failure and releases the running lock」の条件・入力・操作を実行する。
+  # 期待値: 「rolls back session mutations on persistence failure and releases the running
+  #   lock」で示す状態または振る舞いが成立すること。
   it "rolls back session mutations on persistence failure and releases the running lock" do
     session = build_session(session_id: "rollback-session")
     invalid_session = build_session(session_id: "invalid-session")
@@ -298,6 +337,12 @@ RSpec.describe CopilotHistory::Sync::HistorySyncService do
     )
   end
 
+  # 概要・目的: 「handles session uniqueness errors as persistence failures and releases the running lock」を通じて、DB
+  #   保存・validation・一意性制約を検証する。
+  # テストケース: 「handles session uniqueness errors as persistence failures and releases the running
+  #   lock」の条件・入力・操作を実行する。
+  # 期待値: 「handles session uniqueness errors as persistence failures and releases the running
+  #   lock」で示す状態または振る舞いが成立すること。
   it "handles session uniqueness errors as persistence failures and releases the running lock" do
     session = build_session(session_id: "duplicate-session")
     fingerprint = fingerprint_for("duplicate")

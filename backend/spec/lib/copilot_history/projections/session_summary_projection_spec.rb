@@ -1,6 +1,12 @@
 require "rails_helper"
 
 RSpec.describe "CopilotHistory session projection summary", :copilot_history do
+  # 概要・目的: 「derives conversation presence, preview, message count, and activity count from normalized
+  #   sessions」を通じて、正規化・projection・presenter の変換契約を検証する。
+  # テストケース: 「derives conversation presence, preview, message count, and activity count from normalized
+  #   sessions」の条件・入力・操作を実行する。
+  # 期待値: 「derives conversation presence, preview, message count, and activity count from normalized
+  #   sessions」で示す状態または振る舞いが成立すること。
   it "derives conversation presence, preview, message count, and activity count from normalized sessions" do
     with_copilot_history_fixture("current_schema_mixed_root") do |root|
       resolved_root = CopilotHistory::Types::ResolvedHistoryRoot.new(

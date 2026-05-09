@@ -4,6 +4,11 @@ RSpec.describe "history read model schema" do
   describe "copilot_sessions" do
     subject(:columns) { ActiveRecord::Base.connection.columns(:copilot_sessions).index_by(&:name) }
 
+    # 概要・目的: 「stores one read model row per session with source dates, payloads, metadata, and indexes」を通じて、DB
+    #   保存・validation・一意性制約を検証する。
+    # テストケース: 「stores one read model row per session with source dates, payloads, metadata, and
+    #   indexes」の条件・入力・操作を実行する。
+    # 期待値: one read model row per session with source dates, payloads, metadata, and indexes が保存されること。
     it "stores one read model row per session with source dates, payloads, metadata, and indexes" do
       expect(columns.keys).to include(
         "session_id",
@@ -50,6 +55,9 @@ RSpec.describe "history read model schema" do
       expect(columns["activity_count"].default).to eq(0)
     end
 
+    # 概要・目的: 「defines uniqueness and query-supporting indexes」を通じて、DB 保存・validation・一意性制約を検証する。
+    # テストケース: 「defines uniqueness and query-supporting indexes」の条件・入力・操作を実行する。
+    # 期待値: 「defines uniqueness and query-supporting indexes」で示す状態または振る舞いが成立すること。
     it "defines uniqueness and query-supporting indexes" do
       indexes = ActiveRecord::Base.connection.indexes(:copilot_sessions)
 
@@ -68,6 +76,9 @@ RSpec.describe "history read model schema" do
   describe "history_sync_runs" do
     subject(:columns) { ActiveRecord::Base.connection.columns(:history_sync_runs).index_by(&:name) }
 
+    # 概要・目的: 「stores sync run outcomes independently of session rows」を通じて、DB 保存・validation・一意性制約を検証する。
+    # テストケース: 「stores sync run outcomes independently of session rows」の条件・入力・操作を実行する。
+    # 期待値: sync run outcomes independently of session rows が保存されること。
     it "stores sync run outcomes independently of session rows" do
       expect(columns.keys).to include(
         "started_at",
@@ -98,6 +109,9 @@ RSpec.describe "history read model schema" do
       expect(columns["running_lock_key"].null).to be(true)
     end
 
+    # 概要・目的: 「defines status, started_at, and running lock indexes」を通じて、DB 保存・validation・一意性制約を検証する。
+    # テストケース: 「defines status, started_at, and running lock indexes」の条件・入力・操作を実行する。
+    # 期待値: 「defines status, started_at, and running lock indexes」で示す状態または振る舞いが成立すること。
     it "defines status, started_at, and running lock indexes" do
       indexes = ActiveRecord::Base.connection.indexes(:history_sync_runs)
 

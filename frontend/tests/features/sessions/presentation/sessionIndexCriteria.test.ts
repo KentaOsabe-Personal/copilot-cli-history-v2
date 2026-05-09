@@ -15,6 +15,12 @@ const RANGE = {
 } as const
 
 describe('sessionIndexCriteria', () => {
+  /**
+   * 概要・目的: 「builds the API query from date range and normalized search term」を通じて、正規化・projection・presenter
+   *   の変換契約を検証する。
+   * テストケース: 「builds the API query from date range and normalized search term」の条件・入力・操作を実行する。
+   * 期待値: the API query from date range and normalized search term が構築されること。
+   */
   it('builds the API query from date range and normalized search term', () => {
     const criteria: SessionIndexCriteria = {
       range: RANGE,
@@ -28,6 +34,11 @@ describe('sessionIndexCriteria', () => {
     })
   })
 
+  /**
+   * 概要・目的: 「omits blank search terms while keeping date range」を通じて、検索・日付条件と query 組み立てを検証する。
+   * テストケース: 「omits blank search terms while keeping date range」の条件・入力・操作を実行する。
+   * 期待値: blank search terms while keeping date range が含まれないこと。
+   */
   it('omits blank search terms while keeping date range', () => {
     expect(toSessionIndexQuery({ range: RANGE, searchTerm: ' \t\n ' })).toEqual({
       from: '2026-04-28T00:00:00+09:00',
@@ -35,6 +46,12 @@ describe('sessionIndexCriteria', () => {
     })
   })
 
+  /**
+   * 概要・目的: 「uses the same normalized search term for criteria keys and labels」を通じて、正規化・projection・presenter
+   *   の変換契約を検証する。
+   * テストケース: 「uses the same normalized search term for criteria keys and labels」の条件・入力・操作を実行する。
+   * 期待値: the same normalized search term for criteria keys and labels が使われること。
+   */
   it('uses the same normalized search term for criteria keys and labels', () => {
     const criteria: SessionIndexCriteria = {
       range: RANGE,
@@ -45,6 +62,14 @@ describe('sessionIndexCriteria', () => {
     expect(formatCriteriaLabel(criteria)).toBe('2026-04-28 〜 2026-05-04 / 検索: gpt-5 tokenizer')
   })
 
+  /**
+   * 概要・目的: 「validates search terms with the backend maximum length and control-character rules」を通じて、DB
+   *   保存・validation・一意性制約を検証する。
+   * テストケース: 「validates search terms with the backend maximum length and control-character
+   *   rules」の条件・入力・操作を実行する。
+   * 期待値: 「validates search terms with the backend maximum length and control-character
+   *   rules」で示す状態または振る舞いが成立すること。
+   */
   it('validates search terms with the backend maximum length and control-character rules', () => {
     expect(validateSearchTerm('a'.repeat(200))).toEqual({ kind: 'valid' })
     expect(validateSearchTerm('a'.repeat(201))).toEqual({
@@ -59,6 +84,11 @@ describe('sessionIndexCriteria', () => {
     })
   })
 
+  /**
+   * 概要・目的: 「normalizes blank and spaced search terms consistently」を通じて、正規化・projection・presenter の変換契約を検証する。
+   * テストケース: 「normalizes blank and spaced search terms consistently」の条件・入力・操作を実行する。
+   * 期待値: blank and spaced search terms consistently が正規化されること。
+   */
   it('normalizes blank and spaced search terms consistently', () => {
     expect(normalizeSearchTerm(' \t\n ')).toBe('')
     expect(normalizeSearchTerm('  hello   world  ')).toBe('hello world')

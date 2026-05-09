@@ -37,6 +37,13 @@ function buildEvent(overrides: Partial<SessionTimelineEvent> = {}): SessionTimel
 }
 
 describe('TimelineEntry', () => {
+  /**
+   * 概要・目的: 「keeps kind, partial state, and issue explanation distinct for degraded non-message
+   *   events」を通じて、同期処理の状態管理と副作用を検証する。
+   * テストケース: 「keeps kind, partial state, and issue explanation distinct for degraded non-message
+   *   events」の条件・入力・操作を実行する。
+   * 期待値: kind, partial state, が維持され、issue explanation distinct for degraded non-message eventsこと。
+   */
   it('keeps kind, partial state, and issue explanation distinct for degraded non-message events', () => {
     render(<TimelineEntry event={buildEvent()} />)
 
@@ -51,6 +58,12 @@ describe('TimelineEntry', () => {
     expect(screen.getByText('event payload matched partially')).toBeInTheDocument()
   })
 
+  /**
+   * 概要・目的: 「keeps unknown events readable without inventing a message role」を通じて、reader と fixture
+   *   の読取・劣化時の扱いを検証する。
+   * テストケース: 「keeps unknown events readable without inventing a message role」の条件・入力・操作を実行する。
+   * 期待値: unknown events readable without inventing a message role が維持されること。
+   */
   it('keeps unknown events readable without inventing a message role', () => {
     render(
       <TimelineEntry

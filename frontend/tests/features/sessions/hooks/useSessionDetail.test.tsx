@@ -104,6 +104,12 @@ function readState() {
 }
 
 describe('useSessionDetail', () => {
+  /**
+   * 概要・目的: 「starts in loading and transitions to success for the active session id」を通じて、検索・日付条件と query
+   *   組み立てを検証する。
+   * テストケース: 「starts in loading and transitions to success for the active session id」の条件・入力・操作を実行する。
+   * 期待値: 「starts in loading and transitions to success for the active session id」で示す状態または振る舞いが成立すること。
+   */
   it('starts in loading and transitions to success for the active session id', async () => {
     const request = deferred<SessionApiResult<SessionDetailResponse>>()
     const fetchSessionDetail = vi.fn<SessionApiClient['fetchSessionDetail']>(() => request.promise)
@@ -131,6 +137,11 @@ describe('useSessionDetail', () => {
     )
   })
 
+  /**
+   * 概要・目的: 「maps session_not_found to a dedicated not_found state」を通じて、HTTP レスポンスとエラー契約を検証する。
+   * テストケース: 「maps session_not_found to a dedicated not_found state」の条件・入力・操作を実行する。
+   * 期待値: session_not_found が a dedicated not_found state に変換されること。
+   */
   it('maps session_not_found to a dedicated not_found state', async () => {
     const fetchSessionDetail = vi.fn<SessionApiClient['fetchSessionDetail']>(async () => ({
       status: 'error',
@@ -156,6 +167,11 @@ describe('useSessionDetail', () => {
     )
   })
 
+  /**
+   * 概要・目的: 「maps backend, network, and config failures to an error state」を通じて、同期処理の状態管理と副作用を検証する。
+   * テストケース: 「maps backend, network, and config failures to an error state」の条件・入力・操作を実行する。
+   * 期待値: backend, network, and config failures が an error state に変換されること。
+   */
   it('maps backend, network, and config failures to an error state', async () => {
     const fetchSessionDetail = vi.fn<SessionApiClient['fetchSessionDetail']>(async () => ({
       status: 'error',
@@ -188,6 +204,14 @@ describe('useSessionDetail', () => {
     )
   })
 
+  /**
+   * 概要・目的: 「aborts the previous request and ignores its late response when the route param changes」を通じて、HTTP
+   *   レスポンスとエラー契約を検証する。
+   * テストケース: 「aborts the previous request and ignores its late response when the route param
+   *   changes」の条件・入力・操作を実行する。
+   * 期待値: 「aborts the previous request and ignores its late response when the route param
+   *   changes」で示す状態または振る舞いが成立すること。
+   */
   it('aborts the previous request and ignores its late response when the route param changes', async () => {
     const sessionARequest = deferred<SessionApiResult<SessionDetailResponse>>()
     const sessionBRequest = deferred<SessionApiResult<SessionDetailResponse>>()
@@ -247,6 +271,11 @@ describe('useSessionDetail', () => {
     )
   })
 
+  /**
+   * 概要・目的: 「returns to loading when the client changes for the same session id」を通じて、検索・日付条件と query 組み立てを検証する。
+   * テストケース: 「returns to loading when the client changes for the same session id」の条件・入力・操作を実行する。
+   * 期待値: to loading when the client changes for the same session id を返すこと。
+   */
   it('returns to loading when the client changes for the same session id', async () => {
     const clientARequest = deferred<SessionApiResult<SessionDetailResponse>>()
     const clientBRequest = deferred<SessionApiResult<SessionDetailResponse>>()
@@ -302,6 +331,12 @@ describe('useSessionDetail', () => {
     )
   })
 
+  /**
+   * 概要・目的: 「keeps the normal detail visible while explicitly loading raw detail」を通じて、正規化・projection・presenter
+   *   の変換契約を検証する。
+   * テストケース: 「keeps the normal detail visible while explicitly loading raw detail」の条件・入力・操作を実行する。
+   * 期待値: the normal detail visible while explicitly loading raw detail が維持されること。
+   */
   it('keeps the normal detail visible while explicitly loading raw detail', async () => {
     const rawRequest = deferred<SessionApiResult<SessionDetailResponse>>()
     const fetchSessionDetail = vi.fn<SessionApiClient['fetchSessionDetail']>(async () => ({
@@ -357,6 +392,12 @@ describe('useSessionDetail', () => {
     )
   })
 
+  /**
+   * 概要・目的: 「keeps conversation detail visible when raw explicit request fails」を通じて、正規化・projection・presenter
+   *   の変換契約を検証する。
+   * テストケース: 「keeps conversation detail visible when raw explicit request fails」の条件・入力・操作を実行する。
+   * 期待値: conversation detail visible when raw explicit request fails が維持されること。
+   */
   it('keeps conversation detail visible when raw explicit request fails', async () => {
     const fetchSessionDetail = vi.fn<SessionApiClient['fetchSessionDetail']>(async () => ({
       status: 'success',

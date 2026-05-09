@@ -4,6 +4,11 @@ RSpec.describe CopilotHistory::Api::SessionIndexQuery do
   subject(:query) { described_class.new }
 
   describe "#call" do
+    # 概要・目的: 「returns stored summary payloads without reconstructing fields for current and legacy
+    #   sessions」を通じて、DB 保存・validation・一意性制約を検証する。
+    # テストケース: 「returns stored summary payloads without reconstructing fields for current and legacy
+    #   sessions」の条件・入力・操作を実行する。
+    # 期待値: stored summary payloads without reconstructing fields for current and legacy sessions を返すこと。
     it "returns stored summary payloads without reconstructing fields for current and legacy sessions" do
       create_session(
         session_id: "current-session",
@@ -69,6 +74,11 @@ RSpec.describe CopilotHistory::Api::SessionIndexQuery do
       expect(result.meta).to eq({ count: 2, partial_results: true })
     end
 
+    # 概要・目的: 「uses updated source time before created source time and excludes rows without display
+    #   time」を通じて、DB 保存・validation・一意性制約を検証する。
+    # テストケース: 「uses updated source time before created source time and excludes rows without display
+    #   time」の条件・入力・操作を実行する。
+    # 期待値: updated source time before created source time and excludes rows without display time が使われること。
     it "uses updated source time before created source time and excludes rows without display time" do
       create_session(
         session_id: "uses-updated",
@@ -100,6 +110,10 @@ RSpec.describe CopilotHistory::Api::SessionIndexQuery do
       expect(result.meta).to eq({ count: 2, partial_results: false })
     end
 
+    # 概要・目的: 「sorts by display time descending and session id ascending before applying limit」を通じて、検索・日付条件と
+    #   query 組み立てを検証する。
+    # テストケース: 「sorts by display time descending and session id ascending before applying limit」の条件・入力・操作を実行する。
+    # 期待値: by display time descending and session id ascending before applying limit で並び替えられること。
     it "sorts by display time descending and session id ascending before applying limit" do
       create_session(session_id: "same-b", updated_at_source: "2026-04-26T10:00:00Z")
       create_session(session_id: "latest", updated_at_source: "2026-04-27T10:00:00Z")
@@ -116,6 +130,10 @@ RSpec.describe CopilotHistory::Api::SessionIndexQuery do
       expect(result.meta).to eq({ count: 3, partial_results: false })
     end
 
+    # 概要・目的: 「does not ask MySQL to sort rows that include JSON payload columns」を通じて、DB
+    #   保存・validation・一意性制約を検証する。
+    # テストケース: 「does not ask MySQL to sort rows that include JSON payload columns」の条件・入力・操作を実行する。
+    # 期待値: ask MySQL to sort rows that include JSON payload columns しないこと。
     it "does not ask MySQL to sort rows that include JSON payload columns" do
       create_session(session_id: "same-b", updated_at_source: "2026-04-26T10:00:00Z")
       create_session(session_id: "same-a", updated_at_source: "2026-04-26T10:00:00Z")
@@ -136,6 +154,10 @@ RSpec.describe CopilotHistory::Api::SessionIndexQuery do
       expect(sql_statements).not_to include(match(/ORDER BY COALESCE/i))
     end
 
+    # 概要・目的: 「supports one-sided ranges and returns an empty success when no rows match」を通じて、DB
+    #   保存・validation・一意性制約を検証する。
+    # テストケース: 「supports one-sided ranges and returns an empty success when no rows match」の条件・入力・操作を実行する。
+    # 期待値: 「supports one-sided ranges and returns an empty success when no rows match」で示す状態または振る舞いが成立すること。
     it "supports one-sided ranges and returns an empty success when no rows match" do
       create_session(session_id: "before", updated_at_source: "2026-04-01T00:00:00Z")
       create_session(session_id: "after", updated_at_source: "2026-05-01T00:00:00Z")
@@ -157,6 +179,10 @@ RSpec.describe CopilotHistory::Api::SessionIndexQuery do
       )
     end
 
+    # 概要・目的: 「filters sessions by stored search text when search text is specified」を通じて、DB
+    #   保存・validation・一意性制約を検証する。
+    # テストケース: 「filters sessions by stored search text when search text is specified」の条件・入力・操作を実行する。
+    # 期待値: sessions by stored search text when search text is specified で絞り込まれること。
     it "filters sessions by stored search text when search text is specified" do
       create_session(session_id: "matches-body", updated_at_source: "2026-04-27T10:00:00Z", search_text: "conversation mentioned apply patch")
       create_session(session_id: "matches-issue", updated_at_source: "2026-04-26T10:00:00Z", search_text: "issue message: migration failed")
@@ -168,6 +194,10 @@ RSpec.describe CopilotHistory::Api::SessionIndexQuery do
       expect(result.meta).to eq({ count: 1, partial_results: false })
     end
 
+    # 概要・目的: 「combines stored search text filtering with date range, ordering, and limit」を通じて、DB
+    #   保存・validation・一意性制約を検証する。
+    # テストケース: 「combines stored search text filtering with date range, ordering, and limit」の条件・入力・操作を実行する。
+    # 期待値: stored search text filtering と date range, ordering, and limit が組み合わせて処理されること。
     it "combines stored search text filtering with date range, ordering, and limit" do
       create_session(session_id: "outside-date", updated_at_source: "2026-03-31T23:59:59Z", search_text: "gpt-5 tokenizer")
       create_session(session_id: "latest", updated_at_source: "2026-04-27T10:00:00Z", search_text: "gpt-5 tokenizer")
@@ -186,6 +216,9 @@ RSpec.describe CopilotHistory::Api::SessionIndexQuery do
       expect(result.meta).to eq({ count: 2, partial_results: false })
     end
 
+    # 概要・目的: 「treats wildcard characters in search text as literal user input」を通じて、検索・日付条件と query 組み立てを検証する。
+    # テストケース: 「treats wildcard characters in search text as literal user input」の条件・入力・操作を実行する。
+    # 期待値: wildcard characters in search text が literal user input として扱われること。
     it "treats wildcard characters in search text as literal user input" do
       create_session(session_id: "literal-percent", updated_at_source: "2026-04-27T10:00:00Z", search_text: "progress reached 100%_done")
       create_session(session_id: "wildcard-would-match", updated_at_source: "2026-04-26T10:00:00Z", search_text: "progress reached 100Xdone")
@@ -196,6 +229,9 @@ RSpec.describe CopilotHistory::Api::SessionIndexQuery do
       expect(result.meta).to eq({ count: 1, partial_results: false })
     end
 
+    # 概要・目的: 「returns an empty success when no stored search text matches」を通じて、DB 保存・validation・一意性制約を検証する。
+    # テストケース: 「returns an empty success when no stored search text matches」の条件・入力・操作を実行する。
+    # 期待値: an empty success when no stored search text matches を返すこと。
     it "returns an empty success when no stored search text matches" do
       create_session(session_id: "misses", updated_at_source: "2026-04-27T10:00:00Z", search_text: "unrelated")
 

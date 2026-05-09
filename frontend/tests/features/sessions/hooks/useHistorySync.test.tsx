@@ -160,6 +160,11 @@ afterEach(() => {
 })
 
 describe('useHistorySync', () => {
+  /**
+   * 概要・目的: 「starts idle and does not issue a sync request until explicitly started」を通じて、同期処理の状態管理と副作用を検証する。
+   * テストケース: 「starts idle and does not issue a sync request until explicitly started」の条件・入力・操作を実行する。
+   * 期待値: 「starts idle and does not issue a sync request until explicitly started」で示す状態または振る舞いが成立すること。
+   */
   it('starts idle and does not issue a sync request until explicitly started', () => {
     const syncHistory = vi.fn<SessionApiClient['syncHistory']>(async () => ({
       status: 'success',
@@ -178,6 +183,13 @@ describe('useHistorySync', () => {
     expect(reloadSessions).not.toHaveBeenCalled()
   })
 
+  /**
+   * 概要・目的: 「suppresses duplicate starts while syncing and issues a new request after a terminal retry」を通じて、DB
+   *   保存・validation・一意性制約を検証する。
+   * テストケース: 「suppresses duplicate starts while syncing and issues a new request after a terminal
+   *   retry」の条件・入力・操作を実行する。
+   * 期待値: duplicate starts while syncing and issues a new request after a terminal retry が抑止されること。
+   */
   it('suppresses duplicate starts while syncing and issues a new request after a terminal retry', async () => {
     const firstRequest = deferred<SessionApiResult<HistorySyncResponse>>()
     const secondRequest = deferred<SessionApiResult<HistorySyncResponse>>()
@@ -261,6 +273,13 @@ describe('useHistorySync', () => {
     expect(reloadSessions).toHaveBeenCalledTimes(1)
   })
 
+  /**
+   * 概要・目的: 「transitions to synced_with_sessions after a successful sync and a successful
+   *   reload」を通じて、同期処理の状態管理と副作用を検証する。
+   * テストケース: 「transitions to synced_with_sessions after a successful sync and a successful
+   *   reload」の条件・入力・操作を実行する。
+   * 期待値: 状態が synced_with_sessions after a successful sync and a successful reload に遷移すること。
+   */
   it('transitions to synced_with_sessions after a successful sync and a successful reload', async () => {
     const syncPayload = buildSyncPayload()
     const syncRequest = deferred<SessionApiResult<HistorySyncResponse>>()
@@ -299,6 +318,13 @@ describe('useHistorySync', () => {
     )
   })
 
+  /**
+   * 概要・目的: 「restores mounted state after StrictMode effect replays so sync state still updates」を通じて、DB
+   *   保存・validation・一意性制約を検証する。
+   * テストケース: 「restores mounted state after StrictMode effect replays so sync state still
+   *   updates」の条件・入力・操作を実行する。
+   * 期待値: mounted state after StrictMode effect replays so sync state still updates が復元されること。
+   */
   it('restores mounted state after StrictMode effect replays so sync state still updates', async () => {
     const syncPayload = buildSyncPayload()
     const syncHistory = vi.fn<SessionApiClient['syncHistory']>(async () => ({
@@ -326,6 +352,11 @@ describe('useHistorySync', () => {
     expect(reloadSessions).toHaveBeenCalledTimes(1)
   })
 
+  /**
+   * 概要・目的: 「transitions to refresh_error when sync succeeds but reload fails」を通じて、同期処理の状態管理と副作用を検証する。
+   * テストケース: 「transitions to refresh_error when sync succeeds but reload fails」の条件・入力・操作を実行する。
+   * 期待値: 状態が refresh_error when sync succeeds but reload fails に遷移すること。
+   */
   it('transitions to refresh_error when sync succeeds but reload fails', async () => {
     const syncPayload = buildSyncPayload()
     const reloadError: SessionApiError = {
@@ -362,6 +393,12 @@ describe('useHistorySync', () => {
     expect(reloadSessions).toHaveBeenCalledTimes(1)
   })
 
+  /**
+   * 概要・目的: 「classifies a history_sync_running conflict separately from other sync
+   *   failures」を通じて、同期処理の状態管理と副作用を検証する。
+   * テストケース: 「classifies a history_sync_running conflict separately from other sync failures」の条件・入力・操作を実行する。
+   * 期待値: 「classifies a history_sync_running conflict separately from other sync failures」で示す状態または振る舞いが成立すること。
+   */
   it('classifies a history_sync_running conflict separately from other sync failures', async () => {
     const syncHistory = vi.fn<SessionApiClient['syncHistory']>(async () => ({
       status: 'error',
@@ -402,6 +439,11 @@ describe('useHistorySync', () => {
     expect(reloadSessions).not.toHaveBeenCalled()
   })
 
+  /**
+   * 概要・目的: 「classifies $label as sync_error」を通じて、同期処理の状態管理と副作用を検証する。
+   * テストケース: 「classifies $label as sync_error」の条件・入力・操作を実行する。
+   * 期待値: $label が sync_error として分類されること。
+   */
   it.each([
     {
       label: 'backend failures',

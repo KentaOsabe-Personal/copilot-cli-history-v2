@@ -1,6 +1,9 @@
 require "rails_helper"
 
 RSpec.describe CopilotHistory::Errors::ReadErrorCode do
+  # 概要・目的: 「defines stable root failure codes」を通じて、DB 保存・validation・一意性制約を検証する。
+  # テストケース: 「defines stable root failure codes」の条件・入力・操作を実行する。
+  # 期待値: 「defines stable root failure codes」で示す状態または振る舞いが成立すること。
   it "defines stable root failure codes" do
     expect(described_class::ROOT_MISSING).to eq("root_missing")
     expect(described_class::ROOT_PERMISSION_DENIED).to eq("root_permission_denied")
@@ -12,6 +15,9 @@ RSpec.describe CopilotHistory::Errors::ReadErrorCode do
     )
   end
 
+  # 概要・目的: 「defines stable session issue codes」を通じて、DB 保存・validation・一意性制約を検証する。
+  # テストケース: 「defines stable session issue codes」の条件・入力・操作を実行する。
+  # 期待値: 「defines stable session issue codes」で示す状態または振る舞いが成立すること。
   it "defines stable session issue codes" do
     expect(described_class::CURRENT_WORKSPACE_UNREADABLE).to eq("current.workspace_unreadable")
     expect(described_class::CURRENT_EVENTS_MISSING).to eq("current.events_missing")

@@ -2,12 +2,19 @@ require "rails_helper"
 
 RSpec.describe CopilotHistory::Api::Types::SessionIndexResult do
   describe "public states" do
+    # 概要・目的: 「exposes success and invalid query states for list lookup」を通じて、DB 保存・validation・一意性制約を検証する。
+    # テストケース: 「exposes success and invalid query states for list lookup」の条件・入力・操作を実行する。
+    # 期待値: success and invalid query states for list lookup が公開されること。
     it "exposes success and invalid query states for list lookup" do
       expect(described_class.constants(false)).to contain_exactly(:Success, :Invalid)
     end
   end
 
   describe described_class::Success do
+    # 概要・目的: 「carries stored summary payloads and response meta without raw reader state」を通じて、DB
+    #   保存・validation・一意性制約を検証する。
+    # テストケース: 「carries stored summary payloads and response meta without raw reader state」の条件・入力・操作を実行する。
+    # 期待値: stored summary payloads and response meta without raw reader state が保持されて渡されること。
     it "carries stored summary payloads and response meta without raw reader state" do
       data = [
         {
@@ -32,6 +39,9 @@ RSpec.describe CopilotHistory::Api::Types::SessionIndexResult do
   end
 
   describe described_class::Invalid do
+    # 概要・目的: 「carries invalid list query details for the HTTP error boundary」を通じて、DB 保存・validation・一意性制約を検証する。
+    # テストケース: 「carries invalid list query details for the HTTP error boundary」の条件・入力・操作を実行する。
+    # 期待値: invalid list query details for the HTTP error boundary が保持されて渡されること。
     it "carries invalid list query details for the HTTP error boundary" do
       result = described_class.new(
         code: "invalid_session_list_query",

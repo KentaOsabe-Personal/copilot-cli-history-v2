@@ -4,6 +4,11 @@ import { MemoryRouter } from 'react-router'
 import StatusPanel from '../../../../src/features/sessions/components/StatusPanel.tsx'
 
 describe('StatusPanel', () => {
+  /**
+   * 概要・目的: 「renders a loading panel without a back link by default」を通じて、hook の状態遷移と非同期制御を検証する。
+   * テストケース: 「renders a loading panel without a back link by default」の条件・入力・操作を実行する。
+   * 期待値: a loading panel without a back link by default が画面に表示されること。
+   */
   it('renders a loading panel without a back link by default', () => {
     render(
       <MemoryRouter>
@@ -16,6 +21,11 @@ describe('StatusPanel', () => {
     expect(screen.queryByRole('link', { name: 'セッション一覧へ戻る' })).not.toBeInTheDocument()
   })
 
+  /**
+   * 概要・目的: 「renders an error panel with a session index link when requested」を通じて、DB 保存・validation・一意性制約を検証する。
+   * テストケース: 「renders an error panel with a session index link when requested」の条件・入力・操作を実行する。
+   * 期待値: an error panel with a session index link when requested が画面に表示されること。
+   */
   it('renders an error panel with a session index link when requested', () => {
     render(
       <MemoryRouter>
@@ -36,6 +46,11 @@ describe('StatusPanel', () => {
     ).toHaveAttribute('href', '/')
   })
 
+  /**
+   * 概要・目的: 「renders a custom action slot when provided」を通じて、検索・日付条件と query 組み立てを検証する。
+   * テストケース: 「renders a custom action slot when provided」の条件・入力・操作を実行する。
+   * 期待値: a custom action slot when provided が画面に表示されること。
+   */
   it('renders a custom action slot when provided', () => {
     render(
       <MemoryRouter>

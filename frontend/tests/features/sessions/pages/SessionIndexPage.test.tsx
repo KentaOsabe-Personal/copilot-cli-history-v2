@@ -99,6 +99,12 @@ describe('SessionIndexPage', () => {
     mockedUseHistorySync.mockReturnValue(buildUseHistorySyncResult())
   })
 
+  /**
+   * 概要・目的: 「renders a loading panel while the session index is being fetched」を通じて、DB
+   *   保存・validation・一意性制約を検証する。
+   * テストケース: 「renders a loading panel while the session index is being fetched」の条件・入力・操作を実行する。
+   * 期待値: a loading panel while the session index is being fetched が画面に表示されること。
+   */
   it('renders a loading panel while the session index is being fetched', () => {
     mockedUseSessionIndex.mockReturnValue(buildUseSessionIndexResult({ status: 'loading' }))
 
@@ -113,6 +119,12 @@ describe('SessionIndexPage', () => {
     expect(screen.getByRole('heading', { name: 'セッション一覧を読み込んでいます' })).toBeInTheDocument()
   })
 
+  /**
+   * 概要・目的: 「keeps the attempted applied range visible inside the loading panel context」を通じて、検索・日付条件と query
+   *   組み立てを検証する。
+   * テストケース: 「keeps the attempted applied range visible inside the loading panel context」の条件・入力・操作を実行する。
+   * 期待値: the attempted applied range visible inside the loading panel context が維持されること。
+   */
   it('keeps the attempted applied range visible inside the loading panel context', () => {
     mockedUseSessionIndex.mockReturnValue(
       buildUseSessionIndexResult(
@@ -135,6 +147,13 @@ describe('SessionIndexPage', () => {
     ).toBeInTheDocument()
   })
 
+  /**
+   * 概要・目的: 「renders the date filter form with the hook-applied range as the current confirmed
+   *   range」を通じて、reader と fixture の読取・劣化時の扱いを検証する。
+   * テストケース: 「renders the date filter form with the hook-applied range as the current confirmed
+   *   range」の条件・入力・操作を実行する。
+   * 期待値: the date filter form with the hook-applied range as the current confirmed range が画面に表示されること。
+   */
   it('renders the date filter form with the hook-applied range as the current confirmed range', () => {
     mockedUseSessionIndex.mockReturnValue(buildUseSessionIndexResult({ status: 'empty' }))
 
@@ -150,6 +169,12 @@ describe('SessionIndexPage', () => {
     expect(screen.getAllByText('現在の表示範囲: 2026-04-28 〜 2026-05-04')).toHaveLength(2)
   })
 
+  /**
+   * 概要・目的: 「renders the search form and applies a search without changing the date range」を通じて、検索・日付条件と query
+   *   組み立てを検証する。
+   * テストケース: 「renders the search form and applies a search without changing the date range」の条件・入力・操作を実行する。
+   * 期待値: the search form が表示され、a search without changing the date range が適用されること。
+   */
   it('renders the search form and applies a search without changing the date range', async () => {
     const user = userEvent.setup()
     const applySearch = vi.fn(async () => ({ status: 'empty' } as const))
@@ -177,6 +202,14 @@ describe('SessionIndexPage', () => {
     expect(screen.getByText('現在の表示範囲: 2026-04-28 〜 2026-05-04')).toBeInTheDocument()
   })
 
+  /**
+   * 概要・目的: 「submits the page-owned draft range through applyRange while keeping the confirmed label on the
+   *   hook state」を通じて、検索・日付条件と query 組み立てを検証する。
+   * テストケース: 「submits the page-owned draft range through applyRange while keeping the confirmed label on the
+   *   hook state」の条件・入力・操作を実行する。
+   * 期待値: 「submits the page-owned draft range through applyRange while keeping the confirmed label on the hook
+   *   state」で示す状態または振る舞いが成立すること。
+   */
   it('submits the page-owned draft range through applyRange while keeping the confirmed label on the hook state', async () => {
     const user = userEvent.setup()
     const applyRange = vi.fn(async () => ({ status: 'empty' } as const))
@@ -208,6 +241,14 @@ describe('SessionIndexPage', () => {
     expect(screen.getByText('現在の表示範囲: 2026-04-28 〜 2026-05-04')).toBeInTheDocument()
   })
 
+  /**
+   * 概要・目的: 「lets the page submit an empty draft so the hook can reset back to the default 7-day
+   *   range」を通じて、検索・日付条件と query 組み立てを検証する。
+   * テストケース: 「lets the page submit an empty draft so the hook can reset back to the default 7-day
+   *   range」の条件・入力・操作を実行する。
+   * 期待値: 「lets the page submit an empty draft so the hook can reset back to the default 7-day
+   *   range」で示す状態または振る舞いが成立すること。
+   */
   it('lets the page submit an empty draft so the hook can reset back to the default 7-day range', async () => {
     const user = userEvent.setup()
     const applyRange = vi.fn(async () => ({ status: 'empty' } as const))
@@ -239,6 +280,11 @@ describe('SessionIndexPage', () => {
     })
   })
 
+  /**
+   * 概要・目的: 「renders an empty-state sync action when the backend returns no sessions」を通じて、同期処理の状態管理と副作用を検証する。
+   * テストケース: 「renders an empty-state sync action when the backend returns no sessions」の条件・入力・操作を実行する。
+   * 期待値: an empty-state sync action when the backend returns no sessions が画面に表示されること。
+   */
   it('renders an empty-state sync action when the backend returns no sessions', () => {
     mockedUseSessionIndex.mockReturnValue(buildUseSessionIndexResult({ status: 'empty' }))
 
@@ -254,6 +300,12 @@ describe('SessionIndexPage', () => {
     expect(screen.getByRole('button', { name: '履歴を取り込む' })).toBeInTheDocument()
   })
 
+  /**
+   * 概要・目的: 「renders search loading and search empty states with the applied criteria」を通じて、検索・日付条件と query
+   *   組み立てを検証する。
+   * テストケース: 「renders search loading and search empty states with the applied criteria」の条件・入力・操作を実行する。
+   * 期待値: search loading が表示され、search empty states with the applied criteriaこと。
+   */
   it('renders search loading and search empty states with the applied criteria', () => {
     mockedUseSessionIndex.mockReturnValue(
       buildUseSessionIndexResult(
@@ -292,6 +344,12 @@ describe('SessionIndexPage', () => {
     expect(screen.getByText('現在の表示条件: 2026-04-28 〜 2026-05-04 / 検索: apply patch')).toBeInTheDocument()
   })
 
+  /**
+   * 概要・目的: 「renders search result context above the list when a search is applied」を通じて、検索・日付条件と query
+   *   組み立てを検証する。
+   * テストケース: 「renders search result context above the list when a search is applied」の条件・入力・操作を実行する。
+   * 期待値: search result context above the list when a search is applied が画面に表示されること。
+   */
   it('renders search result context above the list when a search is applied', () => {
     mockedUseSessionIndex.mockReturnValue(
       buildUseSessionIndexResult(
@@ -317,6 +375,13 @@ describe('SessionIndexPage', () => {
     expect(screen.getByRole('link', { name: 'session-123 を開く' })).toBeInTheDocument()
   })
 
+  /**
+   * 概要・目的: 「clears an applied search from the empty state while preserving the date criteria」を通じて、検索・日付条件と
+   *   query 組み立てを検証する。
+   * テストケース: 「clears an applied search from the empty state while preserving the date criteria」の条件・入力・操作を実行する。
+   * 期待値: 「clears an applied search from the empty state while preserving the date
+   *   criteria」で示す状態または振る舞いが成立すること。
+   */
   it('clears an applied search from the empty state while preserving the date criteria', async () => {
     const user = userEvent.setup()
     const clearSearch = vi.fn(async () => ({ status: 'empty' } as const))
@@ -341,6 +406,11 @@ describe('SessionIndexPage', () => {
     expect(screen.getByText('現在の検索条件: 2026-04-28 〜 2026-05-04 / 検索: apply patch')).toBeInTheDocument()
   })
 
+  /**
+   * 概要・目的: 「keeps a user-selected empty range visible in the empty state copy」を通じて、検索・日付条件と query 組み立てを検証する。
+   * テストケース: 「keeps a user-selected empty range visible in the empty state copy」の条件・入力・操作を実行する。
+   * 期待値: a user-selected empty range visible in the empty state copy が維持されること。
+   */
   it('keeps a user-selected empty range visible in the empty state copy', () => {
     mockedUseSessionIndex.mockReturnValue(
       buildUseSessionIndexResult(
@@ -361,6 +431,13 @@ describe('SessionIndexPage', () => {
     expect(screen.getAllByText('現在の表示範囲: 2026-05-01 〜 2026-05-07')).toHaveLength(2)
   })
 
+  /**
+   * 概要・目的: 「renders ordered session cards without placeholder-only work context or model
+   *   metadata」を通じて、検索・日付条件と query 組み立てを検証する。
+   * テストケース: 「renders ordered session cards without placeholder-only work context or model
+   *   metadata」の条件・入力・操作を実行する。
+   * 期待値: ordered session cards without placeholder-only work context or model metadata が画面に表示されること。
+   */
   it('renders ordered session cards without placeholder-only work context or model metadata', () => {
     mockedUseSessionIndex.mockReturnValue(buildUseSessionIndexResult({
       status: 'success',
@@ -409,6 +486,13 @@ describe('SessionIndexPage', () => {
     )
   })
 
+  /**
+   * 概要・目的: 「keeps normal sessions free of always-on status badges while surfacing exceptional
+   *   states」を通じて、HTTP レスポンスとエラー契約を検証する。
+   * テストケース: 「keeps normal sessions free of always-on status badges while surfacing exceptional
+   *   states」の条件・入力・操作を実行する。
+   * 期待値: normal sessions free of always-on status badges while surfacing exceptional states が維持されること。
+   */
   it('keeps normal sessions free of always-on status badges while surfacing exceptional states', () => {
     mockedUseSessionIndex.mockReturnValue(buildUseSessionIndexResult({
       status: 'success',
@@ -468,6 +552,11 @@ describe('SessionIndexPage', () => {
     expect(screen.getAllByText('表示できる会話本文はありません')).toHaveLength(2)
   })
 
+  /**
+   * 概要・目的: 「renders an error panel without success cards when the fetch fails」を通じて、hook の状態遷移と非同期制御を検証する。
+   * テストケース: 「renders an error panel without success cards when the fetch fails」の条件・入力・操作を実行する。
+   * 期待値: an error panel without success cards when the fetch fails が画面に表示されること。
+   */
   it('renders an error panel without success cards when the fetch fails', () => {
     mockedUseSessionIndex.mockReturnValue(buildUseSessionIndexResult({
       status: 'error',
@@ -493,6 +582,12 @@ describe('SessionIndexPage', () => {
     expect(screen.queryByRole('link', { name: 'session-123 を開く' })).not.toBeInTheDocument()
   })
 
+  /**
+   * 概要・目的: 「renders search-condition client errors separately from generic list
+   *   failures」を通じて、同期処理の状態管理と副作用を検証する。
+   * テストケース: 「renders search-condition client errors separately from generic list failures」の条件・入力・操作を実行する。
+   * 期待値: search-condition client errors separately from generic list failures が画面に表示されること。
+   */
   it('renders search-condition client errors separately from generic list failures', () => {
     mockedUseSessionIndex.mockReturnValue(
       buildUseSessionIndexResult(
@@ -525,6 +620,12 @@ describe('SessionIndexPage', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('検索条件を確認してください。')
   })
 
+  /**
+   * 概要・目的: 「keeps generic search fetch failures aligned to the applied search
+   *   criteria」を通じて、同期処理の状態管理と副作用を検証する。
+   * テストケース: 「keeps generic search fetch failures aligned to the applied search criteria」の条件・入力・操作を実行する。
+   * 期待値: generic search fetch failures aligned to the applied search criteria が維持されること。
+   */
   it('keeps generic search fetch failures aligned to the applied search criteria', () => {
     mockedUseSessionIndex.mockReturnValue(
       buildUseSessionIndexResult(
@@ -558,6 +659,13 @@ describe('SessionIndexPage', () => {
     expect(screen.queryByRole('link', { name: 'session-123 を開く' })).not.toBeInTheDocument()
   })
 
+  /**
+   * 概要・目的: 「keeps a new-range error aligned to the attempted applied range instead of stale success
+   *   content」を通じて、検索・日付条件と query 組み立てを検証する。
+   * テストケース: 「keeps a new-range error aligned to the attempted applied range instead of stale success
+   *   content」の条件・入力・操作を実行する。
+   * 期待値: a new-range error aligned to the attempted applied range instead of stale success content が維持されること。
+   */
   it('keeps a new-range error aligned to the attempted applied range instead of stale success content', () => {
     mockedUseSessionIndex.mockReturnValue(
       buildUseSessionIndexResult(
@@ -594,6 +702,12 @@ describe('SessionIndexPage', () => {
     expect(screen.queryByRole('heading', { name: 'この日付範囲に一致するセッションはありません' })).not.toBeInTheDocument()
   })
 
+  /**
+   * 概要・目的: 「navigates to the detail route when a session card is selected」を通じて、正規化・projection・presenter
+   *   の変換契約を検証する。
+   * テストケース: 「navigates to the detail route when a session card is selected」の条件・入力・操作を実行する。
+   * 期待値: 「navigates to the detail route when a session card is selected」で示す状態または振る舞いが成立すること。
+   */
   it('navigates to the detail route when a session card is selected', async () => {
     const user = userEvent.setup()
 
@@ -624,6 +738,12 @@ describe('SessionIndexPage', () => {
     expect(screen.getByText('detail route')).toBeInTheDocument()
   })
 
+  /**
+   * 概要・目的: 「starts the same sync request from the top control and the empty-state
+   *   action」を通じて、同期処理の状態管理と副作用を検証する。
+   * テストケース: 「starts the same sync request from the top control and the empty-state action」の条件・入力・操作を実行する。
+   * 期待値: the top control and the empty-state action から the same sync request が開始されること。
+   */
   it('starts the same sync request from the top control and the empty-state action', async () => {
     const user = userEvent.setup()
     const startSync = vi.fn(async () => undefined)
@@ -645,6 +765,11 @@ describe('SessionIndexPage', () => {
     expect(startSync).toHaveBeenCalledTimes(2)
   })
 
+  /**
+   * 概要・目的: 「disables both sync actions while syncing from an empty page」を通じて、同期処理の状態管理と副作用を検証する。
+   * テストケース: 「disables both sync actions while syncing from an empty page」の条件・入力・操作を実行する。
+   * 期待値: 「disables both sync actions while syncing from an empty page」で示す状態または振る舞いが成立すること。
+   */
   it('disables both sync actions while syncing from an empty page', () => {
     mockedUseSessionIndex.mockReturnValue(buildUseSessionIndexResult({ status: 'empty' }))
     mockedUseHistorySync.mockReturnValue(buildUseHistorySyncResult({ status: 'syncing' }))
@@ -659,6 +784,11 @@ describe('SessionIndexPage', () => {
     expect(screen.getByRole('button', { name: '履歴を取り込み中...' })).toBeDisabled()
   })
 
+  /**
+   * 概要・目的: 「renders synced sessions with a completion banner and the existing list」を通じて、同期処理の状態管理と副作用を検証する。
+   * テストケース: 「renders synced sessions with a completion banner and the existing list」の条件・入力・操作を実行する。
+   * 期待値: synced sessions with a completion banner が表示され、the existing listこと。
+   */
   it('renders synced sessions with a completion banner and the existing list', () => {
     mockedUseSessionIndex.mockReturnValue(buildUseSessionIndexResult({
       status: 'success',
@@ -700,6 +830,14 @@ describe('SessionIndexPage', () => {
     expect(screen.getByRole('link', { name: 'session-123 を開く' })).toBeInTheDocument()
   })
 
+  /**
+   * 概要・目的: 「keeps the same date-filter experience after sync when current and legacy sessions share the
+   *   result list」を通じて、同期処理の状態管理と副作用を検証する。
+   * テストケース: 「keeps the same date-filter experience after sync when current and legacy sessions share the
+   *   result list」の条件・入力・操作を実行する。
+   * 期待値: the same date-filter experience after sync when current が維持され、legacy sessions share the result
+   *   listこと。
+   */
   it('keeps the same date-filter experience after sync when current and legacy sessions share the result list', () => {
     mockedUseSessionIndex.mockReturnValue(buildUseSessionIndexResult(
       {
@@ -757,6 +895,12 @@ describe('SessionIndexPage', () => {
     expect(screen.getByRole('link', { name: 'legacy-session を開く' })).toBeInTheDocument()
   })
 
+  /**
+   * 概要・目的: 「renders a synced-empty banner and keeps the empty state distinct from
+   *   failure」を通じて、同期処理の状態管理と副作用を検証する。
+   * テストケース: 「renders a synced-empty banner and keeps the empty state distinct from failure」の条件・入力・操作を実行する。
+   * 期待値: a synced-empty banner が表示され、the empty state distinct from failure が維持されること。
+   */
   it('renders a synced-empty banner and keeps the empty state distinct from failure', () => {
     mockedUseSessionIndex.mockReturnValue(buildUseSessionIndexResult({ status: 'empty' }))
     mockedUseHistorySync.mockReturnValue(buildUseHistorySyncResult({
@@ -792,6 +936,11 @@ describe('SessionIndexPage', () => {
     expect(screen.getByRole('button', { name: '履歴を取り込む' })).toBeInTheDocument()
   })
 
+  /**
+   * 概要・目的: 「renders the %s banner without hiding the current list」を通じて、reader と fixture の読取・劣化時の扱いを検証する。
+   * テストケース: 「renders the %s banner without hiding the current list」の条件・入力・操作を実行する。
+   * 期待値: the %s banner without hiding the current list が画面に表示されること。
+   */
   it.each([
     {
       name: 'refresh error',
@@ -872,6 +1021,11 @@ describe('SessionIndexPage', () => {
     expect(screen.getByRole('link', { name: 'session-123 を開く' })).toBeInTheDocument()
   })
 
+  /**
+   * 概要・目的: 「keeps the existing session list visible while a sync is in progress」を通じて、同期処理の状態管理と副作用を検証する。
+   * テストケース: 「keeps the existing session list visible while a sync is in progress」の条件・入力・操作を実行する。
+   * 期待値: the existing session list visible while a sync is in progress が維持されること。
+   */
   it('keeps the existing session list visible while a sync is in progress', () => {
     mockedUseSessionIndex.mockReturnValue(buildUseSessionIndexResult({
       status: 'success',
@@ -893,6 +1047,12 @@ describe('SessionIndexPage', () => {
     expect(screen.getByRole('link', { name: 'session-123 を開く' })).toBeInTheDocument()
   })
 
+  /**
+   * 概要・目的: 「shows sync failures separately from the initial index error state」を通じて、DB
+   *   保存・validation・一意性制約を検証する。
+   * テストケース: 「shows sync failures separately from the initial index error state」の条件・入力・操作を実行する。
+   * 期待値: sync failures separately from the initial index error state が表示されること。
+   */
   it('shows sync failures separately from the initial index error state', () => {
     mockedUseSessionIndex.mockReturnValue(buildUseSessionIndexResult({
       status: 'error',

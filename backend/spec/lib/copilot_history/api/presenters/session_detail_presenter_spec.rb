@@ -4,6 +4,11 @@ RSpec.describe CopilotHistory::Api::Presenters::SessionDetailPresenter do
   subject(:presenter) { described_class.new }
 
   describe "#call" do
+    # 概要・目的: 「keeps session issues in the header and groups event issues onto their matching timeline
+    #   events」を通じて、reader と fixture の読取・劣化時の扱いを検証する。
+    # テストケース: 「keeps session issues in the header and groups event issues onto their matching timeline
+    #   events」の条件・入力・操作を実行する。
+    # 期待値: session issues in the header が維持され、groups event issues onto their matching timeline eventsこと。
     it "keeps session issues in the header and groups event issues onto their matching timeline events" do
       session_issue = CopilotHistory::Types::ReadIssue.new(
         code: CopilotHistory::Errors::ReadErrorCode::LEGACY_JSON_PARSE_FAILED,
@@ -186,6 +191,10 @@ RSpec.describe CopilotHistory::Api::Presenters::SessionDetailPresenter do
       )
     end
 
+    # 概要・目的: 「returns an empty message_snapshots array for current sessions」を通じて、reader と fixture
+    #   の読取・劣化時の扱いを検証する。
+    # テストケース: 「returns an empty message_snapshots array for current sessions」の条件・入力・操作を実行する。
+    # 期待値: an empty message_snapshots array for current sessions を返すこと。
     it "returns an empty message_snapshots array for current sessions" do
       result = CopilotHistory::Api::Types::SessionLookupResult::Found.new(
         root: build_root,
@@ -212,6 +221,12 @@ RSpec.describe CopilotHistory::Api::Presenters::SessionDetailPresenter do
       expect(presenter.call(result: result).dig(:data, :message_snapshots)).to eq([])
     end
 
+    # 概要・目的: 「maps current detail into conversation, activity, timeline, and omits raw payloads by
+    #   default」を通じて、reader と fixture の読取・劣化時の扱いを検証する。
+    # テストケース: 「maps current detail into conversation, activity, timeline, and omits raw payloads by
+    #   default」の条件・入力・操作を実行する。
+    # 期待値: 「maps current detail into conversation, activity, timeline, and omits raw payloads by
+    #   default」で示す状態または振る舞いが成立すること。
     it "maps current detail into conversation, activity, timeline, and omits raw payloads by default" do
       result = CopilotHistory::Api::Types::SessionLookupResult::Found.new(
         root: build_root,
@@ -359,6 +374,11 @@ RSpec.describe CopilotHistory::Api::Presenters::SessionDetailPresenter do
       )
     end
 
+    # 概要・目的: 「keeps tool-only conversation entries and their utterance issues in the existing detail
+    #   schema」を通じて、reader と fixture の読取・劣化時の扱いを検証する。
+    # テストケース: 「keeps tool-only conversation entries and their utterance issues in the existing detail
+    #   schema」の条件・入力・操作を実行する。
+    # 期待値: tool-only conversation entries が維持され、their utterance issues in the existing detail schemaこと。
     it "keeps tool-only conversation entries and their utterance issues in the existing detail schema" do
       utterance_issue = CopilotHistory::Types::ReadIssue.new(
         code: CopilotHistory::Errors::ReadErrorCode::EVENT_PARTIAL_MAPPING,
@@ -443,6 +463,9 @@ RSpec.describe CopilotHistory::Api::Presenters::SessionDetailPresenter do
       )
     end
 
+    # 概要・目的: 「includes raw payloads only when explicitly requested」を通じて、正規化・projection・presenter の変換契約を検証する。
+    # テストケース: 「includes raw payloads only when explicitly requested」の条件・入力・操作を実行する。
+    # 期待値: 「includes raw payloads only when explicitly requested」で示す状態または振る舞いが成立すること。
     it "includes raw payloads only when explicitly requested" do
       result = CopilotHistory::Api::Types::SessionLookupResult::Found.new(
         root: build_root,
@@ -484,6 +507,11 @@ RSpec.describe CopilotHistory::Api::Presenters::SessionDetailPresenter do
       expect(payload.dig(:activity, :entries).first.fetch(:raw_payload)).to eq({ "type" => "tool.execution_start" })
     end
 
+    # 概要・目的: 「keeps unmatched event issues in the session issue list so invalid lines remain visible」を通じて、DB
+    #   保存・validation・一意性制約を検証する。
+    # テストケース: 「keeps unmatched event issues in the session issue list so invalid lines remain
+    #   visible」の条件・入力・操作を実行する。
+    # 期待値: unmatched event issues in the session issue list so invalid lines remain visible が維持されること。
     it "keeps unmatched event issues in the session issue list so invalid lines remain visible" do
       unmatched_event_issue = CopilotHistory::Types::ReadIssue.new(
         code: CopilotHistory::Errors::ReadErrorCode::CURRENT_EVENT_PARSE_FAILED,

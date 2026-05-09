@@ -202,6 +202,12 @@ describe('SessionDetailPage', () => {
     requestRaw.mockReset()
   })
 
+  /**
+   * 概要・目的: 「renders a loading panel while the detail is being fetched」を通じて、正規化・projection・presenter
+   *   の変換契約を検証する。
+   * テストケース: 「renders a loading panel while the detail is being fetched」の条件・入力・操作を実行する。
+   * 期待値: a loading panel while the detail is being fetched が画面に表示されること。
+   */
   it('renders a loading panel while the detail is being fetched', () => {
     mockedUseSessionDetail.mockReturnValue({
       state: {
@@ -217,6 +223,13 @@ describe('SessionDetailPage', () => {
     expect(screen.getByRole('heading', { name: 'セッション詳細を読み込んでいます' })).toBeInTheDocument()
   })
 
+  /**
+   * 概要・目的: 「renders header metadata, session issues, and timeline entries for a degraded success
+   *   response」を通じて、同期処理の状態管理と副作用を検証する。
+   * テストケース: 「renders header metadata, session issues, and timeline entries for a degraded success
+   *   response」の条件・入力・操作を実行する。
+   * 期待値: header metadata, session issues, が表示され、timeline entries for a degraded success responseこと。
+   */
   it('renders header metadata, session issues, and timeline entries for a degraded success response', () => {
     mockedUseSessionDetail.mockReturnValue({
       state: {
@@ -248,6 +261,12 @@ describe('SessionDetailPage', () => {
     expect(screen.queryByText('functions.bash / tool-1')).not.toBeInTheDocument()
   })
 
+  /**
+   * 概要・目的: 「omits placeholder-only work context and model metadata from the detail
+   *   header」を通じて、正規化・projection・presenter の変換契約を検証する。
+   * テストケース: 「omits placeholder-only work context and model metadata from the detail header」の条件・入力・操作を実行する。
+   * 期待値: placeholder-only work context and model metadata from the detail header が含まれないこと。
+   */
   it('omits placeholder-only work context and model metadata from the detail header', () => {
     mockedUseSessionDetail.mockReturnValue({
       state: {
@@ -273,6 +292,12 @@ describe('SessionDetailPage', () => {
     expect(screen.queryByText('モデル不明')).not.toBeInTheDocument()
   })
 
+  /**
+   * 概要・目的: 「starts tool-only conversation entries hidden by default in the detail
+   *   page」を通じて、正規化・projection・presenter の変換契約を検証する。
+   * テストケース: 「starts tool-only conversation entries hidden by default in the detail page」の条件・入力・操作を実行する。
+   * 期待値: 「starts tool-only conversation entries hidden by default in the detail page」で示す状態または振る舞いが成立すること。
+   */
   it('starts tool-only conversation entries hidden by default in the detail page', async () => {
     const user = userEvent.setup()
 
@@ -339,6 +364,11 @@ describe('SessionDetailPage', () => {
     expect(entry).toHaveTextContent('functions.view')
   })
 
+  /**
+   * 概要・目的: 「applies a wrap-safe class to the route-level session id」を通じて、検索・日付条件と query 組み立てを検証する。
+   * テストケース: 「applies a wrap-safe class to the route-level session id」の条件・入力・操作を実行する。
+   * 期待値: a wrap-safe class to the route-level session id が適用されること。
+   */
   it('applies a wrap-safe class to the route-level session id', () => {
     const longSessionId =
       'route-session-id-with-an-extremely-long-identifier-that-should-wrap-without-requiring-page-scroll'
@@ -360,6 +390,13 @@ describe('SessionDetailPage', () => {
     expect(screen.getAllByText(longSessionId)[0]).toHaveClass('break-all')
   })
 
+  /**
+   * 概要・目的: 「keeps overflow-sensitive detail surfaces block-local and wrap-safe in the rendered
+   *   page」を通じて、同期処理の状態管理と副作用を検証する。
+   * テストケース: 「keeps overflow-sensitive detail surfaces block-local and wrap-safe in the rendered
+   *   page」の条件・入力・操作を実行する。
+   * 期待値: overflow-sensitive detail surfaces block-local が維持され、wrap-safe in the rendered pageこと。
+   */
   it('keeps overflow-sensitive detail surfaces block-local and wrap-safe in the rendered page', async () => {
     const user = userEvent.setup()
     const longSessionId =
@@ -475,6 +512,13 @@ describe('SessionDetailPage', () => {
     )
   })
 
+  /**
+   * 概要・目的: 「keeps tool, code, partial, and unknown timeline events readable in sequence order」を通じて、reader と
+   *   fixture の読取・劣化時の扱いを検証する。
+   * テストケース: 「keeps tool, code, partial, and unknown timeline events readable in sequence
+   *   order」の条件・入力・操作を実行する。
+   * 期待値: tool, code, partial, が維持され、unknown timeline events readable in sequence orderこと。
+   */
   it('keeps tool, code, partial, and unknown timeline events readable in sequence order', async () => {
     mockedUseSessionDetail.mockReturnValue({
       state: {
@@ -513,6 +557,13 @@ describe('SessionDetailPage', () => {
     expect(screen.queryByText('write_bash')).not.toBeInTheDocument()
   })
 
+  /**
+   * 概要・目的: 「renders a clean legacy session in the same detail flow without schema-specific UI」を通じて、reader と
+   *   fixture の読取・劣化時の扱いを検証する。
+   * テストケース: 「renders a clean legacy session in the same detail flow without schema-specific
+   *   UI」の条件・入力・操作を実行する。
+   * 期待値: a clean legacy session in the same detail flow without schema-specific UI が画面に表示されること。
+   */
   it('renders a clean legacy session in the same detail flow without schema-specific UI', () => {
     mockedUseSessionDetail.mockReturnValue({
       state: {
@@ -582,6 +633,14 @@ describe('SessionDetailPage', () => {
     expect(screen.queryByRole('heading', { name: 'セッションの issue' })).not.toBeInTheDocument()
   })
 
+  /**
+   * 概要・目的: 「keeps other conversation and activity details readable even when one entry lacks renderable body
+   *   content」を通じて、reader と fixture の読取・劣化時の扱いを検証する。
+   * テストケース: 「keeps other conversation and activity details readable even when one entry lacks renderable body
+   *   content」の条件・入力・操作を実行する。
+   * 期待値: other conversation が維持され、activity details readable even when one entry lacks renderable body
+   *   contentこと。
+   */
   it('keeps other conversation and activity details readable even when one entry lacks renderable body content', () => {
     mockedUseSessionDetail.mockReturnValue({
       state: {
@@ -641,6 +700,13 @@ describe('SessionDetailPage', () => {
     expect(screen.getByRole('heading', { name: '内部 activity' })).toBeInTheDocument()
   })
 
+  /**
+   * 概要・目的: 「preserves conversation, activity, degraded, and issue metadata for legacy detail responses
+   *   too」を通じて、同期処理の状態管理と副作用を検証する。
+   * テストケース: 「preserves conversation, activity, degraded, and issue metadata for legacy detail responses
+   *   too」の条件・入力・操作を実行する。
+   * 期待値: conversation, activity, degraded, が保持され、issue metadata for legacy detail responses tooこと。
+   */
   it('preserves conversation, activity, degraded, and issue metadata for legacy detail responses too', async () => {
     const user = userEvent.setup()
 
@@ -742,6 +808,12 @@ describe('SessionDetailPage', () => {
     expect(screen.getByText('2026-04-26 17:59:02 JST')).toBeInTheDocument()
   })
 
+  /**
+   * 概要・目的: 「renders a dedicated not found panel with a link back to the index」を通じて、DB
+   *   保存・validation・一意性制約を検証する。
+   * テストケース: 「renders a dedicated not found panel with a link back to the index」の条件・入力・操作を実行する。
+   * 期待値: a dedicated not found panel with a link back to the index が画面に表示されること。
+   */
   it('renders a dedicated not found panel with a link back to the index', () => {
     mockedUseSessionDetail.mockReturnValue({
       state: {
@@ -757,6 +829,11 @@ describe('SessionDetailPage', () => {
     expect(screen.getByRole('link', { name: 'セッション一覧へ戻る' })).toHaveAttribute('href', '/')
   })
 
+  /**
+   * 概要・目的: 「renders an error panel with a link back to the index」を通じて、DB 保存・validation・一意性制約を検証する。
+   * テストケース: 「renders an error panel with a link back to the index」の条件・入力・操作を実行する。
+   * 期待値: an error panel with a link back to the index が画面に表示されること。
+   */
   it('renders an error panel with a link back to the index', () => {
     mockedUseSessionDetail.mockReturnValue({
       state: {
@@ -781,6 +858,13 @@ describe('SessionDetailPage', () => {
     expect(screen.getByRole('link', { name: 'セッション一覧へ戻る' })).toHaveAttribute('href', '/')
   })
 
+  /**
+   * 概要・目的: 「renders an explicit empty conversation state instead of filling the main area with
+   *   activity」を通じて、正規化・projection・presenter の変換契約を検証する。
+   * テストケース: 「renders an explicit empty conversation state instead of filling the main area with
+   *   activity」の条件・入力・操作を実行する。
+   * 期待値: an explicit empty conversation state instead of filling the main area with activity が画面に表示されること。
+   */
   it('renders an explicit empty conversation state instead of filling the main area with activity', () => {
     mockedUseSessionDetail.mockReturnValue({
       state: {
@@ -814,6 +898,14 @@ describe('SessionDetailPage', () => {
     expect(screen.getByRole('heading', { name: '内部 activity' })).toBeInTheDocument()
   })
 
+  /**
+   * 概要・目的: 「requests raw detail only from the explicit raw action and keeps raw status visible」を通じて、HTTP
+   *   レスポンスとエラー契約を検証する。
+   * テストケース: 「requests raw detail only from the explicit raw action and keeps raw status
+   *   visible」の条件・入力・操作を実行する。
+   * 期待値: 「requests raw detail only from the explicit raw action and keeps raw status
+   *   visible」で示す状態または振る舞いが成立すること。
+   */
   it('requests raw detail only from the explicit raw action and keeps raw status visible', async () => {
     const user = userEvent.setup()
 
@@ -856,6 +948,13 @@ describe('SessionDetailPage', () => {
     expect(screen.getByText('raw included')).toBeInTheDocument()
   })
 
+  /**
+   * 概要・目的: 「renders disclosures after the conversation and expands session issues only on demand」を通じて、reader
+   *   と fixture の読取・劣化時の扱いを検証する。
+   * テストケース: 「renders disclosures after the conversation and expands session issues only on
+   *   demand」の条件・入力・操作を実行する。
+   * 期待値: disclosures after the conversation が表示され、expands session issues only on demandこと。
+   */
   it('renders disclosures after the conversation and expands session issues only on demand', async () => {
     const user = userEvent.setup()
 
@@ -887,6 +986,14 @@ describe('SessionDetailPage', () => {
     expect(screen.getByText('セッション全体')).toBeInTheDocument()
   })
 
+  /**
+   * 概要・目的: 「keeps the detail page read-only without edit, delete, send, share, timezone, or dedicated
+   *   raw-viewer controls」を通じて、reader と fixture の読取・劣化時の扱いを検証する。
+   * テストケース: 「keeps the detail page read-only without edit, delete, send, share, timezone, or dedicated
+   *   raw-viewer controls」の条件・入力・操作を実行する。
+   * 期待値: the detail page read-only without edit, delete, send, share, timezone, or dedicated raw-viewer
+   *   controls が維持されること。
+   */
   it('keeps the detail page read-only without edit, delete, send, share, timezone, or dedicated raw-viewer controls', () => {
     mockedUseSessionDetail.mockReturnValue({
       state: {

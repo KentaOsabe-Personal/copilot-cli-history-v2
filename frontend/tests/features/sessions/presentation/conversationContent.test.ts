@@ -28,6 +28,12 @@ function buildEntry(overrides: Partial<SessionConversationEntry> = {}): SessionC
 }
 
 describe('formatConversationEntryContent', () => {
+  /**
+   * 概要・目的: 「preserves text/code order and keeps tool hints as separate attached
+   *   blocks」を通じて、同期処理の状態管理と副作用を検証する。
+   * テストケース: 「preserves text/code order and keeps tool hints as separate attached blocks」の条件・入力・操作を実行する。
+   * 期待値: text/code order が保持され、tool hints as separate attached blocks が維持されること。
+   */
   it('preserves text/code order and keeps tool hints as separate attached blocks', () => {
     expect(formatConversationEntryContent(buildEntry())).toEqual({
       role: 'assistant',
@@ -62,6 +68,12 @@ describe('formatConversationEntryContent', () => {
     })
   })
 
+  /**
+   * 概要・目的: 「keeps partial tool hints readable even when the assistant content is empty」を通じて、reader と fixture
+   *   の読取・劣化時の扱いを検証する。
+   * テストケース: 「keeps partial tool hints readable even when the assistant content is empty」の条件・入力・操作を実行する。
+   * 期待値: partial tool hints readable even when the assistant content is empty が維持されること。
+   */
   it('keeps partial tool hints readable even when the assistant content is empty', () => {
     expect(
       formatConversationEntryContent(
@@ -92,6 +104,13 @@ describe('formatConversationEntryContent', () => {
     })
   })
 
+  /**
+   * 概要・目的: 「collapses skill-context tool arguments by default without dropping tool metadata」を通じて、検索・日付条件と
+   *   query 組み立てを検証する。
+   * テストケース: 「collapses skill-context tool arguments by default without dropping tool metadata」の条件・入力・操作を実行する。
+   * 期待値: 「collapses skill-context tool arguments by default without dropping tool
+   *   metadata」で示す状態または振る舞いが成立すること。
+   */
   it('collapses skill-context tool arguments by default without dropping tool metadata', () => {
     expect(
       formatConversationEntryContent(
@@ -124,6 +143,14 @@ describe('formatConversationEntryContent', () => {
     })
   })
 
+  /**
+   * 概要・目的: 「collapses every tool arguments preview by default while preserving the collapse
+   *   reason」を通じて、検索・日付条件と query 組み立てを検証する。
+   * テストケース: 「collapses every tool arguments preview by default while preserving the collapse
+   *   reason」の条件・入力・操作を実行する。
+   * 期待値: 「collapses every tool arguments preview by default while preserving the collapse
+   *   reason」で示す状態または振る舞いが成立すること。
+   */
   it('collapses every tool arguments preview by default while preserving the collapse reason', () => {
     expect(
       formatConversationEntryContent(
@@ -199,6 +226,11 @@ describe('formatConversationEntryContent', () => {
 })
 
 describe('shouldDefaultHideConversationEntryContent', () => {
+  /**
+   * 概要・目的: 「returns true when the entry starts with a skill-context tag」を通じて、ユーザー操作と callback の発火を検証する。
+   * テストケース: 「returns true when the entry starts with a skill-context tag」の条件・入力・操作を実行する。
+   * 期待値: true when the entry starts with a skill-context tag を返すこと。
+   */
   it('returns true when the entry starts with a skill-context tag', () => {
     expect(
       shouldDefaultHideConversationEntryContent(
@@ -207,6 +239,12 @@ describe('shouldDefaultHideConversationEntryContent', () => {
     ).toBe(true)
   })
 
+  /**
+   * 概要・目的: 「returns false for regular message content and tool-only entries」を通じて、正規化・projection・presenter
+   *   の変換契約を検証する。
+   * テストケース: 「returns false for regular message content and tool-only entries」の条件・入力・操作を実行する。
+   * 期待値: false for regular message content and tool-only entries を返すこと。
+   */
   it('returns false for regular message content and tool-only entries', () => {
     expect(shouldDefaultHideConversationEntryContent('I will inspect the current session.')).toBe(
       false,
@@ -217,6 +255,12 @@ describe('shouldDefaultHideConversationEntryContent', () => {
 })
 
 describe('shouldDefaultHideConversationEntry', () => {
+  /**
+   * 概要・目的: 「returns true when the entry has only tool calls and no visible body content」を通じて、検索・日付条件と query
+   *   組み立てを検証する。
+   * テストケース: 「returns true when the entry has only tool calls and no visible body content」の条件・入力・操作を実行する。
+   * 期待値: true when the entry has only tool calls and no visible body content を返すこと。
+   */
   it('returns true when the entry has only tool calls and no visible body content', () => {
     expect(
       shouldDefaultHideConversationEntry(
@@ -235,6 +279,12 @@ describe('shouldDefaultHideConversationEntry', () => {
     ).toBe(true)
   })
 
+  /**
+   * 概要・目的: 「returns true when the entry body is whitespace only and tool calls are
+   *   present」を通じて、正規化・projection・presenter の変換契約を検証する。
+   * テストケース: 「returns true when the entry body is whitespace only and tool calls are present」の条件・入力・操作を実行する。
+   * 期待値: true when the entry body is whitespace only and tool calls are present を返すこと。
+   */
   it('returns true when the entry body is whitespace only and tool calls are present', () => {
     expect(
       shouldDefaultHideConversationEntry(
@@ -253,6 +303,12 @@ describe('shouldDefaultHideConversationEntry', () => {
     ).toBe(true)
   })
 
+  /**
+   * 概要・目的: 「returns false when the entry still has visible prose alongside tool calls」を通じて、検索・日付条件と query
+   *   組み立てを検証する。
+   * テストケース: 「returns false when the entry still has visible prose alongside tool calls」の条件・入力・操作を実行する。
+   * 期待値: false when the entry still has visible prose alongside tool calls を返すこと。
+   */
   it('returns false when the entry still has visible prose alongside tool calls', () => {
     expect(
       shouldDefaultHideConversationEntry(

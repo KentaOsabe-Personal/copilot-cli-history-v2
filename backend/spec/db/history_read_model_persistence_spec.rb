@@ -9,6 +9,11 @@ RSpec.describe "history read model persistence" do
   end
 
   describe "copilot_sessions" do
+    # 概要・目的: 「persists current and legacy builder attributes in the same table for payload and metadata
+    #   reuse」を通じて、DB 保存・validation・一意性制約を検証する。
+    # テストケース: 「persists current and legacy builder attributes in the same table for payload and metadata
+    #   reuse」の条件・入力・操作を実行する。
+    # 期待値: current and legacy builder attributes in the same table for payload and metadata reuse が永続化されること。
     it "persists current and legacy builder attributes in the same table for payload and metadata reuse" do
       current_source = write_source("current/events.jsonl", "{}\n")
       legacy_source = write_source("legacy/session.json", "{}")
@@ -52,6 +57,10 @@ RSpec.describe "history read model persistence" do
       expect(legacy.updated_at_source).to be_nil
     end
 
+    # 概要・目的: 「updates a regenerated session by natural key without creating a duplicate row」を通じて、DB
+    #   保存・validation・一意性制約を検証する。
+    # テストケース: 「updates a regenerated session by natural key without creating a duplicate row」の条件・入力・操作を実行する。
+    # 期待値: a regenerated session by natural key without creating a duplicate row が更新されること。
     it "updates a regenerated session by natural key without creating a duplicate row" do
       source = write_source("current/events.jsonl", "{}\n")
       original_attributes = build_attributes(
@@ -81,6 +90,9 @@ RSpec.describe "history read model persistence" do
   end
 
   describe "history_sync_runs" do
+    # 概要・目的: 「persists root failures without requiring any session rows」を通じて、DB 保存・validation・一意性制約を検証する。
+    # テストケース: 「persists root failures without requiring any session rows」の条件・入力・操作を実行する。
+    # 期待値: root failures without requiring any session rows が永続化されること。
     it "persists root failures without requiring any session rows" do
       run = HistorySyncRun.create!(
         started_at: Time.zone.parse("2026-04-30 03:00:00"),
@@ -104,6 +116,11 @@ RSpec.describe "history read model persistence" do
       )
     end
 
+    # 概要・目的: 「persists complete success and degraded completion as distinct operational outcomes」を通じて、DB
+    #   保存・validation・一意性制約を検証する。
+    # テストケース: 「persists complete success and degraded completion as distinct operational
+    #   outcomes」の条件・入力・操作を実行する。
+    # 期待値: complete success and degraded completion as distinct operational outcomes が永続化されること。
     it "persists complete success and degraded completion as distinct operational outcomes" do
       succeeded = HistorySyncRun.create!(
         started_at: Time.zone.parse("2026-04-30 03:00:00"),
@@ -131,6 +148,10 @@ RSpec.describe "history read model persistence" do
       expect(completed_with_issues.degradation_summary).to eq("1 session degraded")
     end
 
+    # 概要・目的: 「allows multiple terminal rows while enforcing one active running lock」を通じて、DB
+    #   保存・validation・一意性制約を検証する。
+    # テストケース: 「allows multiple terminal rows while enforcing one active running lock」の条件・入力・操作を実行する。
+    # 期待値: multiple terminal rows while enforcing one active running lock が許可されること。
     it "allows multiple terminal rows while enforcing one active running lock" do
       started_at = Time.zone.parse("2026-04-30 03:00:00")
 

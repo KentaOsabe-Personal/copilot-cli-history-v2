@@ -12,6 +12,10 @@ RSpec.describe CopilotHistory::SessionCatalogReader, :copilot_history do
   end
 
   describe "#call" do
+    # 概要・目的: 「returns a public success envelope with both current and legacy sessions」を通じて、HTTP
+    #   レスポンスとエラー契約を検証する。
+    # テストケース: 「returns a public success envelope with both current and legacy sessions」の条件・入力・操作を実行する。
+    # 期待値: a public success envelope with both current and legacy sessions を返すこと。
     it "returns a public success envelope with both current and legacy sessions" do
       with_copilot_history_fixture("mixed_root") do |root|
         ENV["COPILOT_HOME"] = root.to_s
@@ -31,6 +35,10 @@ RSpec.describe CopilotHistory::SessionCatalogReader, :copilot_history do
       end
     end
 
+    # 概要・目的: 「returns current dotted schema and legacy sessions from the same history root」を通じて、reader と
+    #   fixture の読取・劣化時の扱いを検証する。
+    # テストケース: 「returns current dotted schema and legacy sessions from the same history root」の条件・入力・操作を実行する。
+    # 期待値: current dotted schema and legacy sessions from the same history root を返すこと。
     it "returns current dotted schema and legacy sessions from the same history root" do
       with_copilot_history_fixture("current_schema_mixed_root") do |root|
         ENV["COPILOT_HOME"] = root.to_s
@@ -49,6 +57,11 @@ RSpec.describe CopilotHistory::SessionCatalogReader, :copilot_history do
       end
     end
 
+    # 概要・目的: 「preserves mixed-session ordering and raw payloads across current unknown and legacy partial
+    #   events」を通じて、reader と fixture の読取・劣化時の扱いを検証する。
+    # テストケース: 「preserves mixed-session ordering and raw payloads across current unknown and legacy partial
+    #   events」の条件・入力・操作を実行する。
+    # 期待値: mixed-session ordering が保持され、raw payloads across current unknown and legacy partial eventsこと。
     it "preserves mixed-session ordering and raw payloads across current unknown and legacy partial events" do
       with_copilot_history_fixture("mixed_root") do |root|
         legacy_path = root.join("history-session-state/legacy-mixed.json")
@@ -102,6 +115,12 @@ RSpec.describe CopilotHistory::SessionCatalogReader, :copilot_history do
       end
     end
 
+    # 概要・目的: 「keeps file-level session issues inside success results instead of promoting them to root
+    #   failure」を通じて、同期処理の状態管理と副作用を検証する。
+    # テストケース: 「keeps file-level session issues inside success results instead of promoting them to root
+    #   failure」の条件・入力・操作を実行する。
+    # 期待値: file-level session issues inside success results instead of promoting them to root failure
+    #   が維持されること。
     it "keeps file-level session issues inside success results instead of promoting them to root failure" do
       with_copilot_history_fixture("mixed_root") do |root|
         workspace_path = root.join("session-state/current-mixed/workspace.yaml")
@@ -124,6 +143,12 @@ RSpec.describe CopilotHistory::SessionCatalogReader, :copilot_history do
       end
     end
 
+    # 概要・目的: 「keeps parse and access failures scoped to sibling sessions without changing the public success
+    #   envelope」を通じて、同期処理の状態管理と副作用を検証する。
+    # テストケース: 「keeps parse and access failures scoped to sibling sessions without changing the public success
+    #   envelope」の条件・入力・操作を実行する。
+    # 期待値: parse が維持され、access failures scoped to sibling sessions without changing the public success
+    #   envelopeこと。
     it "keeps parse and access failures scoped to sibling sessions without changing the public success envelope" do
       with_copilot_history_fixture("mixed_root") do |root|
         events_path = root.join("session-state/current-mixed/events.jsonl")
@@ -167,6 +192,10 @@ RSpec.describe CopilotHistory::SessionCatalogReader, :copilot_history do
       end
     end
 
+    # 概要・目的: 「wraps fatal root failures in the public failure envelope and logs them as
+    #   error」を通じて、同期処理の状態管理と副作用を検証する。
+    # テストケース: 「wraps fatal root failures in the public failure envelope and logs them as error」の条件・入力・操作を実行する。
+    # 期待値: fatal root failures in the public failure envelope and logs them as error が公開用 envelope に包まれること。
     it "wraps fatal root failures in the public failure envelope and logs them as error" do
       logger = instance_double(Logger, warn: nil, error: nil)
 
@@ -196,6 +225,11 @@ RSpec.describe CopilotHistory::SessionCatalogReader, :copilot_history do
       end
     end
 
+    # 概要・目的: 「returns a public failure envelope when the resolved root exists but is not
+    #   accessible」を通じて、同期処理の状態管理と副作用を検証する。
+    # テストケース: 「returns a public failure envelope when the resolved root exists but is not
+    #   accessible」の条件・入力・操作を実行する。
+    # 期待値: a public failure envelope when the resolved root exists but is not accessible を返すこと。
     it "returns a public failure envelope when the resolved root exists but is not accessible" do
       Dir.mktmpdir("copilot-history-home") do |home|
         expected_path = Pathname.new(home).join(".copilot")
@@ -221,6 +255,9 @@ RSpec.describe CopilotHistory::SessionCatalogReader, :copilot_history do
       end
     end
 
+    # 概要・目的: 「wraps source catalog access failures in the public failure envelope」を通じて、同期処理の状態管理と副作用を検証する。
+    # テストケース: 「wraps source catalog access failures in the public failure envelope」の条件・入力・操作を実行する。
+    # 期待値: source catalog access failures in the public failure envelope が公開用 envelope に包まれること。
     it "wraps source catalog access failures in the public failure envelope" do
       logger = instance_double(Logger, warn: nil, error: nil)
 
@@ -251,6 +288,9 @@ RSpec.describe CopilotHistory::SessionCatalogReader, :copilot_history do
       end
     end
 
+    # 概要・目的: 「keeps session issues in the result without logging them」を通じて、reader と fixture の読取・劣化時の扱いを検証する。
+    # テストケース: 「keeps session issues in the result without logging them」の条件・入力・操作を実行する。
+    # 期待値: session issues in the result without logging them が維持されること。
     it "keeps session issues in the result without logging them" do
       logger = instance_double(Logger, warn: nil, error: nil)
 
@@ -277,6 +317,10 @@ RSpec.describe CopilotHistory::SessionCatalogReader, :copilot_history do
       end
     end
 
+    # 概要・目的: 「does not log warning-only session issues while preserving them in the result」を通じて、reader と
+    #   fixture の読取・劣化時の扱いを検証する。
+    # テストケース: 「does not log warning-only session issues while preserving them in the result」の条件・入力・操作を実行する。
+    # 期待値: log warning-only session issues while preserving them in the result しないこと。
     it "does not log warning-only session issues while preserving them in the result" do
       logger = instance_double(Logger, warn: nil, error: nil)
 

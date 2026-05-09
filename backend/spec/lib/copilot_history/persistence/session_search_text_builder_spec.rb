@@ -2,6 +2,9 @@ require "rails_helper"
 
 RSpec.describe CopilotHistory::Persistence::SessionSearchTextBuilder do
   describe "#call" do
+    # 概要・目的: 「collects conversation body, summary, and issue text only」を通じて、reader と fixture の読取・劣化時の扱いを検証する。
+    # テストケース: 「collects conversation body, summary, and issue text only」の条件・入力・操作を実行する。
+    # 期待値: 「collects conversation body, summary, and issue text only」で示す状態または振る舞いが成立すること。
     it "collects conversation body, summary, and issue text only" do
       summary_payload = {
         conversation_summary: {
@@ -97,6 +100,11 @@ RSpec.describe CopilotHistory::Persistence::SessionSearchTextBuilder do
       )
     end
 
+    # 概要・目的: 「normalizes whitespace and returns an empty string when no searchable text
+    #   exists」を通じて、正規化・projection・presenter の変換契約を検証する。
+    # テストケース: 「normalizes whitespace and returns an empty string when no searchable text
+    #   exists」の条件・入力・操作を実行する。
+    # 期待値: whitespace and returns an empty string when no searchable text exists が正規化されること。
     it "normalizes whitespace and returns an empty string when no searchable text exists" do
       search_text = described_class.new.call(
         summary_payload: { conversation_summary: { preview: "  hello\n\nworld\t" } },

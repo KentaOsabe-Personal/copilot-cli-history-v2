@@ -4,6 +4,12 @@ RSpec.describe CopilotHistory::Projections::ActivityProjector, :copilot_history 
   subject(:projector) { described_class.new }
 
   describe "#call" do
+    # 概要・目的: 「projects system, detail, and unknown events separately from conversation messages」を通じて、reader と
+    #   fixture の読取・劣化時の扱いを検証する。
+    # テストケース: 「projects system, detail, and unknown events separately from conversation
+    #   messages」の条件・入力・操作を実行する。
+    # 期待値: 「projects system, detail, and unknown events separately from conversation
+    #   messages」で示す状態または振る舞いが成立すること。
     it "projects system, detail, and unknown events separately from conversation messages" do
       with_copilot_history_fixture("current_schema_valid") do |root|
         session = read_first_current_session(root)
@@ -24,6 +30,10 @@ RSpec.describe CopilotHistory::Projections::ActivityProjector, :copilot_history 
       end
     end
 
+    # 概要・目的: 「keeps unknown and partial issue traceability on activity entries」を通じて、reader と fixture
+    #   の読取・劣化時の扱いを検証する。
+    # テストケース: 「keeps unknown and partial issue traceability on activity entries」の条件・入力・操作を実行する。
+    # 期待値: unknown が維持され、partial issue traceability on activity entriesこと。
     it "keeps unknown and partial issue traceability on activity entries" do
       with_copilot_history_fixture("current_schema_degraded") do |root|
         session = read_first_current_session(root)

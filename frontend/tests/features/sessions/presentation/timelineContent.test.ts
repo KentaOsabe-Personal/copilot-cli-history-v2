@@ -45,6 +45,12 @@ function buildEvent(overrides: Partial<TimelineEventForContent> = {}): TimelineE
 }
 
 describe('formatTimelineContent', () => {
+  /**
+   * 概要・目的: 「extracts tool hints from canonical helper fields and preserves text/code order」を通じて、検索・日付条件と
+   *   query 組み立てを検証する。
+   * テストケース: 「extracts tool hints from canonical helper fields and preserves text/code order」の条件・入力・操作を実行する。
+   * 期待値: 「extracts tool hints from canonical helper fields and preserves text/code order」で示す状態または振る舞いが成立すること。
+   */
   it('extracts tool hints from canonical helper fields and preserves text/code order', () => {
     const event = buildEvent({
       content: 'Before code\n```ts\nconst answer = 42\n```\nAfter code',
@@ -86,6 +92,12 @@ describe('formatTimelineContent', () => {
     })
   })
 
+  /**
+   * 概要・目的: 「keeps partial tool summaries even when only a subset of fields is
+   *   available」を通じて、正規化・projection・presenter の変換契約を検証する。
+   * テストケース: 「keeps partial tool summaries even when only a subset of fields is available」の条件・入力・操作を実行する。
+   * 期待値: partial tool summaries even when only a subset of fields is available が維持されること。
+   */
   it('keeps partial tool summaries even when only a subset of fields is available', () => {
     const event = buildEvent({
       content: null,
@@ -114,6 +126,11 @@ describe('formatTimelineContent', () => {
     })
   })
 
+  /**
+   * 概要・目的: 「formats non-message detail summaries as dedicated blocks」を通じて、同期処理の状態管理と副作用を検証する。
+   * テストケース: 「formats non-message detail summaries as dedicated blocks」の条件・入力・操作を実行する。
+   * 期待値: non-message detail summaries as dedicated blocks が表示用に整形されること。
+   */
   it('formats non-message detail summaries as dedicated blocks', () => {
     const event = buildEvent({
       kind: 'detail',
@@ -158,6 +175,11 @@ function buildActivity(overrides: Partial<SessionActivityEntry> = {}): SessionAc
 }
 
 describe('formatActivityContent', () => {
+  /**
+   * 概要・目的: 「formats internal activity without message content blocks」を通じて、同期処理の状態管理と副作用を検証する。
+   * テストケース: 「formats internal activity without message content blocks」の条件・入力・操作を実行する。
+   * 期待値: internal activity without message content blocks が表示用に整形されること。
+   */
   it('formats internal activity without message content blocks', () => {
     expect(formatActivityContent(buildActivity())).toEqual({
       sequence: 4,
@@ -184,6 +206,12 @@ describe('formatActivityContent', () => {
 })
 
 describe('deriveConversationEntriesFromTimeline', () => {
+  /**
+   * 概要・目的: 「falls back to non-empty user and assistant messages only」を通じて、正規化・projection・presenter
+   *   の変換契約を検証する。
+   * テストケース: 「falls back to non-empty user and assistant messages only」の条件・入力・操作を実行する。
+   * 期待値: non-empty user and assistant messages only に fallback すること。
+   */
   it('falls back to non-empty user and assistant messages only', () => {
     const timeline: readonly SessionTimelineEvent[] = [
       buildEvent({

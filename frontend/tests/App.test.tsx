@@ -25,6 +25,12 @@ function expectReadOnlyScopeCopy() {
 }
 
 describe('App', () => {
+  /**
+   * 概要・目的: 「renders the session index route inside the shared read-only shell」を通じて、DB
+   *   保存・validation・一意性制約を検証する。
+   * テストケース: 「renders the session index route inside the shared read-only shell」の条件・入力・操作を実行する。
+   * 期待値: the session index route inside the shared read-only shell が画面に表示されること。
+   */
   it('renders the session index route inside the shared read-only shell', () => {
     render(
       <MemoryRouter initialEntries={['/']}>
@@ -43,6 +49,12 @@ describe('App', () => {
     expectReadOnlyControlsToBeAbsent()
   })
 
+  /**
+   * 概要・目的: 「renders the detail route directly without going through the index page」を通じて、DB
+   *   保存・validation・一意性制約を検証する。
+   * テストケース: 「renders the detail route directly without going through the index page」の条件・入力・操作を実行する。
+   * 期待値: the detail route directly without going through the index page が画面に表示されること。
+   */
   it('renders the detail route directly without going through the index page', () => {
     render(
       <MemoryRouter initialEntries={['/sessions/session-123']}>

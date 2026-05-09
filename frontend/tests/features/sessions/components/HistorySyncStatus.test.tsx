@@ -37,6 +37,11 @@ function buildBackendError(overrides: Partial<Extract<SessionApiError, { kind: '
 }
 
 describe('HistorySyncStatus', () => {
+  /**
+   * 概要・目的: 「renders a compact success banner for synced sessions」を通じて、同期処理の状態管理と副作用を検証する。
+   * テストケース: 「renders a compact success banner for synced sessions」の条件・入力・操作を実行する。
+   * 期待値: a compact success banner for synced sessions が画面に表示されること。
+   */
   it('renders a compact success banner for synced sessions', () => {
     const state: HistorySyncState = {
       status: 'synced_with_sessions',
@@ -50,6 +55,11 @@ describe('HistorySyncStatus', () => {
     expect(screen.getByText('3 件を保存しました。1 件は一部欠損を含みます。')).toBeInTheDocument()
   })
 
+  /**
+   * 概要・目的: 「renders a non-error empty outcome after a successful sync」を通じて、同期処理の状態管理と副作用を検証する。
+   * テストケース: 「renders a non-error empty outcome after a successful sync」の条件・入力・操作を実行する。
+   * 期待値: a non-error empty outcome after a successful sync が画面に表示されること。
+   */
   it('renders a non-error empty outcome after a successful sync', () => {
     const state: HistorySyncState = {
       status: 'synced_empty',
@@ -62,6 +72,12 @@ describe('HistorySyncStatus', () => {
     expect(screen.getByText('取り込みは完了しましたが、表示できるセッションはまだありません。')).toBeInTheDocument()
   })
 
+  /**
+   * 概要・目的: 「renders a refresh error banner without presenting success state as
+   *   current」を通じて、同期処理の状態管理と副作用を検証する。
+   * テストケース: 「renders a refresh error banner without presenting success state as current」の条件・入力・操作を実行する。
+   * 期待値: a refresh error banner without presenting success state as current が画面に表示されること。
+   */
   it('renders a refresh error banner without presenting success state as current', () => {
     const state: HistorySyncState = {
       status: 'refresh_error',
@@ -78,6 +94,11 @@ describe('HistorySyncStatus', () => {
     expect(screen.getByText('3 件を保存しましたが、一覧の再取得に失敗しました。時間をおいて再度お試しください。')).toBeInTheDocument()
   })
 
+  /**
+   * 概要・目的: 「renders a conflict banner when a sync is already running」を通じて、同期処理の状態管理と副作用を検証する。
+   * テストケース: 「renders a conflict banner when a sync is already running」の条件・入力・操作を実行する。
+   * 期待値: a conflict banner when a sync is already running が画面に表示されること。
+   */
   it('renders a conflict banner when a sync is already running', () => {
     const state: HistorySyncState = {
       status: 'conflict',
@@ -95,6 +116,11 @@ describe('HistorySyncStatus', () => {
     expect(screen.getByText('少し時間をおいてから、もう一度お試しください。')).toBeInTheDocument()
   })
 
+  /**
+   * 概要・目的: 「renders a retryable sync error banner for $label failures」を通じて、同期処理の状態管理と副作用を検証する。
+   * テストケース: 「renders a retryable sync error banner for $label failures」の条件・入力・操作を実行する。
+   * 期待値: a retryable sync error banner for $label failures が画面に表示されること。
+   */
   it.each([
     {
       label: 'network',
@@ -134,6 +160,11 @@ describe('HistorySyncStatus', () => {
     expect(screen.getByText(expectedMessage)).toBeInTheDocument()
   })
 
+  /**
+   * 概要・目的: 「does not render a banner for idle state」を通じて、hook の状態遷移と非同期制御を検証する。
+   * テストケース: 「does not render a banner for idle state」の条件・入力・操作を実行する。
+   * 期待値: render a banner for idle state しないこと。
+   */
   it('does not render a banner for idle state', () => {
     render(<HistorySyncStatus state={{ status: 'idle' }} />)
 

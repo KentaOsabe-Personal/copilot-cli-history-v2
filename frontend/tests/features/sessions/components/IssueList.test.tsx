@@ -4,6 +4,12 @@ import type { SessionIssue } from '../../../../src/features/sessions/api/session
 import IssueList from '../../../../src/features/sessions/components/IssueList.tsx'
 
 describe('IssueList', () => {
+  /**
+   * 概要・目的: 「wraps long issue messages and source paths inside the issue panel」を通じて、reader と fixture
+   *   の読取・劣化時の扱いを検証する。
+   * テストケース: 「wraps long issue messages and source paths inside the issue panel」の条件・入力・操作を実行する。
+   * 期待値: long issue messages and source paths inside the issue panel が公開用 envelope に包まれること。
+   */
   it('wraps long issue messages and source paths inside the issue panel', () => {
     const issues: readonly SessionIssue[] = [
       {

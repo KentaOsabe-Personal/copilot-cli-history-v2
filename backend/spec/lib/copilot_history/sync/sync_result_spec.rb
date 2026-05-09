@@ -11,6 +11,9 @@ RSpec.describe CopilotHistory::Sync::SyncResult do
   end
 
   describe CopilotHistory::Sync::SyncResult::Succeeded do
+    # 概要・目的: 「carries a terminal sync run and exposes its result kind」を通じて、同期処理の状態管理と副作用を検証する。
+    # テストケース: 「carries a terminal sync run and exposes its result kind」の条件・入力・操作を実行する。
+    # 期待値: a terminal sync run and exposes its result kind が保持されて渡されること。
     it "carries a terminal sync run and exposes its result kind" do
       result = described_class.new(sync_run:)
 
@@ -22,6 +25,9 @@ RSpec.describe CopilotHistory::Sync::SyncResult do
   end
 
   describe CopilotHistory::Sync::SyncResult::Conflict do
+    # 概要・目的: 「carries the existing running sync run without replacing it」を通じて、同期処理の状態管理と副作用を検証する。
+    # テストケース: 「carries the existing running sync run without replacing it」の条件・入力・操作を実行する。
+    # 期待値: the existing running sync run without replacing it が保持されて渡されること。
     it "carries the existing running sync run without replacing it" do
       running_run = HistorySyncRun.new(
         id: 102,
@@ -39,6 +45,10 @@ RSpec.describe CopilotHistory::Sync::SyncResult do
   end
 
   describe CopilotHistory::Sync::SyncResult::Failed do
+    # 概要・目的: 「carries terminal run, failure code, message, and details for root
+    #   failures」を通じて、同期処理の状態管理と副作用を検証する。
+    # テストケース: 「carries terminal run, failure code, message, and details for root failures」の条件・入力・操作を実行する。
+    # 期待値: terminal run, failure code, message, and details for root failures が保持されて渡されること。
     it "carries terminal run, failure code, message, and details for root failures" do
       failed_run = HistorySyncRun.new(
         id: 103,

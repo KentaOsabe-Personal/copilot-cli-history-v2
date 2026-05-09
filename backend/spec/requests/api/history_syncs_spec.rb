@@ -16,6 +16,10 @@ RSpec.describe "API History Syncs", :copilot_history, type: :request do
   end
 
   describe "POST /api/history/sync" do
+    # 概要・目的: 「syncs mixed current and legacy sessions and returns the terminal run
+    #   counts」を通じて、同期処理の状態管理と副作用を検証する。
+    # テストケース: 「syncs mixed current and legacy sessions and returns the terminal run counts」の条件・入力・操作を実行する。
+    # 期待値: 「syncs mixed current and legacy sessions and returns the terminal run counts」で示す状態または振る舞いが成立すること。
     it "syncs mixed current and legacy sessions and returns the terminal run counts" do
       with_copilot_history_fixture("current_schema_mixed_root") do |root|
         ENV["COPILOT_HOME"] = root.to_s
@@ -56,6 +60,12 @@ RSpec.describe "API History Syncs", :copilot_history, type: :request do
       end
     end
 
+    # 概要・目的: 「skips unchanged sessions on a repeated sync without rewriting payloads or indexed
+    #   timestamps」を通じて、DB 保存・validation・一意性制約を検証する。
+    # テストケース: 「skips unchanged sessions on a repeated sync without rewriting payloads or indexed
+    #   timestamps」の条件・入力・操作を実行する。
+    # 期待値: 「skips unchanged sessions on a repeated sync without rewriting payloads or indexed
+    #   timestamps」で示す状態または振る舞いが成立すること。
     it "skips unchanged sessions on a repeated sync without rewriting payloads or indexed timestamps" do
       with_copilot_history_fixture("current_schema_mixed_root") do |root|
         ENV["COPILOT_HOME"] = root.to_s
@@ -82,6 +92,10 @@ RSpec.describe "API History Syncs", :copilot_history, type: :request do
       end
     end
 
+    # 概要・目的: 「updates changed raw files without duplicating the existing read model row」を通じて、DB
+    #   保存・validation・一意性制約を検証する。
+    # テストケース: 「updates changed raw files without duplicating the existing read model row」の条件・入力・操作を実行する。
+    # 期待値: changed raw files without duplicating the existing read model row が更新されること。
     it "updates changed raw files without duplicating the existing read model row" do
       with_copilot_history_fixture("current_schema_mixed_root") do |root|
         ENV["COPILOT_HOME"] = root.to_s
@@ -116,6 +130,11 @@ RSpec.describe "API History Syncs", :copilot_history, type: :request do
       end
     end
 
+    # 概要・目的: 「returns a root failure as a 503 error envelope and does not overwrite existing
+    #   sessions」を通じて、同期処理の状態管理と副作用を検証する。
+    # テストケース: 「returns a root failure as a 503 error envelope and does not overwrite existing
+    #   sessions」の条件・入力・操作を実行する。
+    # 期待値: a root failure を a 503 error envelope and does not overwrite existing sessions として返すこと。
     it "returns a root failure as a 503 error envelope and does not overwrite existing sessions" do
       existing_session = CopilotSession.create!(
         session_id: "existing-session",
@@ -175,6 +194,10 @@ RSpec.describe "API History Syncs", :copilot_history, type: :request do
       end
     end
 
+    # 概要・目的: 「returns degraded sessions as completed_with_issues with saved issue
+    #   information」を通じて、同期処理の状態管理と副作用を検証する。
+    # テストケース: 「returns degraded sessions as completed_with_issues with saved issue information」の条件・入力・操作を実行する。
+    # 期待値: degraded sessions を completed_with_issues with saved issue information として返すこと。
     it "returns degraded sessions as completed_with_issues with saved issue information" do
       with_copilot_history_fixture("current_schema_mixed_root") do |root|
         workspace_path = root.join("session-state/current-schema-mixed/workspace.yaml")
@@ -207,6 +230,9 @@ RSpec.describe "API History Syncs", :copilot_history, type: :request do
       end
     end
 
+    # 概要・目的: 「returns conflict without overwriting an existing running sync run」を通じて、同期処理の状態管理と副作用を検証する。
+    # テストケース: 「returns conflict without overwriting an existing running sync run」の条件・入力・操作を実行する。
+    # 期待値: conflict without overwriting an existing running sync run を返すこと。
     it "returns conflict without overwriting an existing running sync run" do
       running_run = HistorySyncRun.create!(
         status: "running",
@@ -238,6 +264,10 @@ RSpec.describe "API History Syncs", :copilot_history, type: :request do
       )
     end
 
+    # 概要・目的: 「returns persistence failures from the service as a 500 error envelope」を通じて、DB
+    #   保存・validation・一意性制約を検証する。
+    # テストケース: 「returns persistence failures from the service as a 500 error envelope」の条件・入力・操作を実行する。
+    # 期待値: persistence failures from the service を a 500 error envelope として返すこと。
     it "returns persistence failures from the service as a 500 error envelope" do
       failed_run = HistorySyncRun.create!(
         status: "failed",

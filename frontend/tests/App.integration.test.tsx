@@ -124,6 +124,13 @@ describe('App integration', () => {
     vi.useRealTimers()
   })
 
+  /**
+   * 概要・目的: 「keeps the read-only scope copy and latest applied date range through a same-range sync
+   *   refresh」を通じて、同期処理の状態管理と副作用を検証する。
+   * テストケース: 「keeps the read-only scope copy and latest applied date range through a same-range sync
+   *   refresh」の条件・入力・操作を実行する。
+   * 期待値: the read-only scope copy が維持され、latest applied date range through a same-range sync refreshこと。
+   */
   it(
     'keeps the read-only scope copy and latest applied date range through a same-range sync refresh',
     async () => {

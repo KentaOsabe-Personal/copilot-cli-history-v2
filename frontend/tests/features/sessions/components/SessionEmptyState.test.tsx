@@ -5,6 +5,11 @@ import { describe, expect, it, vi } from 'vitest'
 import SessionEmptyState from '../../../../src/features/sessions/components/SessionEmptyState.tsx'
 
 describe('SessionEmptyState', () => {
+  /**
+   * 概要・目的: 「renders a primary action that starts the same sync request」を通じて、同期処理の状態管理と副作用を検証する。
+   * テストケース: 「renders a primary action that starts the same sync request」の条件・入力・操作を実行する。
+   * 期待値: a primary action that starts the same sync request が画面に表示されること。
+   */
   it('renders a primary action that starts the same sync request', async () => {
     const user = userEvent.setup()
     const onSync = vi.fn()
@@ -26,6 +31,11 @@ describe('SessionEmptyState', () => {
     expect(onSync).toHaveBeenCalledTimes(1)
   })
 
+  /**
+   * 概要・目的: 「disables the empty-state action while syncing」を通じて、同期処理の状態管理と副作用を検証する。
+   * テストケース: 「disables the empty-state action while syncing」の条件・入力・操作を実行する。
+   * 期待値: 「disables the empty-state action while syncing」で示す状態または振る舞いが成立すること。
+   */
   it('disables the empty-state action while syncing', () => {
     const onSync = vi.fn()
 
@@ -41,6 +51,12 @@ describe('SessionEmptyState', () => {
     expect(screen.getByRole('button', { name: '履歴を取り込み中...' })).toBeDisabled()
   })
 
+  /**
+   * 概要・目的: 「keeps the empty meaning range-scoped and adds synced_empty only as a
+   *   hint」を通じて、同期処理の状態管理と副作用を検証する。
+   * テストケース: 「keeps the empty meaning range-scoped and adds synced_empty only as a hint」の条件・入力・操作を実行する。
+   * 期待値: the empty meaning range-scoped が維持され、adds synced_empty only as a hintこと。
+   */
   it('keeps the empty meaning range-scoped and adds synced_empty only as a hint', () => {
     render(
       <SessionEmptyState
@@ -74,6 +90,13 @@ describe('SessionEmptyState', () => {
     expect(screen.getByText('この条件では、まだ一致するセッションが見つかっていません。')).toBeInTheDocument()
   })
 
+  /**
+   * 概要・目的: 「renders a search-scoped empty state without offering edit, delete, or share actions」を通じて、検索・日付条件と
+   *   query 組み立てを検証する。
+   * テストケース: 「renders a search-scoped empty state without offering edit, delete, or share
+   *   actions」の条件・入力・操作を実行する。
+   * 期待値: a search-scoped empty state without offering edit, delete, or share actions が画面に表示されること。
+   */
   it('renders a search-scoped empty state without offering edit, delete, or share actions', async () => {
     const user = userEvent.setup()
     const onClearSearch = vi.fn()

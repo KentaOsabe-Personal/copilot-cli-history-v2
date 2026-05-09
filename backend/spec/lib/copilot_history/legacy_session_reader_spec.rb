@@ -2,6 +2,11 @@ require "rails_helper"
 
 RSpec.describe CopilotHistory::LegacySessionReader, :copilot_history do
   describe "#call" do
+    # 概要・目的: 「normalizes legacy timeline events and preserves chatMessages as message snapshots」を通じて、reader と
+    #   fixture の読取・劣化時の扱いを検証する。
+    # テストケース: 「normalizes legacy timeline events and preserves chatMessages as message
+    #   snapshots」の条件・入力・操作を実行する。
+    # 期待値: legacy timeline events and preserves chatMessages as message snapshots が正規化されること。
     it "normalizes legacy timeline events and preserves chatMessages as message snapshots" do
       with_copilot_history_fixture("legacy_valid") do |root|
         session = described_class.new.call(build_source(root, "legacy-valid"))
@@ -75,6 +80,10 @@ RSpec.describe CopilotHistory::LegacySessionReader, :copilot_history do
       end
     end
 
+    # 概要・目的: 「returns a session issue when the legacy source JSON cannot be parsed」を通じて、reader と fixture
+    #   の読取・劣化時の扱いを検証する。
+    # テストケース: 「returns a session issue when the legacy source JSON cannot be parsed」の条件・入力・操作を実行する。
+    # 期待値: a session issue when the legacy source JSON cannot be parsed を返すこと。
     it "returns a session issue when the legacy source JSON cannot be parsed" do
       with_copilot_history_fixture("legacy_invalid") do |root|
         source_path = root.join("history-session-state/legacy-invalid.json")
@@ -97,6 +106,10 @@ RSpec.describe CopilotHistory::LegacySessionReader, :copilot_history do
       end
     end
 
+    # 概要・目的: 「returns a session issue when the legacy source file is unreadable」を通じて、reader と fixture
+    #   の読取・劣化時の扱いを検証する。
+    # テストケース: 「returns a session issue when the legacy source file is unreadable」の条件・入力・操作を実行する。
+    # 期待値: a session issue when the legacy source file is unreadable を返すこと。
     it "returns a session issue when the legacy source file is unreadable" do
       with_copilot_history_fixture("legacy_unreadable") do |root|
         source_path = root.join("history-session-state/legacy-unreadable.json")
@@ -122,6 +135,11 @@ RSpec.describe CopilotHistory::LegacySessionReader, :copilot_history do
       end
     end
 
+    # 概要・目的: 「keeps unknown non-hash timeline entries as raw payload while preserving
+    #   chatMessages」を通じて、正規化・projection・presenter の変換契約を検証する。
+    # テストケース: 「keeps unknown non-hash timeline entries as raw payload while preserving
+    #   chatMessages」の条件・入力・操作を実行する。
+    # 期待値: unknown non-hash timeline entries as raw payload while preserving chatMessages が維持されること。
     it "keeps unknown non-hash timeline entries as raw payload while preserving chatMessages" do
       with_copilot_history_fixture("legacy_valid") do |root|
         source_path = root.join("history-session-state/legacy-valid.json")

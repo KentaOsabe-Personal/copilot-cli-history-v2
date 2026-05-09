@@ -36,6 +36,13 @@ function Harness({
 }
 
 describe('SessionDateFilterForm', () => {
+  /**
+   * 概要・目的: 「shows the current applied range and disables Apply while the draft range is invalid」を通じて、DB
+   *   保存・validation・一意性制約を検証する。
+   * テストケース: 「shows the current applied range and disables Apply while the draft range is
+   *   invalid」の条件・入力・操作を実行する。
+   * 期待値: the current applied range and disables Apply while the draft range is invalid が表示されること。
+   */
   it('shows the current applied range and disables Apply while the draft range is invalid', () => {
     render(
       <Harness
@@ -51,6 +58,11 @@ describe('SessionDateFilterForm', () => {
     expect(screen.getByRole('button', { name: '適用する' })).toBeDisabled()
   })
 
+  /**
+   * 概要・目的: 「allows Apply again after the user fixes an invalid range」を通じて、DB 保存・validation・一意性制約を検証する。
+   * テストケース: 「allows Apply again after the user fixes an invalid range」の条件・入力・操作を実行する。
+   * 期待値: Apply again after the user fixes an invalid range が許可されること。
+   */
   it('allows Apply again after the user fixes an invalid range', async () => {
     const user = userEvent.setup()
     const onApply = vi.fn(async () => undefined)
@@ -76,6 +88,11 @@ describe('SessionDateFilterForm', () => {
     })
   })
 
+  /**
+   * 概要・目的: 「accepts one-sided ranges as valid input」を通じて、DB 保存・validation・一意性制約を検証する。
+   * テストケース: 「accepts one-sided ranges as valid input」の条件・入力・操作を実行する。
+   * 期待値: one-sided ranges as valid input が受け入れられること。
+   */
   it('accepts one-sided ranges as valid input', async () => {
     const user = userEvent.setup()
     const onApply = vi.fn(async () => undefined)
@@ -98,6 +115,12 @@ describe('SessionDateFilterForm', () => {
     })
   })
 
+  /**
+   * 概要・目的: 「allows submitting an empty draft as a reset back to the default range」を通じて、DB
+   *   保存・validation・一意性制約を検証する。
+   * テストケース: 「allows submitting an empty draft as a reset back to the default range」の条件・入力・操作を実行する。
+   * 期待値: submitting an empty draft as a reset back to the default range が許可されること。
+   */
   it('allows submitting an empty draft as a reset back to the default range', async () => {
     const user = userEvent.setup()
     const onApply = vi.fn(async () => undefined)

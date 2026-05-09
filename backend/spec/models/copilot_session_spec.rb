@@ -30,6 +30,9 @@ RSpec.describe CopilotSession do
     }
   end
 
+  # 概要・目的: 「accepts a complete read model with missing history source dates」を通じて、DB 保存・validation・一意性制約を検証する。
+  # テストケース: 「accepts a complete read model with missing history source dates」の条件・入力・操作を実行する。
+  # 期待値: a complete read model with missing history source dates が受け入れられること。
   it "accepts a complete read model with missing history source dates" do
     session = described_class.new(valid_attributes)
 
@@ -38,6 +41,11 @@ RSpec.describe CopilotSession do
     expect(session.updated_at_source).to be_nil
   end
 
+  # 概要・目的: 「requires the natural key, format, state, payloads, source metadata, and indexed timestamp」を通じて、DB
+  #   保存・validation・一意性制約を検証する。
+  # テストケース: 「requires the natural key, format, state, payloads, source metadata, and indexed
+  #   timestamp」の条件・入力・操作を実行する。
+  # 期待値: the natural key, format, state, payloads, source metadata, and indexed timestamp が必須として扱われること。
   it "requires the natural key, format, state, payloads, source metadata, and indexed timestamp" do
     required_fields = %i[
       session_id
@@ -60,6 +68,9 @@ RSpec.describe CopilotSession do
     end
   end
 
+  # 概要・目的: 「allows only canonical source formats and states」を通じて、DB 保存・validation・一意性制約を検証する。
+  # テストケース: 「allows only canonical source formats and states」の条件・入力・操作を実行する。
+  # 期待値: only canonical source formats and states が許可されること。
   it "allows only canonical source formats and states" do
     invalid = described_class.new(valid_attributes.merge(source_format: "future", source_state: "partial"))
 
@@ -68,6 +79,9 @@ RSpec.describe CopilotSession do
     expect(invalid.errors[:source_state]).to be_present
   end
 
+  # 概要・目的: 「requires count fields to be non-negative integers」を通じて、DB 保存・validation・一意性制約を検証する。
+  # テストケース: 「requires count fields to be non-negative integers」の条件・入力・操作を実行する。
+  # 期待値: count fields to be non-negative integers が必須として扱われること。
   it "requires count fields to be non-negative integers" do
     count_fields = %i[event_count message_snapshot_count issue_count message_count activity_count]
 
@@ -79,6 +93,9 @@ RSpec.describe CopilotSession do
     end
   end
 
+  # 概要・目的: 「requires JSON contract fields to be objects」を通じて、DB 保存・validation・一意性制約を検証する。
+  # テストケース: 「requires JSON contract fields to be objects」の条件・入力・操作を実行する。
+  # 期待値: JSON contract fields to be objects が必須として扱われること。
   it "requires JSON contract fields to be objects" do
     json_fields = %i[source_paths source_fingerprint summary_payload detail_payload]
 
@@ -90,6 +107,9 @@ RSpec.describe CopilotSession do
     end
   end
 
+  # 概要・目的: 「prevents duplicate session IDs」を通じて、DB 保存・validation・一意性制約を検証する。
+  # テストケース: 「prevents duplicate session IDs」の条件・入力・操作を実行する。
+  # 期待値: duplicate session IDs を防ぐこと。
   it "prevents duplicate session IDs" do
     described_class.create!(valid_attributes)
 
@@ -99,6 +119,10 @@ RSpec.describe CopilotSession do
     expect(duplicate.errors[:session_id]).to be_present
   end
 
+  # 概要・目的: 「stores issue and degradation state distinctly from valid payloads」を通じて、DB
+  #   保存・validation・一意性制約を検証する。
+  # テストケース: 「stores issue and degradation state distinctly from valid payloads」の条件・入力・操作を実行する。
+  # 期待値: issue and degradation state distinctly from valid payloads が保存されること。
   it "stores issue and degradation state distinctly from valid payloads" do
     session = described_class.new(valid_attributes.merge(degraded: true, issue_count: 2))
 
@@ -107,6 +131,9 @@ RSpec.describe CopilotSession do
     expect(session.issue_count).to eq(2)
   end
 
+  # 概要・目的: 「allows an empty search text but rejects a missing search text」を通じて、DB 保存・validation・一意性制約を検証する。
+  # テストケース: 「allows an empty search text but rejects a missing search text」の条件・入力・操作を実行する。
+  # 期待値: an empty search text but rejects a missing search text が許可されること。
   it "allows an empty search text but rejects a missing search text" do
     empty_search_text = described_class.new(valid_attributes.merge(search_text: ""))
     missing_search_text = described_class.new(valid_attributes.merge(search_text: nil))
@@ -116,6 +143,9 @@ RSpec.describe CopilotSession do
     expect(missing_search_text.errors[:search_text]).to be_present
   end
 
+  # 概要・目的: 「requires a non-negative integer search text version」を通じて、DB 保存・validation・一意性制約を検証する。
+  # テストケース: 「requires a non-negative integer search text version」の条件・入力・操作を実行する。
+  # 期待値: a non-negative integer search text version が必須として扱われること。
   it "requires a non-negative integer search text version" do
     missing_version = described_class.new(valid_attributes.merge(search_text_version: nil))
     negative_version = described_class.new(valid_attributes.merge(search_text_version: -1))

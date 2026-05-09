@@ -6,6 +6,10 @@ RSpec.describe CopilotHistory::EventNormalizer do
     subject(:normalizer) { described_class.new(source_path: source_path) }
 
     shared_examples "a known normalized message" do |source_format|
+      # 概要・目的: 「normalizes a known #{source_format} message event without emitting issues」を通じて、reader と
+      #   fixture の読取・劣化時の扱いを検証する。
+      # テストケース: 「normalizes a known #{source_format} message event without emitting issues」の条件・入力・操作を実行する。
+      # 期待値: a known #{source_format} message event without emitting issues が正規化されること。
       it "normalizes a known #{source_format} message event without emitting issues" do
         result = normalizer.call(
           raw_event: {
@@ -44,6 +48,12 @@ RSpec.describe CopilotHistory::EventNormalizer do
     end
 
     shared_examples "a partially normalized message" do |source_format|
+      # 概要・目的: 「returns a partial #{source_format} event with a compatibility warning when a known message
+      #   shape is incomplete」を通じて、reader と fixture の読取・劣化時の扱いを検証する。
+      # テストケース: 「returns a partial #{source_format} event with a compatibility warning when a known message
+      #   shape is incomplete」の条件・入力・操作を実行する。
+      # 期待値: a partial #{source_format} event with a compatibility warning when a known message shape is
+      #   incomplete を返すこと。
       it "returns a partial #{source_format} event with a compatibility warning when a known message shape is incomplete" do
         result = normalizer.call(
           raw_event: {
@@ -88,6 +98,11 @@ RSpec.describe CopilotHistory::EventNormalizer do
     end
 
     shared_examples "an unknown normalized event" do |source_format|
+      # 概要・目的: 「returns an unknown #{source_format} event and preserves the raw payload for unsupported
+      #   shapes」を通じて、reader と fixture の読取・劣化時の扱いを検証する。
+      # テストケース: 「returns an unknown #{source_format} event and preserves the raw payload for unsupported
+      #   shapes」の条件・入力・操作を実行する。
+      # 期待値: an unknown #{source_format} event and preserves the raw payload for unsupported shapes を返すこと。
       it "returns an unknown #{source_format} event and preserves the raw payload for unsupported shapes" do
         result = normalizer.call(
           raw_event: {
@@ -131,6 +146,10 @@ RSpec.describe CopilotHistory::EventNormalizer do
       end
     end
 
+    # 概要・目的: 「treats non-hash payloads as unknown events without raising」を通じて、reader と fixture
+    #   の読取・劣化時の扱いを検証する。
+    # テストケース: 「treats non-hash payloads as unknown events without raising」の条件・入力・操作を実行する。
+    # 期待値: non-hash payloads が unknown events without raising として扱われること。
     it "treats non-hash payloads as unknown events without raising" do
       result = normalizer.call(
         raw_event: [ "unexpected", { "value" => 42 } ],
@@ -165,6 +184,11 @@ RSpec.describe CopilotHistory::EventNormalizer do
       )
     end
 
+    # 概要・目的: 「normalizes current assistant messages from dotted event types into canonical helper
+    #   fields」を通じて、reader と fixture の読取・劣化時の扱いを検証する。
+    # テストケース: 「normalizes current assistant messages from dotted event types into canonical helper
+    #   fields」の条件・入力・操作を実行する。
+    # 期待値: current assistant messages from dotted event types into canonical helper fields が正規化されること。
     it "normalizes current assistant messages from dotted event types into canonical helper fields" do
       result = normalizer.call(
         raw_event: {
@@ -228,6 +252,11 @@ RSpec.describe CopilotHistory::EventNormalizer do
       )
     end
 
+    # 概要・目的: 「normalizes current non-message events into detail or unknown events without dropping raw
+    #   payload」を通じて、reader と fixture の読取・劣化時の扱いを検証する。
+    # テストケース: 「normalizes current non-message events into detail or unknown events without dropping raw
+    #   payload」の条件・入力・操作を実行する。
+    # 期待値: current non-message events into detail or unknown events without dropping raw payload が正規化されること。
     it "normalizes current non-message events into detail or unknown events without dropping raw payload" do
       detail_result = normalizer.call(
         raw_event: {
@@ -300,6 +329,12 @@ RSpec.describe CopilotHistory::EventNormalizer do
       )
     end
 
+    # 概要・目的: 「applies redaction and truncation to current tool request summaries without dropping the message
+    #   body」を通じて、reader と fixture の読取・劣化時の扱いを検証する。
+    # テストケース: 「applies redaction and truncation to current tool request summaries without dropping the message
+    #   body」の条件・入力・操作を実行する。
+    # 期待値: redaction and truncation to current tool request summaries without dropping the message body
+    #   が適用されること。
     it "applies redaction and truncation to current tool request summaries without dropping the message body" do
       result = normalizer.call(
         raw_event: {
@@ -344,6 +379,11 @@ RSpec.describe CopilotHistory::EventNormalizer do
       expect(result.issues).to eq([])
     end
 
+    # 概要・目的: 「classifies skill.invoked current events as detail events with a canonical summary」を通じて、reader と
+    #   fixture の読取・劣化時の扱いを検証する。
+    # テストケース: 「classifies skill.invoked current events as detail events with a canonical
+    #   summary」の条件・入力・操作を実行する。
+    # 期待値: skill.invoked current events が detail events with a canonical summary として分類されること。
     it "classifies skill.invoked current events as detail events with a canonical summary" do
       result = normalizer.call(
         raw_event: {

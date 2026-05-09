@@ -9,6 +9,12 @@ RSpec.describe CopilotHistory::Persistence::SessionRecordBuilder do
   end
 
   describe "#call" do
+    # 概要・目的: 「reuses existing presenter payloads as summary and detail snapshots without raw
+    #   payloads」を通じて、正規化・projection・presenter の変換契約を検証する。
+    # テストケース: 「reuses existing presenter payloads as summary and detail snapshots without raw
+    #   payloads」の条件・入力・操作を実行する。
+    # 期待値: 「reuses existing presenter payloads as summary and detail snapshots without raw
+    #   payloads」で示す状態または振る舞いが成立すること。
     it "reuses existing presenter payloads as summary and detail snapshots without raw payloads" do
       events_path = write_source("current/events.jsonl", "{\"type\":\"assistant.message\"}\n")
       workspace_path = write_source("current/workspace.yaml", "cwd: /workspace/current\n")
@@ -60,6 +66,12 @@ RSpec.describe CopilotHistory::Persistence::SessionRecordBuilder do
       )
     end
 
+    # 概要・目的: 「maps session scalars, source metadata, counts, and source dates into valid read model
+    #   attributes」を通じて、DB 保存・validation・一意性制約を検証する。
+    # テストケース: 「maps session scalars, source metadata, counts, and source dates into valid read model
+    #   attributes」の条件・入力・操作を実行する。
+    # 期待値: 「maps session scalars, source metadata, counts, and source dates into valid read model
+    #   attributes」で示す状態または振る舞いが成立すること。
     it "maps session scalars, source metadata, counts, and source dates into valid read model attributes" do
       events_path = write_source("current/events.jsonl", "{}\n")
       workspace_path = write_source("current/workspace.yaml", "cwd: /workspace/current\n")
@@ -140,6 +152,11 @@ RSpec.describe CopilotHistory::Persistence::SessionRecordBuilder do
       expect(CopilotSession.new(attributes)).to be_valid
     end
 
+    # 概要・目的: 「builds search text from presenter conversation payloads without tool or scalar metadata
+    #   noise」を通じて、正規化・projection・presenter の変換契約を検証する。
+    # テストケース: 「builds search text from presenter conversation payloads without tool or scalar metadata
+    #   noise」の条件・入力・操作を実行する。
+    # 期待値: search text from presenter conversation payloads without tool or scalar metadata noise が構築されること。
     it "builds search text from presenter conversation payloads without tool or scalar metadata noise" do
       source_path = write_source("current/events.jsonl", "{}\n")
       session = build_session(
@@ -183,6 +200,11 @@ RSpec.describe CopilotHistory::Persistence::SessionRecordBuilder do
       expect(attributes.fetch(:search_text_version)).to eq(CopilotHistory::Persistence::SessionSearchTextBuilder::VERSION)
     end
 
+    # 概要・目的: 「preserves missing history dates and maps legacy sessions through the shared contract」を通じて、reader
+    #   と fixture の読取・劣化時の扱いを検証する。
+    # テストケース: 「preserves missing history dates and maps legacy sessions through the shared
+    #   contract」の条件・入力・操作を実行する。
+    # 期待値: missing history dates が保持され、maps legacy sessions through the shared contractこと。
     it "preserves missing history dates and maps legacy sessions through the shared contract" do
       source_path = write_source("legacy/session.json", "{}")
       session = build_session(
@@ -224,6 +246,11 @@ RSpec.describe CopilotHistory::Persistence::SessionRecordBuilder do
       expect(CopilotSession.new(attributes)).to be_valid
     end
 
+    # 概要・目的: 「returns replaceable attributes and does not persist records or make sync decisions」を通じて、DB
+    #   保存・validation・一意性制約を検証する。
+    # テストケース: 「returns replaceable attributes and does not persist records or make sync
+    #   decisions」の条件・入力・操作を実行する。
+    # 期待値: replaceable attributes and does not persist records or make sync decisions を返すこと。
     it "returns replaceable attributes and does not persist records or make sync decisions" do
       source_path = write_source("current/events.jsonl", "{}\n")
       indexed_at = Time.zone.parse("2026-04-30 12:00:00")
@@ -257,6 +284,9 @@ RSpec.describe CopilotHistory::Persistence::SessionRecordBuilder do
       expect(regenerated_attributes.keys).not_to include(:skip, :upsert, :delete, :raw_files_primary_source)
     end
 
+    # 概要・目的: 「uses a precomputed source fingerprint when provided」を通じて、reader と fixture の読取・劣化時の扱いを検証する。
+    # テストケース: 「uses a precomputed source fingerprint when provided」の条件・入力・操作を実行する。
+    # 期待値: a precomputed source fingerprint when provided が使われること。
     it "uses a precomputed source fingerprint when provided" do
       source_path = write_source("current/events.jsonl", "{}\n")
       precomputed_fingerprint = {
@@ -293,6 +323,9 @@ RSpec.describe CopilotHistory::Persistence::SessionRecordBuilder do
       expect(fingerprint_builder).not_to have_received(:call)
     end
 
+    # 概要・目的: 「computes the source fingerprint when none is provided」を通じて、reader と fixture の読取・劣化時の扱いを検証する。
+    # テストケース: 「computes the source fingerprint when none is provided」の条件・入力・操作を実行する。
+    # 期待値: 「computes the source fingerprint when none is provided」で示す状態または振る舞いが成立すること。
     it "computes the source fingerprint when none is provided" do
       source_path = write_source("current/events.jsonl", "{}\n")
       computed_fingerprint = { "complete" => true, "artifacts" => { "events" => { "status" => "ok" } } }

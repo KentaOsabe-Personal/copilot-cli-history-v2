@@ -5,6 +5,12 @@ import { describe, expect, it, vi } from 'vitest'
 import SessionSearchForm from '../../../../src/features/sessions/components/SessionSearchForm.tsx'
 
 describe('SessionSearchForm', () => {
+  /**
+   * 概要・目的: 「applies a search term with submit and keeps the applied criteria visible」を通じて、検索・日付条件と query
+   *   組み立てを検証する。
+   * テストケース: 「applies a search term with submit and keeps the applied criteria visible」の条件・入力・操作を実行する。
+   * 期待値: a search term with submit and keeps the applied criteria visible が適用されること。
+   */
   it('applies a search term with submit and keeps the applied criteria visible', async () => {
     const user = userEvent.setup()
     const onApplySearch = vi.fn()
@@ -30,6 +36,11 @@ describe('SessionSearchForm', () => {
     expect(onApplySearch).toHaveBeenCalledWith('tool failure')
   })
 
+  /**
+   * 概要・目的: 「applies a search term with Enter」を通じて、検索・日付条件と query 組み立てを検証する。
+   * テストケース: 「applies a search term with Enter」の条件・入力・操作を実行する。
+   * 期待値: a search term with Enter が適用されること。
+   */
   it('applies a search term with Enter', async () => {
     const user = userEvent.setup()
     const onApplySearch = vi.fn()
@@ -50,6 +61,11 @@ describe('SessionSearchForm', () => {
     expect(onApplySearch).toHaveBeenCalledWith('gpt-5')
   })
 
+  /**
+   * 概要・目的: 「clears the applied search without changing the date criteria」を通じて、検索・日付条件と query 組み立てを検証する。
+   * テストケース: 「clears the applied search without changing the date criteria」の条件・入力・操作を実行する。
+   * 期待値: 「clears the applied search without changing the date criteria」で示す状態または振る舞いが成立すること。
+   */
   it('clears the applied search without changing the date criteria', async () => {
     const user = userEvent.setup()
     const onClearSearch = vi.fn()
@@ -70,6 +86,13 @@ describe('SessionSearchForm', () => {
     expect(onClearSearch).toHaveBeenCalledTimes(1)
   })
 
+  /**
+   * 概要・目的: 「shows frontend and backend search-condition errors apart from generic fetch errors」を通じて、検索・日付条件と
+   *   query 組み立てを検証する。
+   * テストケース: 「shows frontend and backend search-condition errors apart from generic fetch
+   *   errors」の条件・入力・操作を実行する。
+   * 期待値: frontend and backend search-condition errors apart from generic fetch errors が表示されること。
+   */
   it('shows frontend and backend search-condition errors apart from generic fetch errors', async () => {
     const user = userEvent.setup()
     const onApplySearch = vi.fn()

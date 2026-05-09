@@ -26,6 +26,7 @@ Project memory keeps persistent guidance (steering, specs notes, component docs)
 
 ## Development Guidelines
 - Think in English, generate responses in Japanese. All Markdown content written to project files (e.g., requirements.md, design.md, tasks.md, research.md, validation reports) MUST be written in the target language configured for this specification (see spec.json.language).
+- フロントエンド・バックエンドのテストコードを作成・更新するときは、各 `it` / test case の直前に `概要・目的`、`テストケース`、`期待値` のコメントを残し、そのテストが守る契約を分かるようにする。
 
 ## Minimal Workflow
 - Phase 0 (optional): `/kiro-steering`, `/kiro-steering-custom`

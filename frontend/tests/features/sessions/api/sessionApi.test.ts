@@ -35,6 +35,12 @@ function buildHistorySyncResponse() {
 }
 
 describe('createSessionApiClient', () => {
+  /**
+   * 概要・目的: 「returns success for the session index response without changing backend order」を通じて、DB
+   *   保存・validation・一意性制約を検証する。
+   * テストケース: 「returns success for the session index response without changing backend order」の条件・入力・操作を実行する。
+   * 期待値: success for the session index response without changing backend order を返すこと。
+   */
   it('returns success for the session index response without changing backend order', async () => {
     const payload = {
       data: [
@@ -120,6 +126,14 @@ describe('createSessionApiClient', () => {
     })
   })
 
+  /**
+   * 概要・目的: 「serializes the explicit default 7-day date query for the session index in a stable order」を通じて、DB
+   *   保存・validation・一意性制約を検証する。
+   * テストケース: 「serializes the explicit default 7-day date query for the session index in a stable
+   *   order」の条件・入力・操作を実行する。
+   * 期待値: 「serializes the explicit default 7-day date query for the session index in a stable
+   *   order」で示す状態または振る舞いが成立すること。
+   */
   it('serializes the explicit default 7-day date query for the session index in a stable order', async () => {
     const payload = {
       data: [],
@@ -151,6 +165,11 @@ describe('createSessionApiClient', () => {
     )
   })
 
+  /**
+   * 概要・目的: 「omits empty date query values while keeping defined values」を通じて、検索・日付条件と query 組み立てを検証する。
+   * テストケース: 「omits empty date query values while keeping defined values」の条件・入力・操作を実行する。
+   * 期待値: empty date query values while keeping defined values が含まれないこと。
+   */
   it('omits empty date query values while keeping defined values', async () => {
     const payload = {
       data: [],
@@ -182,6 +201,12 @@ describe('createSessionApiClient', () => {
     )
   })
 
+  /**
+   * 概要・目的: 「serializes a normalized search query after date range parameters」を通じて、正規化・projection・presenter
+   *   の変換契約を検証する。
+   * テストケース: 「serializes a normalized search query after date range parameters」の条件・入力・操作を実行する。
+   * 期待値: 「serializes a normalized search query after date range parameters」で示す状態または振る舞いが成立すること。
+   */
   it('serializes a normalized search query after date range parameters', async () => {
     const payload = {
       data: [],
@@ -214,6 +239,11 @@ describe('createSessionApiClient', () => {
     )
   })
 
+  /**
+   * 概要・目的: 「omits blank search query values」を通じて、検索・日付条件と query 組み立てを検証する。
+   * テストケース: 「omits blank search query values」の条件・入力・操作を実行する。
+   * 期待値: blank search query values が含まれないこと。
+   */
   it('omits blank search query values', async () => {
     const payload = {
       data: [],
@@ -242,6 +272,11 @@ describe('createSessionApiClient', () => {
     expect(String(fetchMock.mock.calls[0][0])).toBe('http://localhost:30000/api/sessions')
   })
 
+  /**
+   * 概要・目的: 「serializes a to-only date query without adding an empty from value」を通じて、検索・日付条件と query 組み立てを検証する。
+   * テストケース: 「serializes a to-only date query without adding an empty from value」の条件・入力・操作を実行する。
+   * 期待値: 「serializes a to-only date query without adding an empty from value」で示す状態または振る舞いが成立すること。
+   */
   it('serializes a to-only date query without adding an empty from value', async () => {
     const payload = {
       data: [],
@@ -273,6 +308,12 @@ describe('createSessionApiClient', () => {
     )
   })
 
+  /**
+   * 概要・目的: 「fetches normal and raw-explicit detail through separate typed client
+   *   methods」を通じて、正規化・projection・presenter の変換契約を検証する。
+   * テストケース: 「fetches normal and raw-explicit detail through separate typed client methods」の条件・入力・操作を実行する。
+   * 期待値: 「fetches normal and raw-explicit detail through separate typed client methods」で示す状態または振る舞いが成立すること。
+   */
   it('fetches normal and raw-explicit detail through separate typed client methods', async () => {
     const payload = {
       data: {
@@ -346,6 +387,11 @@ describe('createSessionApiClient', () => {
     })
   })
 
+  /**
+   * 概要・目的: 「posts sync history without a body and returns the sync payload unchanged」を通じて、同期処理の状態管理と副作用を検証する。
+   * テストケース: 「posts sync history without a body and returns the sync payload unchanged」の条件・入力・操作を実行する。
+   * 期待値: 「posts sync history without a body and returns the sync payload unchanged」で示す状態または振る舞いが成立すること。
+   */
   it('posts sync history without a body and returns the sync payload unchanged', async () => {
     const payload = buildHistorySyncResponse()
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(jsonResponse(payload))
@@ -369,6 +415,11 @@ describe('createSessionApiClient', () => {
     expect(fetchMock.mock.calls[0][1]?.body).toBeUndefined()
   })
 
+  /**
+   * 概要・目的: 「preserves sync conflicts as backend errors with http status and code」を通じて、同期処理の状態管理と副作用を検証する。
+   * テストケース: 「preserves sync conflicts as backend errors with http status and code」の条件・入力・操作を実行する。
+   * 期待値: sync conflicts as backend errors with http status が保持され、codeこと。
+   */
   it('preserves sync conflicts as backend errors with http status and code', async () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
       jsonResponse(
@@ -405,6 +456,11 @@ describe('createSessionApiClient', () => {
     })
   })
 
+  /**
+   * 概要・目的: 「preserves root and persistence sync failures as backend errors」を通じて、DB 保存・validation・一意性制約を検証する。
+   * テストケース: 「preserves root and persistence sync failures as backend errors」の条件・入力・操作を実行する。
+   * 期待値: root が保持され、persistence sync failures as backend errorsこと。
+   */
   it('preserves root and persistence sync failures as backend errors', async () => {
     const fetchMock = vi
       .fn<typeof fetch>()
@@ -472,6 +528,13 @@ describe('createSessionApiClient', () => {
     })
   })
 
+  /**
+   * 概要・目的: 「returns a config error before requesting when sync history is called without an API base
+   *   URL」を通じて、同期処理の状態管理と副作用を検証する。
+   * テストケース: 「returns a config error before requesting when sync history is called without an API base
+   *   URL」の条件・入力・操作を実行する。
+   * 期待値: a config error before requesting when sync history is called without an API base URL を返すこと。
+   */
   it('returns a config error before requesting when sync history is called without an API base URL', async () => {
     const fetchMock = vi.fn<typeof fetch>()
     const client = createSessionApiClient({
@@ -493,6 +556,11 @@ describe('createSessionApiClient', () => {
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
+  /**
+   * 概要・目的: 「normalizes sync network failures into a network error」を通じて、同期処理の状態管理と副作用を検証する。
+   * テストケース: 「normalizes sync network failures into a network error」の条件・入力・操作を実行する。
+   * 期待値: sync network failures into a network error が正規化されること。
+   */
   it('normalizes sync network failures into a network error', async () => {
     const fetchMock = vi.fn<typeof fetch>().mockRejectedValue(new TypeError('Failed to fetch'))
     const client = createSessionApiClient({
@@ -513,6 +581,11 @@ describe('createSessionApiClient', () => {
     })
   })
 
+  /**
+   * 概要・目的: 「normalizes a detail 404 session_not_found into a not_found error」を通じて、HTTP レスポンスとエラー契約を検証する。
+   * テストケース: 「normalizes a detail 404 session_not_found into a not_found error」の条件・入力・操作を実行する。
+   * 期待値: a detail 404 session_not_found into a not_found error が正規化されること。
+   */
   it('normalizes a detail 404 session_not_found into a not_found error', async () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
       jsonResponse(
@@ -550,6 +623,11 @@ describe('createSessionApiClient', () => {
     )
   })
 
+  /**
+   * 概要・目的: 「normalizes backend failures into a backend error」を通じて、同期処理の状態管理と副作用を検証する。
+   * テストケース: 「normalizes backend failures into a backend error」の条件・入力・操作を実行する。
+   * 期待値: backend failures into a backend error が正規化されること。
+   */
   it('normalizes backend failures into a backend error', async () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
       jsonResponse(
@@ -584,6 +662,12 @@ describe('createSessionApiClient', () => {
     })
   })
 
+  /**
+   * 概要・目的: 「returns a config error before requesting when the API base URL is missing」を通じて、HTTP
+   *   レスポンスとエラー契約を検証する。
+   * テストケース: 「returns a config error before requesting when the API base URL is missing」の条件・入力・操作を実行する。
+   * 期待値: a config error before requesting when the API base URL is missing を返すこと。
+   */
   it('returns a config error before requesting when the API base URL is missing', async () => {
     const fetchMock = vi.fn<typeof fetch>()
     const client = createSessionApiClient({
@@ -605,6 +689,12 @@ describe('createSessionApiClient', () => {
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
+  /**
+   * 概要・目的: 「returns a config error before requesting when the API base URL is malformed」を通じて、HTTP
+   *   レスポンスとエラー契約を検証する。
+   * テストケース: 「returns a config error before requesting when the API base URL is malformed」の条件・入力・操作を実行する。
+   * 期待値: a config error before requesting when the API base URL is malformed を返すこと。
+   */
   it('returns a config error before requesting when the API base URL is malformed', async () => {
     const fetchMock = vi.fn<typeof fetch>()
     const client = createSessionApiClient({
@@ -627,6 +717,11 @@ describe('createSessionApiClient', () => {
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
+  /**
+   * 概要・目的: 「normalizes network failures into a network error」を通じて、同期処理の状態管理と副作用を検証する。
+   * テストケース: 「normalizes network failures into a network error」の条件・入力・操作を実行する。
+   * 期待値: network failures into a network error が正規化されること。
+   */
   it('normalizes network failures into a network error', async () => {
     const fetchMock = vi.fn<typeof fetch>().mockRejectedValue(new TypeError('Failed to fetch'))
     const client = createSessionApiClient({
