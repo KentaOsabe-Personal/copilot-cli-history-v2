@@ -132,11 +132,24 @@ function SessionIndexPage() {
         <StatusPanel
           variant="error"
           title="セッション一覧を表示できません"
-          message={`現在の表示範囲: ${appliedRangeLabel} の一覧取得に失敗しました。時間をおいて再度開いてください。`}
+          message={
+            hasAppliedSearch
+              ? `現在の表示条件: ${appliedCriteriaLabel} の一覧取得に失敗しました。時間をおいて再度開くか、条件を見直してください。`
+              : `現在の表示範囲: ${appliedRangeLabel} の一覧取得に失敗しました。時間をおいて再度開いてください。`
+          }
         />
       ) : null}
 
-      {state.status === 'success' ? <SessionList sessions={state.sessions} /> : null}
+      {state.status === 'success' ? (
+        <div className="flex flex-col gap-4">
+          {hasAppliedSearch ? (
+            <p className="text-sm text-slate-300">
+              現在の表示条件: {appliedCriteriaLabel} の検索結果を表示しています。
+            </p>
+          ) : null}
+          <SessionList sessions={state.sessions} />
+        </div>
+      ) : null}
     </section>
   )
 }

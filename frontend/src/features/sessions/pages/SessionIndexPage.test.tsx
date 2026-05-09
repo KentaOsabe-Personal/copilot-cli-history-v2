@@ -292,6 +292,31 @@ describe('SessionIndexPage', () => {
     expect(screen.getByText('現在の表示条件: 2026-04-28 〜 2026-05-04 / 検索: apply patch')).toBeInTheDocument()
   })
 
+  it('renders search result context above the list when a search is applied', () => {
+    mockedUseSessionIndex.mockReturnValue(
+      buildUseSessionIndexResult(
+        {
+          status: 'success',
+          sessions: [buildSessionSummary()],
+          meta: { count: 1, partial_results: false },
+        },
+        DEFAULT_APPLIED_RANGE,
+        { appliedSearchTerm: 'apply patch' },
+      ),
+    )
+
+    render(
+      <MemoryRouter>
+        <SessionIndexPage />
+      </MemoryRouter>,
+    )
+
+    expect(
+      screen.getByText('現在の表示条件: 2026-04-28 〜 2026-05-04 / 検索: apply patch の検索結果を表示しています。'),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'session-123 を開く' })).toBeInTheDocument()
+  })
+
   it('clears an applied search from the empty state while preserving the date criteria', async () => {
     const user = userEvent.setup()
     const clearSearch = vi.fn(async () => ({ status: 'empty' } as const))
@@ -498,6 +523,39 @@ describe('SessionIndexPage', () => {
     expect(screen.getByRole('heading', { name: '検索条件を確認してください' })).toBeInTheDocument()
     expect(screen.getByText('現在の表示条件: 2026-04-28 〜 2026-05-04 / 検索: bad を見直して再度検索してください。')).toBeInTheDocument()
     expect(screen.getByRole('alert')).toHaveTextContent('検索条件を確認してください。')
+  })
+
+  it('keeps generic search fetch failures aligned to the applied search criteria', () => {
+    mockedUseSessionIndex.mockReturnValue(
+      buildUseSessionIndexResult(
+        {
+          status: 'error',
+          error: {
+            kind: 'backend',
+            httpStatus: 503,
+            code: 'root_missing',
+            message: 'history root does not exist',
+            details: {
+              path: '/tmp/.copilot',
+            },
+          },
+        },
+        DEFAULT_APPLIED_RANGE,
+        { appliedSearchTerm: 'apply patch' },
+      ),
+    )
+
+    render(
+      <MemoryRouter>
+        <SessionIndexPage />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByRole('heading', { name: 'セッション一覧を表示できません' })).toBeInTheDocument()
+    expect(
+      screen.getByText('現在の表示条件: 2026-04-28 〜 2026-05-04 / 検索: apply patch の一覧取得に失敗しました。時間をおいて再度開くか、条件を見直してください。'),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'session-123 を開く' })).not.toBeInTheDocument()
   })
 
   it('keeps a new-range error aligned to the attempted applied range instead of stale success content', () => {
