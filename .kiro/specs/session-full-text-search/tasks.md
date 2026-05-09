@@ -101,8 +101,8 @@
   - _Depends: 4.1_
   - _Requirements: 3.5, 3.6, 4.4, 4.5, 5.3, 5.4, 5.6_
 
-- [ ] 5. 検索 feature の contract と回帰を固定する
-- [ ] 5.1 backend の検索対象生成、同期、一覧 API contract を検証する
+- [x] 5. 検索 feature の contract と回帰を固定する
+- [x] 5.1 backend の検索対象生成、同期、一覧 API contract を検証する
   - 検索対象に含める field、current / legacy、degraded / issue、検索対象外 field を unit spec で固定する。
   - 検索 projection 未作成行の同期更新と、作成済み行の skip 維持を sync spec で固定する。
   - 検索語と日付範囲の合成、response shape 維持、empty success、invalid search を request / query spec で固定する。
@@ -110,7 +110,7 @@
   - _Depends: 1.3, 2.3_
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 5.1, 5.2, 5.5, 5.6_
 
-- [ ] 5.2 frontend の検索 criteria、状態管理、表示状態を検証する
+- [x] 5.2 frontend の検索 criteria、状態管理、表示状態を検証する
   - criteria helper、API serialization、hook、検索フォーム、空状態、一覧ページの検索体験をテストで固定する。
   - 検索中、検索結果、検索空、検索条件 error、通常空、generic error の区別を確認する。
   - 日付範囲との併用、検索解除、同期後再取得、stale response 防止を同じ test suite で確認する。
@@ -118,7 +118,7 @@
   - _Depends: 4.2_
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.3, 5.4, 5.6_
 
-- [ ] 5.3 標準検証で backend / frontend の回帰がないことを確認する
+- [x] 5.3 標準検証で backend / frontend の回帰がないことを確認する
   - backend の対象 spec と品質確認コマンドを Docker Compose 標準環境で実行する。
   - frontend の lint、build、検索関連 test を Docker Compose 標準環境で実行する。
   - 新規 gem、外部検索サービス、semantic search、ベクトル検索、検索結果スコアリング、検索語ハイライトを導入していないことを確認する。
