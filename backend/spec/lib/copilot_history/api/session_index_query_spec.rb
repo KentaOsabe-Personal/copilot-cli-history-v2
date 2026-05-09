@@ -156,9 +156,61 @@ RSpec.describe CopilotHistory::Api::SessionIndexQuery do
         )
       )
     end
+
+    it "filters sessions by stored search text when search text is specified" do
+      create_session(session_id: "matches-body", updated_at_source: "2026-04-27T10:00:00Z", search_text: "conversation mentioned apply patch")
+      create_session(session_id: "matches-issue", updated_at_source: "2026-04-26T10:00:00Z", search_text: "issue message: migration failed")
+      create_session(session_id: "misses", updated_at_source: "2026-04-25T10:00:00Z", search_text: "unrelated session")
+
+      result = query.call(search_term: "patch")
+
+      expect(result.data.map { |payload| payload["id"] }).to eq(%w[matches-body])
+      expect(result.meta).to eq({ count: 1, partial_results: false })
+    end
+
+    it "combines stored search text filtering with date range, ordering, and limit" do
+      create_session(session_id: "outside-date", updated_at_source: "2026-03-31T23:59:59Z", search_text: "gpt-5 tokenizer")
+      create_session(session_id: "latest", updated_at_source: "2026-04-27T10:00:00Z", search_text: "gpt-5 tokenizer")
+      create_session(session_id: "same-b", updated_at_source: "2026-04-26T10:00:00Z", search_text: "gpt-5 tokenizer")
+      create_session(session_id: "same-a", updated_at_source: "2026-04-26T10:00:00Z", search_text: "gpt-5 tokenizer")
+      create_session(session_id: "not-search", updated_at_source: "2026-04-28T10:00:00Z", search_text: "claude tokenizer")
+
+      result = query.call(
+        from_time: Time.zone.parse("2026-04-01T00:00:00Z"),
+        to_time: Time.zone.parse("2026-04-30T23:59:59Z"),
+        limit: 2,
+        search_term: "gpt-5"
+      )
+
+      expect(result.data.map { |payload| payload["id"] }).to eq(%w[latest same-a])
+      expect(result.meta).to eq({ count: 2, partial_results: false })
+    end
+
+    it "treats wildcard characters in search text as literal user input" do
+      create_session(session_id: "literal-percent", updated_at_source: "2026-04-27T10:00:00Z", search_text: "progress reached 100%_done")
+      create_session(session_id: "wildcard-would-match", updated_at_source: "2026-04-26T10:00:00Z", search_text: "progress reached 100Xdone")
+
+      result = query.call(search_term: "100%_done")
+
+      expect(result.data.map { |payload| payload["id"] }).to eq(%w[literal-percent])
+      expect(result.meta).to eq({ count: 1, partial_results: false })
+    end
+
+    it "returns an empty success when no stored search text matches" do
+      create_session(session_id: "misses", updated_at_source: "2026-04-27T10:00:00Z", search_text: "unrelated")
+
+      result = query.call(search_term: "not present")
+
+      expect(result).to eq(
+        CopilotHistory::Api::Types::SessionIndexResult::Success.new(
+          data: [],
+          meta: { count: 0, partial_results: false }
+        )
+      )
+    end
   end
 
-  def create_session(session_id:, source_format: "current", created_at_source: nil, updated_at_source: nil, summary_payload: nil)
+  def create_session(session_id:, source_format: "current", created_at_source: nil, updated_at_source: nil, summary_payload: nil, search_text: nil)
     CopilotSession.create!(
       session_id: session_id,
       source_format: source_format,
@@ -175,7 +227,7 @@ RSpec.describe CopilotHistory::Api::SessionIndexQuery do
       issue_count: 0,
       degraded: false,
       conversation_preview: "summary",
-      search_text: "summary #{session_id}",
+      search_text: search_text || "summary #{session_id}",
       message_count: 1,
       activity_count: 1,
       source_paths: { "source" => "/tmp/#{session_id}.json" },

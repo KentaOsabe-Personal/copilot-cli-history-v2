@@ -9,7 +9,8 @@ module Api
       result = session_index_query.call(
         from_time: criteria.from_time,
         to_time: criteria.to_time,
-        limit: criteria.limit
+        limit: criteria.limit,
+        search_term: criteria.search_term
       )
 
       case result
