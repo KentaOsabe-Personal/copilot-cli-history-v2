@@ -15,7 +15,7 @@
 ## Scope
 
 - **In**: `copilot_sessions` / `history_sync_runs` の DB schema、ActiveRecord model、raw files から DB payload を作る builder、同期 service、`POST /api/history/sync`、session list/detail API の DB query 化、日付 query param、frontend の同期ボタンと空状態表示、backend / frontend tests、README の初回同期説明。
-- **Out**: 検索 UI、バックグラウンド job、自動 file watch、削除同期、認証・認可、外部公開向け hardening、raw files を一次ソースから外すこと。
+- **Out**: バックグラウンド job、自動 file watch、削除同期、認証・認可、外部公開向け hardening、raw files を一次ソースから外すこと、検索結果スコアリング、semantic search、検索語ハイライト。
 
 ## Constraints
 
@@ -42,5 +42,5 @@
 
 ## Follow-up Specs
 
-- [ ] session-date-filtering -- セッション一覧に日付フィルタ UI を追加し、初期表示を直近 1 週間へ絞り、長い履歴表示によるページ全体の横スクロールを抑制する。Dependencies: session-api-db-query, frontend-session-ui, frontend-history-sync-ui
-- [ ] session-full-text-search -- セッション一覧に全文検索を追加し、保存済み read model から会話本文・関連メタ情報に一致するセッションを探せるようにする。Dependencies: session-api-db-query, session-date-filtering, history-sync-api
+- [x] session-date-filtering -- セッション一覧に日付フィルタ UI を追加し、初期表示を直近 1 週間へ絞り、長い履歴表示によるページ全体の横スクロールを抑制する。Dependencies: session-api-db-query, frontend-session-ui, frontend-history-sync-ui
+- [x] session-full-text-search -- セッション一覧に全文検索を追加し、保存済み read model から会話本文・関連メタ情報に一致するセッションを探せるようにする。Dependencies: session-api-db-query, session-date-filtering, history-sync-api
