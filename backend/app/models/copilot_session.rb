@@ -23,8 +23,13 @@ class CopilotSession < ApplicationRecord
   validates(*COUNT_FIELDS, numericality: { only_integer: true, greater_than_or_equal_to: 0 })
 
   validate :json_contract_fields_are_objects
+  validate :search_text_is_not_nil
 
   private
+
+  def search_text_is_not_nil
+    errors.add(:search_text, :blank) if search_text.nil?
+  end
 
   def json_contract_fields_are_objects
     JSON_OBJECT_FIELDS.each do |field|

@@ -335,6 +335,7 @@ RSpec.describe "API Sessions", type: :request do
       issue_count: 0,
       degraded: false,
       conversation_preview: "summary",
+      search_text: "summary #{session_id}",
       message_count: 1,
       activity_count: 1,
       source_paths: { "source" => "/tmp/#{session_id}.json" },

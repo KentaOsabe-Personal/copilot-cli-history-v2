@@ -18,6 +18,7 @@ RSpec.describe CopilotSession do
       issue_count: 0,
       degraded: false,
       conversation_preview: "hello",
+      search_text: "hello gpt-5",
       message_count: 1,
       activity_count: 1,
       source_paths: { "events" => "/tmp/events.jsonl" },
@@ -45,6 +46,7 @@ RSpec.describe CopilotSession do
       source_fingerprint
       summary_payload
       detail_payload
+      search_text
       indexed_at
     ]
 
@@ -101,5 +103,14 @@ RSpec.describe CopilotSession do
     expect(session).to be_valid
     expect(session.degraded).to be(true)
     expect(session.issue_count).to eq(2)
+  end
+
+  it "allows an empty search text but rejects a missing search text" do
+    empty_search_text = described_class.new(valid_attributes.merge(search_text: ""))
+    missing_search_text = described_class.new(valid_attributes.merge(search_text: nil))
+
+    expect(empty_search_text).to be_valid
+    expect(missing_search_text).not_to be_valid
+    expect(missing_search_text.errors[:search_text]).to be_present
   end
 end
