@@ -30,7 +30,7 @@ function buildUseSessionIndexResult(
   state: SessionIndexState,
   appliedRange: SessionDateRangeDraft = DEFAULT_APPLIED_RANGE,
   overrides: Partial<
-    Pick<UseSessionIndexResult, 'isRefreshing' | 'applyRange' | 'reloadSessions'>
+    Pick<UseSessionIndexResult, 'isRefreshing' | 'applyRange' | 'reloadSessions' | 'applySearch' | 'clearSearch' | 'appliedSearchTerm'>
   > = {},
 ): UseSessionIndexResult {
   const reloadOutcome =
@@ -43,8 +43,11 @@ function buildUseSessionIndexResult(
   return {
     state,
     appliedRange,
+    appliedSearchTerm: overrides.appliedSearchTerm ?? '',
     isRefreshing: overrides.isRefreshing ?? false,
     applyRange: overrides.applyRange ?? vi.fn(async () => reloadOutcome),
+    applySearch: overrides.applySearch ?? vi.fn(async () => reloadOutcome),
+    clearSearch: overrides.clearSearch ?? vi.fn(async () => reloadOutcome),
     reloadSessions,
   }
 }
@@ -147,6 +150,33 @@ describe('SessionIndexPage', () => {
     expect(screen.getAllByText('現在の表示範囲: 2026-04-28 〜 2026-05-04')).toHaveLength(2)
   })
 
+  it('renders the search form and applies a search without changing the date range', async () => {
+    const user = userEvent.setup()
+    const applySearch = vi.fn(async () => ({ status: 'empty' } as const))
+
+    mockedUseSessionIndex.mockReturnValue(
+      buildUseSessionIndexResult(
+        { status: 'success', sessions: [buildSessionSummary()], meta: { count: 1, partial_results: false } },
+        DEFAULT_APPLIED_RANGE,
+        { applySearch },
+      ),
+    )
+
+    render(
+      <MemoryRouter>
+        <SessionIndexPage />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByRole('heading', { name: '検索語で絞り込む' })).toBeInTheDocument()
+
+    await user.type(screen.getByLabelText('検索語'), 'apply patch')
+    await user.click(screen.getByRole('button', { name: '検索する' }))
+
+    expect(applySearch).toHaveBeenCalledWith('apply patch')
+    expect(screen.getByText('現在の表示範囲: 2026-04-28 〜 2026-05-04')).toBeInTheDocument()
+  })
+
   it('submits the page-owned draft range through applyRange while keeping the confirmed label on the hook state', async () => {
     const user = userEvent.setup()
     const applyRange = vi.fn(async () => ({ status: 'empty' } as const))
@@ -222,6 +252,68 @@ describe('SessionIndexPage', () => {
     expect(screen.getByRole('heading', { name: 'この日付範囲に一致するセッションはありません' })).toBeInTheDocument()
     expect(screen.getAllByText('現在の表示範囲: 2026-04-28 〜 2026-05-04')).toHaveLength(2)
     expect(screen.getByRole('button', { name: '履歴を取り込む' })).toBeInTheDocument()
+  })
+
+  it('renders search loading and search empty states with the applied criteria', () => {
+    mockedUseSessionIndex.mockReturnValue(
+      buildUseSessionIndexResult(
+        { status: 'loading' },
+        DEFAULT_APPLIED_RANGE,
+        { appliedSearchTerm: 'apply patch' },
+      ),
+    )
+
+    const { rerender } = render(
+      <MemoryRouter>
+        <SessionIndexPage />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByRole('heading', { name: '検索条件を含むセッション一覧を読み込んでいます' })).toBeInTheDocument()
+    expect(
+      screen.getByText('現在の表示条件: 2026-04-28 〜 2026-05-04 / 検索: apply patch のセッションを確認しています。'),
+    ).toBeInTheDocument()
+
+    mockedUseSessionIndex.mockReturnValue(
+      buildUseSessionIndexResult(
+        { status: 'empty' },
+        DEFAULT_APPLIED_RANGE,
+        { appliedSearchTerm: 'apply patch' },
+      ),
+    )
+
+    rerender(
+      <MemoryRouter>
+        <SessionIndexPage />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByRole('heading', { name: '検索条件に一致するセッションはありません' })).toBeInTheDocument()
+    expect(screen.getByText('現在の表示条件: 2026-04-28 〜 2026-05-04 / 検索: apply patch')).toBeInTheDocument()
+  })
+
+  it('clears an applied search from the empty state while preserving the date criteria', async () => {
+    const user = userEvent.setup()
+    const clearSearch = vi.fn(async () => ({ status: 'empty' } as const))
+
+    mockedUseSessionIndex.mockReturnValue(
+      buildUseSessionIndexResult(
+        { status: 'empty' },
+        DEFAULT_APPLIED_RANGE,
+        { appliedSearchTerm: 'apply patch', clearSearch },
+      ),
+    )
+
+    render(
+      <MemoryRouter>
+        <SessionIndexPage />
+      </MemoryRouter>,
+    )
+
+    await user.click(screen.getAllByRole('button', { name: '検索を解除' })[1])
+
+    expect(clearSearch).toHaveBeenCalledTimes(1)
+    expect(screen.getByText('現在の検索条件: 2026-04-28 〜 2026-05-04 / 検索: apply patch')).toBeInTheDocument()
   })
 
   it('keeps a user-selected empty range visible in the empty state copy', () => {
@@ -374,6 +466,38 @@ describe('SessionIndexPage', () => {
     expect(screen.getByRole('button', { name: '履歴を最新化' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'セッション一覧を表示できません' })).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'session-123 を開く' })).not.toBeInTheDocument()
+  })
+
+  it('renders search-condition client errors separately from generic list failures', () => {
+    mockedUseSessionIndex.mockReturnValue(
+      buildUseSessionIndexResult(
+        {
+          status: 'error',
+          error: {
+            kind: 'backend',
+            httpStatus: 400,
+            code: 'invalid_session_list_query',
+            message: 'session list query is invalid',
+            details: {
+              field: 'search',
+              reason: 'control_character',
+            },
+          },
+        },
+        DEFAULT_APPLIED_RANGE,
+        { appliedSearchTerm: 'bad' },
+      ),
+    )
+
+    render(
+      <MemoryRouter>
+        <SessionIndexPage />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByRole('heading', { name: '検索条件を確認してください' })).toBeInTheDocument()
+    expect(screen.getByText('現在の表示条件: 2026-04-28 〜 2026-05-04 / 検索: bad を見直して再度検索してください。')).toBeInTheDocument()
+    expect(screen.getByRole('alert')).toHaveTextContent('検索条件を確認してください。')
   })
 
   it('keeps a new-range error aligned to the attempted applied range instead of stale success content', () => {

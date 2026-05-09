@@ -51,6 +51,7 @@ export interface SessionIndexResponse {
 export interface SessionIndexQuery {
   from?: string
   to?: string
+  search?: string
 }
 
 export interface SessionIndexRequest {
