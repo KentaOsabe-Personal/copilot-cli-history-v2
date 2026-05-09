@@ -1,9 +1,9 @@
 # 要件定義書
 
 ## プロジェクト記述（入力）
-**課題:** GitHub Copilot CLI のローカル会話履歴を読み返す利用者は、日付範囲だけでは目的のセッションへ素早く辿り着けない。会話本文、エラー文言、ツール呼び出し、issue message などの断片を覚えていても、現状は一覧を開いて preview と詳細を順に確認する必要がある。  
+**課題:** GitHub Copilot CLI のローカル会話履歴を読み返す利用者は、日付範囲だけでは目的のセッションへ素早く辿り着けない。会話本文、会話 preview、issue message などの断片を覚えていても、現状は一覧を開いて preview と詳細を順に確認する必要がある。  
 **現状:** アプリは raw files を明示同期で保存済み read model に取り込み、セッション一覧・詳細は保存済み read model から返す。frontend には一覧、日付範囲フィルタ、詳細画面、会話表示、activity / issue 表示、手動同期導線があるが、日付以外の探索条件はない。  
-**変更したいこと:** 利用者が一覧画面で検索語を入力し、保存済みセッションの会話本文や関連メタ情報に一致するセッションだけを確認できるようにする。検索は日付範囲と併用でき、結果が空の場合や検索条件を解除した場合も既存の read-only 閲覧体験と整合させる。
+**変更したいこと:** 利用者が一覧画面で検索語を入力し、保存済みセッションの会話本文、会話 preview、issue code / message に一致するセッションだけを確認できるようにする。検索は日付範囲と併用でき、結果が空の場合や検索条件を解除した場合も既存の read-only 閲覧体験と整合させる。
 
 ## はじめに
 この仕様は、GitHub Copilot CLI のローカル会話履歴を読み返す利用者が、覚えている断片的な語句から保存済みセッションを探せるようにするための要件を定義する。
@@ -12,7 +12,7 @@
 
 ## 境界コンテキスト
 - **対象範囲**: 保存済みセッションの検索対象テキスト、明示同期後の検索可能状態、セッション一覧取得での検索語条件、日付範囲と検索語の併用、一覧画面の検索入力・適用・解除、検索中・検索結果・検索空状態・検索条件エラーの表示、backend / frontend tests
-- **対象外**: 外部検索サービス、semantic search、ベクトル検索、検索結果スコアリング、検索語ハイライト、repository / branch / model 専用フィルタ、並び替え UI、pagination、詳細画面内検索、履歴の編集・削除・共有、自動同期、認証・認可、raw files の直接検索
+- **対象外**: 外部検索サービス、semantic search、ベクトル検索、検索結果スコアリング、検索語ハイライト、tool call / activity / 作業コンテキスト / selected model の既定検索、repository / branch / model 専用フィルタ、並び替え UI、pagination、詳細画面内検索、履歴の編集・削除・共有、自動同期、認証・認可、raw files の直接検索
 - **隣接前提**: `history-db-read-model` は保存済みセッションの summary / detail payload と履歴由来メタ情報を提供する。`history-sync-api` は raw files から保存済み read model を明示更新する。`session-api-db-query` は一覧取得の保存済み read model 参照と日付範囲条件を提供する。`session-date-filtering` は frontend の日付条件管理と同期後再取得の条件維持を提供する。
 
 ## 要件
@@ -22,10 +22,11 @@
 
 #### 受け入れ基準
 1. When セッションが明示同期によって保存または更新される, the Copilot History Application shall そのセッションを一覧検索の対象として利用できる状態にする。
-2. When セッションが検索対象として利用できる状態になる, the Copilot History Application shall 会話本文、会話要約、tool call の名称または引数概要、activity のタイトルまたは本文、issue の code または message、作業コンテキスト、選択モデルを検索対象に含める。
+2. When セッションが検索対象として利用できる状態になる, the Copilot History Application shall 会話本文、会話要約、issue の code または message を検索対象に含める。
 3. When current 形式または legacy 形式のセッションが検索対象になる, the Copilot History Application shall 保存形式にかかわらず同じ検索体験で扱える状態にする。
 4. If セッションに degraded 状態または issue 情報が含まれる, the Copilot History Application shall 読み取れた範囲の検索対象を保持し、degraded 状態または issue 情報を検索対象から失わせない。
 5. The Copilot History Application shall 検索対象の準備を保存済み read model の再生成可能な補助情報として扱い、raw files を一次ソースとする方針を変更しない。
+6. The Copilot History Application shall tool call、activity、作業コンテキスト、repository、branch、選択モデルを既定の本文検索対象に含めない。
 
 ### 要件2: セッション一覧を検索語で絞り込める
 **目的:** As a 履歴から特定の会話を探す利用者, I want セッション一覧を覚えている語句で絞り込みたい, so that preview と詳細を順番に開く手間を減らせる

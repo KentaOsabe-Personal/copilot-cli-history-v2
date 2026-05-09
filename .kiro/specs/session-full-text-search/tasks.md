@@ -8,17 +8,18 @@
   - 完了時には、既存レコードと新規レコードのどちらも検索対象テキストを持つ状態で保存できる。
   - _Requirements: 1.1, 1.5, 5.5_
 
-- [x] 1.2 検索対象テキストを保存 payload と履歴メタ情報から生成する
-  - 会話本文、会話要約、tool call、activity、issue、作業コンテキスト、選択モデルを検索対象へ含める。
+- [x] 1.2 検索対象テキストを保存 payload の本文情報から生成する
+  - 会話本文、会話要約、issue code / message を検索対象へ含める。
+  - tool call、activity、作業コンテキスト、repository / branch、選択モデルは既定の本文検索対象に含めない。
   - current 形式と legacy 形式の差分を保存 payload の範囲で吸収し、同じ検索体験で扱える文字列を生成する。
   - degraded 状態や issue 情報がある場合も、読み取れた範囲の本文と issue code / message を検索対象から失わせない。
   - 検索対象外の raw payload、source fingerprint、内部 timestamp は含めない。
   - 完了時には、生成結果が正規化済み文字列として返り、空セッションでも nil ではなく空文字を返すことをテストで確認できる。
-  - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 5.2, 5.5_
+  - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 5.2, 5.5_
 
-- [x] 1.3 明示同期で検索 projection 未作成の既存行を更新対象にする
-  - source fingerprint が不変でも、検索対象テキストが未作成の既存行は保存属性を再生成して更新する。
-  - 検索対象テキストが作成済みで fingerprint も不変の行は、既存どおり skip できるようにする。
+- [x] 1.3 明示同期で検索 projection version が古い既存行を更新対象にする
+  - source fingerprint が不変でも、`search_text_version` が古い既存行は保存属性を再生成して更新する。
+  - `search_text_version` が現行で fingerprint も不変の行は、既存どおり skip できるようにする。
   - root failure、degraded handling、同期中 lock、同期結果 count の既存挙動を維持する。
   - 完了時には、手動同期後に保存済みセッションが一覧検索の対象になることを同期テストで確認できる。
   - _Requirements: 1.1, 1.4, 1.5, 5.5_
@@ -104,11 +105,11 @@
 - [x] 5. 検索 feature の contract と回帰を固定する
 - [x] 5.1 backend の検索対象生成、同期、一覧 API contract を検証する
   - 検索対象に含める field、current / legacy、degraded / issue、検索対象外 field を unit spec で固定する。
-  - 検索 projection 未作成行の同期更新と、作成済み行の skip 維持を sync spec で固定する。
+  - 検索 projection version が古い行の同期更新と、現行 version 行の skip 維持を sync spec で固定する。
   - 検索語と日付範囲の合成、response shape 維持、empty success、invalid search を request / query spec で固定する。
   - 完了時には、backend の検索関連 spec が保存済み read model 基準で通り、raw files 直接検索を期待しない状態になる。
   - _Depends: 1.3, 2.3_
-  - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 5.1, 5.2, 5.5, 5.6_
+  - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 5.1, 5.2, 5.5, 5.6_
 
 - [x] 5.2 frontend の検索 criteria、状態管理、表示状態を検証する
   - criteria helper、API serialization、hook、検索フォーム、空状態、一覧ページの検索体験をテストで固定する。
@@ -124,4 +125,4 @@
   - 新規 gem、外部検索サービス、semantic search、ベクトル検索、検索結果スコアリング、検索語ハイライトを導入していないことを確認する。
   - 完了時には、実行した検証コマンドと結果を implementation handoff で報告できる。
   - _Depends: 5.1, 5.2_
-  - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6_
+  - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6_

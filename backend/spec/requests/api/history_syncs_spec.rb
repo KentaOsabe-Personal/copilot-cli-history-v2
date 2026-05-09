@@ -126,6 +126,7 @@ RSpec.describe "API History Syncs", :copilot_history, type: :request do
         issue_count: 0,
         degraded: false,
         search_text: "existing session",
+        search_text_version: CopilotHistory::Persistence::SessionSearchTextBuilder::VERSION,
         message_count: 0,
         activity_count: 0,
         source_paths: { "events" => "/tmp/existing/events.jsonl" },

@@ -21,6 +21,7 @@ class CopilotSession < ApplicationRecord
   validates :indexed_at, presence: true
   validates :degraded, inclusion: { in: [ true, false ] }
   validates(*COUNT_FIELDS, numericality: { only_integer: true, greater_than_or_equal_to: 0 })
+  validates :search_text_version, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
 
   validate :json_contract_fields_are_objects
   validate :search_text_is_not_nil

@@ -133,7 +133,7 @@ module CopilotHistory
       end
 
       def search_projection_created?(record)
-        record.search_text.present?
+        record.search_text_version == CopilotHistory::Persistence::SessionSearchTextBuilder::VERSION
       end
 
       def handle_persistence_failure(sync_run:, error:)

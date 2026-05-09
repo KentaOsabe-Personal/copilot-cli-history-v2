@@ -19,6 +19,7 @@ RSpec.describe CopilotSession do
       degraded: false,
       conversation_preview: "hello",
       search_text: "hello gpt-5",
+      search_text_version: CopilotHistory::Persistence::SessionSearchTextBuilder::VERSION,
       message_count: 1,
       activity_count: 1,
       source_paths: { "events" => "/tmp/events.jsonl" },
@@ -47,6 +48,7 @@ RSpec.describe CopilotSession do
       summary_payload
       detail_payload
       search_text
+      search_text_version
       indexed_at
     ]
 
@@ -112,5 +114,15 @@ RSpec.describe CopilotSession do
     expect(empty_search_text).to be_valid
     expect(missing_search_text).not_to be_valid
     expect(missing_search_text.errors[:search_text]).to be_present
+  end
+
+  it "requires a non-negative integer search text version" do
+    missing_version = described_class.new(valid_attributes.merge(search_text_version: nil))
+    negative_version = described_class.new(valid_attributes.merge(search_text_version: -1))
+
+    expect(missing_version).not_to be_valid
+    expect(missing_version.errors[:search_text_version]).to be_present
+    expect(negative_version).not_to be_valid
+    expect(negative_version.errors[:search_text_version]).to be_present
   end
 end

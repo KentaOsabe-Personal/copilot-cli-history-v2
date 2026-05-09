@@ -1,7 +1,7 @@
 # 設計書
 
 ## 概要
-この feature は、GitHub Copilot CLI のローカル会話履歴を読み返す利用者に、保存済みセッションを覚えている語句で絞り込める read-only 一覧探索を提供する。利用者は会話本文、tool call、activity、issue、作業コンテキスト、選択モデルなどの断片から目的のセッションを探せる。
+この feature は、GitHub Copilot CLI のローカル会話履歴を読み返す利用者に、保存済みセッションを覚えている語句で絞り込める read-only 一覧探索を提供する。利用者は会話本文、会話 preview、issue code / message などの断片から目的のセッションを探せる。
 
 影響範囲は、同期時に作る検索対象テキスト、`GET /api/sessions` の検索条件、frontend 一覧画面の検索入力・適用・解除・状態表示に限定する。検索は既存の日付範囲条件と併用され、通常表示と検索表示のどちらも保存済み `CopilotSession` read model を参照する。
 
@@ -13,6 +13,7 @@
 
 ### 非目標
 - 外部検索サービス、semantic search、ベクトル検索、検索結果スコアリング、検索語ハイライト。
+- tool call、activity、作業コンテキスト、repository / branch / model を既定の本文検索対象に含めること。
 - repository / branch / model の専用 filter、並び替え UI、pagination、詳細画面内検索。
 - 履歴の編集、削除、共有、自動同期、認証、認可。
 - raw files の直接検索、API request 時の raw files 再読取。
@@ -23,7 +24,7 @@
 ### この spec が責務を持つもの
 - `CopilotSession` read model に保存する検索対象テキストの schema、validation、再生成 contract。
 - `SessionRecordBuilder` から呼ばれる検索対象テキスト構築境界。
-- 既存 read model row の検索 projection が未作成の場合に、明示同期で update 対象にする skip 判定。
+- 既存 read model row の検索 projection version が古い場合に、明示同期で update 対象にする skip 判定。
 - `GET /api/sessions` の `search` query param parsing、validation、date range との合成 query。
 - 検索条件を含んでも既存一覧 response shape、件数 meta、degraded / issue payload を維持すること。
 - frontend 一覧画面の検索語 draft / applied state、適用、解除、sync 後 same-criteria refresh。
@@ -47,7 +48,8 @@
 - Rails 8.1 API mode、ActiveRecord、MySQL 9.7、React 19、TypeScript 6、Vite、Vitest、RSpec。
 
 ### 再検証トリガー
-- `summary_payload` / `detail_payload` の field 名、nesting、issue / activity / conversation / tool call contract が変わる。
+- `summary_payload` / `detail_payload` の field 名、nesting、issue / conversation contract が変わる。
+- tool call、activity、作業コンテキスト、repository / branch / model を既定検索へ含める要求が追加される。
 - `CopilotSession` の保存 lifecycle、upsert 判定、read model 再生成方針が変わる。
 - `GET /api/sessions` の response envelope、error envelope、date range semantics が変わる。
 - 検索方式を literal substring match から FULLTEXT、ranking、semantic search、外部 search index へ変更する。
@@ -133,10 +135,11 @@ backend/
 │   │   └── api/
 │   │       └── sessions_controller.rb                  # search criteria を index query へ渡す
 │   └── models/
-│       └── copilot_session.rb                          # search_text の null 不可 / string contract を追加する
+│       └── copilot_session.rb                          # search_text と search_text_version の contract を追加する
 ├── db/
 │   ├── migrate/
-│   │   └── YYYYMMDDHHMMSS_add_search_text_to_copilot_sessions.rb
+│   │   ├── YYYYMMDDHHMMSS_add_search_text_to_copilot_sessions.rb
+│   │   └── YYYYMMDDHHMMSS_add_search_text_version_to_copilot_sessions.rb
 │   └── schema.rb
 ├── lib/
 │   └── copilot_history/
@@ -147,9 +150,9 @@ backend/
 │       │       └── error_presenter.rb                  # search validation error を既存 envelope で返す
 │       ├── persistence/
 │       │   ├── session_record_builder.rb               # search_text を保存 attributes に含める
-│       │   └── session_search_text_builder.rb          # payload と metadata から検索対象を構築する
+│       │   └── session_search_text_builder.rb          # 会話 payload と issue から検索対象を構築する
 │       └── sync/
-│           └── history_sync_service.rb                 # search_text 未作成 row を update 対象にする
+│           └── history_sync_service.rb                 # search_text_version が古い row を update 対象にする
 └── spec/
     ├── requests/
     │   └── api/
@@ -192,9 +195,9 @@ frontend/
 
 ### 変更対象ファイル
 - `backend/db/schema.rb` — migration 実行後の schema snapshot を反映する。
-- `backend/app/models/copilot_session.rb` — `search_text` の nil 不可と string contract を validation に追加する。空セッションの検索対象は空文字になり得るため、`presence` validation は使わない。
+- `backend/app/models/copilot_session.rb` — `search_text` の nil 不可と `search_text_version` の non-negative integer contract を validation に追加する。空セッションの検索対象は空文字になり得るため、`search_text` には `presence` validation は使わない。
 - `backend/lib/copilot_history/persistence/session_record_builder.rb` — `SessionSearchTextBuilder` を呼び、保存 attributes に `search_text` を含める。
-- `backend/lib/copilot_history/sync/history_sync_service.rb` — 既存 row の `search_text` が未作成なら、source fingerprint が同じでも update 対象として保存 attributes を再生成する。
+- `backend/lib/copilot_history/sync/history_sync_service.rb` — 既存 row の `search_text_version` が現行 version と異なるなら、source fingerprint が同じでも update 対象として保存 attributes を再生成する。
 - `backend/lib/copilot_history/api/session_list_params.rb` — optional `search` param を trim / normalize し、空文字は未指定、長すぎる値や制御文字は invalid とする。
 - `backend/lib/copilot_history/api/session_index_query.rb` — `search_text` 条件を date candidate scope に合成し、既存 sort / limit / payload passthrough を維持する。
 - `backend/lib/copilot_history/api/presenters/error_presenter.rb` — 必要に応じて `details.field == "search"` の invalid query を既存 `invalid_session_list_query` envelope で表現できるようにする。
@@ -203,7 +206,7 @@ frontend/
 - `backend/spec/models/copilot_session_spec.rb` — `search_text` validation を検証する。
 - `backend/spec/lib/copilot_history/api/session_list_params_spec.rb` — search param の trim、blank、max length、control character error を検証する。
 - `backend/spec/lib/copilot_history/api/session_index_query_spec.rb` — literal match、escaped wildcard、date range 併用、degraded / issue payload 維持を検証する。
-- `backend/spec/lib/copilot_history/sync/history_sync_service_spec.rb` — fingerprint 不変でも `search_text` 未作成 row を update することを検証する。
+- `backend/spec/lib/copilot_history/sync/history_sync_service_spec.rb` — fingerprint 不変でも `search_text_version` が古い row を update することを検証する。
 - `frontend/src/features/sessions/api/sessionApi.types.ts` — `SessionIndexQuery` に `search?: string` を追加し、criteria helper と API client の型を明示する。
 - `frontend/src/features/sessions/api/sessionApi.ts` — `search` query param を未指定値なしで URL に追加する。
 - `frontend/src/features/sessions/api/sessionApi.test.ts` — search serialization、date + search serialization、blank search omission を検証する。
@@ -213,8 +216,9 @@ frontend/
 - `frontend/src/features/sessions/**/*.test.*` — hook、form、empty state、page の検索条件維持と stale result 抑止を検証する。
 
 ### 作成するファイル
-- `backend/db/migrate/YYYYMMDDHHMMSS_add_search_text_to_copilot_sessions.rb` — `copilot_sessions.search_text` を `MEDIUMTEXT` として追加する。既存 rows は migration 内 backfill で空文字の再生成可能補助情報を持たせ、明示同期で更新される。
-- `backend/lib/copilot_history/persistence/session_search_text_builder.rb` — 保存済み payload と scalar metadata から正規化済み検索対象テキストを構築する。
+- `backend/db/migrate/YYYYMMDDHHMMSS_add_search_text_to_copilot_sessions.rb` — `copilot_sessions.search_text` を `MEDIUMTEXT` として追加する。既存 rows は migration 内 backfill で空文字の再生成可能補助情報を持たせる。
+- `backend/db/migrate/YYYYMMDDHHMMSS_add_search_text_version_to_copilot_sessions.rb` — `copilot_sessions.search_text_version` を追加し、既存 rows の `search_text` を会話本文・会話 preview・issue 中心に backfill する。
+- `backend/lib/copilot_history/persistence/session_search_text_builder.rb` — 保存済み conversation payload と issue から正規化済み検索対象テキストを構築する。
 - `backend/spec/lib/copilot_history/persistence/session_search_text_builder_spec.rb` — 要件1.2、1.3、1.4 の検索対象 coverage を固定する。
 - `frontend/src/features/sessions/presentation/sessionIndexCriteria.ts` — 既存 `sessionDateFilter.ts` を使い、検索語を含む一覧 criteria を扱う。
 - `frontend/src/features/sessions/presentation/sessionIndexCriteria.test.ts` — query key、label、blank search、invalid search を固定する。
@@ -240,7 +244,7 @@ sequenceDiagram
     participant DB as MySQL
 
     Sync->>Builder: build session attributes
-    Builder->>Search: build summary detail metadata
+    Builder->>Search: build summary detail
     Search-->>Builder: normalized search text
     Builder-->>Sync: attributes with search text
     Sync->>Model: create or update when changed or search text missing
@@ -300,10 +304,11 @@ flowchart TD
 | 要件 | 要約 | コンポーネント | インターフェース | フロー |
 |------|------|----------------|------------------|--------|
 | 1.1 | 明示同期で検索可能にする | `HistorySyncService`, `SessionRecordBuilder`, `SessionSearchTextBuilder`, `CopilotSession` | `search_text` | sync search text flow |
-| 1.2 | 会話・要約・tool・activity・issue・context・model を含める | `SessionSearchTextBuilder` | text collection whitelist | sync search text flow |
+| 1.2 | 会話本文・会話要約・issue を含める | `SessionSearchTextBuilder` | text collection whitelist | sync search text flow |
 | 1.3 | current / legacy を同じ検索体験で扱う | `SessionSearchTextBuilder`, `SessionIndexQuery` | saved payload contract | sync/search flow |
 | 1.4 | degraded / issue を検索対象から失わせない | `SessionSearchTextBuilder`, `CopilotSession` | issue code/message collection | sync search text flow |
 | 1.5 | raw files 正本方針を維持する | Boundary, `CopilotSession` | regenerable read model field | architecture |
+| 1.6 | tool/activity/metadata を既定検索対象に含めない | `SessionSearchTextBuilder` | exclusion whitelist | sync search text flow |
 | 2.1 | 検索語一致 session だけ一覧対象 | `SessionListParams`, `SessionIndexQuery` | `search` query param | search request flow |
 | 2.2 | 検索語と日付範囲を併用 | `SessionListParams`, `SessionIndexQuery`, `useSessionIndex` | `SessionIndexCriteria` | search request flow |
 | 2.3 | 検索語なしは日付範囲のみ | `SessionListParams`, `SessionIndexQuery` | blank search normalization | search request flow |
@@ -332,10 +337,10 @@ flowchart TD
 
 | コンポーネント | ドメイン / レイヤー | 意図 | 要件 coverage | 主要依存 | Contract |
 |----------------|----------------------|------|---------------|----------|----------|
-| `SessionSearchTextBuilder` | Backend persistence | 保存 payload と metadata から検索対象テキストを作る | 1.1, 1.2, 1.3, 1.4, 1.5 | summary/detail payload P0 | Service |
-| `CopilotSession` | Backend persistence | `search_text` を read model row として保持する | 1.1, 1.5, 5.5 | ActiveRecord P0, MySQL P0 | State |
+| `SessionSearchTextBuilder` | Backend persistence | 保存済み conversation payload と issue から検索対象テキストを作る | 1.1-1.6 | summary/detail payload P0 | Service |
+| `CopilotSession` | Backend persistence | `search_text` と `search_text_version` を read model row として保持する | 1.1, 1.5, 5.5 | ActiveRecord P0, MySQL P0 | State |
 | `SessionRecordBuilder` | Backend persistence | 同期時 attributes に `search_text` を含める | 1.1, 1.5 | `SessionSearchTextBuilder` P0 | Service |
-| `HistorySyncService` | Backend sync | 検索 projection 未作成 row を skip せず再保存する | 1.1, 1.5 | `SessionRecordBuilder` P0, `CopilotSession` P0 | Batch |
+| `HistorySyncService` | Backend sync | 古い検索 projection version の row を skip せず再保存する | 1.1, 1.5 | `SessionRecordBuilder` P0, `CopilotSession` P0 | Batch |
 | `SessionListParams` | Backend API | date / limit / search param を正規化し invalid を返す | 2.1, 2.2, 2.3, 2.6, 5.1 | Rails params P0 | Service |
 | `SessionIndexQuery` | Backend API Query | date range と search_text 条件で summary payload を取得する | 2.1-2.5, 5.1, 5.5 | `CopilotSession` P0 | Service |
 | `SessionsController` | Backend API | criteria parsing、query result、error envelope を HTTP に接続する | 2.4, 2.5, 2.6, 5.6 | parser/query/error presenter P0 | API |
@@ -355,11 +360,11 @@ flowchart TD
 | Requirements | 1.1, 1.2, 1.3, 1.4, 1.5 |
 
 **責務と制約**
-- `summary_payload`、`detail_payload`、work context、`selected_model` から検索対象文字列だけを収集する。
-- 対象 field は会話本文、会話要約、tool call 名 / arguments preview、activity title / summary、issue code / message、cwd / git_root / repository / branch、selected model に限定する。
+- `summary_payload` と `detail_payload` から、会話本文、会話 preview、issue code / message だけを収集する。
+- tool call 名 / arguments preview、activity title / summary、cwd / git_root / repository / branch、selected model は既定の本文検索対象に含めない。
 - current / legacy の payload 差分は key whitelist と safe traversal で吸収し、存在しない field は空として扱う。
 - `raw_payload`、source fingerprint、内部 timestamp、DB row metadata は検索対象に含めない。
-- Unicode 正規化、case fold、空白 collapse を行い、空セッションでも空文字を返す。
+- 前後空白の trim と空白 collapse を行い、空セッションでも空文字を返す。
 
 **Dependencies**
 - Inbound: `SessionRecordBuilder` — 保存 attributes 構築時に呼ぶ (P0)
@@ -372,14 +377,16 @@ flowchart TD
 module CopilotHistory
   module Persistence
     class SessionSearchTextBuilder
-      def call(summary_payload:, detail_payload:, work_context:, selected_model:)
+      VERSION = 2
+
+      def call(summary_payload:, detail_payload:, metadata:)
         # returns String
       end
     end
   end
 end
 ```
-- Preconditions: `summary_payload` と `detail_payload` は Hash、`work_context` は scalar metadata Hash。
+- Preconditions: `summary_payload` と `detail_payload` は Hash。`metadata` は互換性のため受け取るが既定検索対象には使わない。
 - Postconditions: 戻り値は正規化済み String。`nil` は返さない。
 - Invariants: raw files は読まない。保存 payload を変更しない。検索対象外 field を副作用で追加しない。
 
@@ -391,15 +398,15 @@ end
 | Requirements | 1.1, 1.5, 5.5 |
 
 **責務と制約**
-- `search_text` を `summary_payload` / `detail_payload` と同じ read model row に保持する。
+- `search_text` と `search_text_version` を `summary_payload` / `detail_payload` と同じ read model row に保持する。
 - `search_text` は再生成可能な補助情報であり、raw files の正本性を変更しない。
 - `search_text` は `nil` を許可しないが、空セッションや migration backfill では空文字を許可する。Rails model では `presence` ではなく nil 不可 / string contract を検証する。
-- 既存 rows は migration 時に空文字を持てるが、明示同期で再生成されると検索対象が更新される。
+- 既存 rows は migration 時に本文検索用 `search_text` と現行 `search_text_version` へ backfill される。明示同期時にも version が古い row は再生成される。
 
 **Contracts**: Service [ ] / API [ ] / Event [ ] / Batch [ ] / State [x]
 
 ##### State Management
-- State model: `copilot_sessions.search_text` は session row に属する normalized text。DB 型は MySQL `MEDIUMTEXT`、null 不可、DB default なしとする。
+- State model: `copilot_sessions.search_text` は session row に属する normalized text。DB 型は MySQL `MEDIUMTEXT`、null 不可、DB default なしとする。`copilot_sessions.search_text_version` は projection 生成規則の integer version で、null 不可、default 0 とする。
 - Persistence & consistency: 同期時の create/update と同じ transaction 境界で更新される。
 - Concurrency strategy: 既存 `session_id` unique / sync service upsert 方針に従う。
 
@@ -407,13 +414,13 @@ end
 
 | Field | Detail |
 |-------|--------|
-| Intent | 明示同期時に検索 projection が未作成の既存 row を再保存する |
+| Intent | 明示同期時に検索 projection version が古い既存 row を再保存する |
 | Requirements | 1.1, 1.5 |
 
 **責務と制約**
-- 既存 row の source fingerprint が不変でも、`search_text` が空または未作成なら update 対象として扱う。
+- 既存 row の source fingerprint が不変でも、`search_text_version` が現行 version と異なるなら update 対象として扱う。
 - update 時は `SessionRecordBuilder` を通じて summary/detail/search text を同じ保存 attributes として再生成する。
-- fingerprint 不変かつ `search_text` 作成済みの row は既存どおり skip する。
+- fingerprint 不変かつ `search_text_version` が現行 version の row は既存どおり skip する。
 - raw files 読取 contract、root failure、degraded handling、running lock は既存同期責務を維持する。
 
 **Dependencies**
@@ -426,8 +433,8 @@ end
 ##### Batch / Job Contract
 - Trigger: 利用者または UI が既存 `POST /api/history/sync` を実行する。
 - Input / validation: 既存 `SessionCatalogReader` の normalized sessions と既存 `CopilotSession` row。
-- Output / destination: `search_text` を含む `CopilotSession` row update、既存 sync run counts。
-- Idempotency & recovery: `search_text` 作成済みで fingerprint 不変の再実行は skip に戻る。
+- Output / destination: `search_text` と `search_text_version` を含む `CopilotSession` row update、既存 sync run counts。
+- Idempotency & recovery: `search_text_version` が現行 version で fingerprint 不変の再実行は skip に戻る。
 
 ### Backend API
 
@@ -440,7 +447,7 @@ end
 
 **責務と制約**
 - `search` を optional string として受け取り、trim 後空なら未指定として扱う。
-- Unicode 正規化と空白 collapse 後、最大 200 文字を超える値は invalid とする。
+- 前後空白の trim と空白 collapse 後、最大 200 文字を超える値は invalid とする。
 - NUL や表示不能な制御文字は invalid とする。通常の空白は collapse 対象として許可する。
 - `from` / `to` / `limit` の既存 validation と error code を維持する。
 
@@ -608,12 +615,14 @@ export interface UseSessionIndexResult {
 - `CopilotSession` は 1 session 1 row を維持する。
 - `search_text` は `summary_payload` / `detail_payload` と同じ session row に属する。
 - `search_text` は検索対象の denormalized projection であり、表示 payload ではない。
-- `search_text` の生成元は保存 payload と scalar metadata であり、raw files path の直接読取ではない。
+- `search_text` の生成元は保存済み conversation payload と issue であり、raw files path の直接読取ではない。
+- `search_text_version` は検索 projection の生成規則を表す version であり、既存 row の再生成判断に使う。
 
 ### Physical Data Model
 | Table | Column | Type | Null | Notes |
 |-------|--------|------|------|-------|
 | `copilot_sessions` | `search_text` | `MEDIUMTEXT` | false | DB default は置かず、migration backfill で既存 rows に `""` を設定し、明示同期で再生成する |
+| `copilot_sessions` | `search_text_version` | `INTEGER` | false | default 0。本文検索用 projection へ移行した rows は現行 version を保存する |
 
 - 初期実装では専用 index を追加しない。literal substring match は B-tree index の主用途ではないため、性能最適化は後続 spec の対象とする。
 - `TEXT` は 64KB 上限で、実データの検索対象推定がこれを超えるため採用しない。
@@ -644,9 +653,9 @@ export interface UseSessionIndexResult {
 ## テスト戦略
 
 ### Backend
-- `SessionSearchTextBuilder` spec: 1.2 の対象 field すべて、current / legacy 差分、degraded / issue、raw payload 非包含、Unicode / whitespace normalization を検証する。
-- model / migration spec: `search_text` が nil 不可で、空文字は有効な検索 projection として保存可能であり、既存 row migration 後も保存可能であることを検証する。
-- `HistorySyncService` spec: source fingerprint が同じでも `search_text` 未作成 row を update し、作成済み row は既存どおり skip することを検証する。
+- `SessionSearchTextBuilder` spec: 会話本文、会話 preview、issue code / message、current / legacy 差分、degraded / issue、tool call / activity / metadata / raw payload 非包含、whitespace normalization を検証する。
+- model / migration spec: `search_text` が nil 不可で、空文字は有効な検索 projection として保存可能であり、`search_text_version` が non-negative integer として保存可能であることを検証する。
+- `HistorySyncService` spec: source fingerprint が同じでも `search_text_version` が古い row を update し、現行 version の row は既存どおり skip することを検証する。
 - `SessionListParams` spec: blank search、trim、max length、invalid control character、date range との同時指定を検証する。
 - `SessionIndexQuery` spec: search-only、date + search、no-search date-only、literal `%` / `_` match、empty success、degraded meta 維持を検証する。
 - request spec: `GET /api/sessions?search=...` の response shape、400 invalid search、raw reader 非呼び出しを検証する。
@@ -661,7 +670,8 @@ export interface UseSessionIndexResult {
 ## 実装・移行ノート
 
 - migration は `search_text` を `MEDIUMTEXT` として追加し、既存 rows は migration 内 backfill で空文字を設定したうえで null 不可にする。MySQL text 系 column の DB default には依存しない。
-- 検索対象は次回の明示同期で再生成される。空文字は有効な検索 projection なので、model validation は `presence` を使わず nil 不可 / string contract に留める。
-- 実装後、既存 read model だけがある開発環境では手動同期を実行すると、fingerprint 不変の row でも `search_text` 未作成なら update される。
+- 追加 migration は `search_text_version` を導入し、既存 rows の `search_text` を会話本文、会話 preview、issue code / message 中心に再 backfill する。
+- 空文字は有効な検索 projection なので、`search_text` validation は `presence` を使わず nil 不可 / string contract に留める。
+- 実装後、既存 read model だけがある開発環境では手動同期を実行すると、fingerprint 不変の row でも `search_text_version` が古ければ update される。
 - `search_text` backfill を自動 job として導入しない。必要になった場合は sync / reindex 境界の別 spec で扱う。
 - UI copy は read-only を維持し、検索結果が空でも編集・削除・共有操作を提示しない。

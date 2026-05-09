@@ -95,7 +95,7 @@ function SessionSearchForm({
         </p>
       ) : (
         <p className="text-sm text-slate-400">
-          会話本文、tool call、activity、issue などの保存済み内容を検索します。
+          会話本文、会話 preview、issue の内容を検索します。
         </p>
       )}
 

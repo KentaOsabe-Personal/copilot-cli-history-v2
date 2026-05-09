@@ -228,6 +228,7 @@ RSpec.describe CopilotHistory::Api::SessionIndexQuery do
       degraded: false,
       conversation_preview: "summary",
       search_text: search_text || "summary #{session_id}",
+      search_text_version: CopilotHistory::Persistence::SessionSearchTextBuilder::VERSION,
       message_count: 1,
       activity_count: 1,
       source_paths: { "source" => "/tmp/#{session_id}.json" },

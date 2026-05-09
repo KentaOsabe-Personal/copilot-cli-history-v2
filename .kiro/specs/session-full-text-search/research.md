@@ -4,7 +4,7 @@
 - **Feature**: `session-full-text-search`
 - **Discovery Scope**: Extension
 - **Key Findings**:
-  - 既存の `copilot_sessions` は `summary_payload` / `detail_payload` と scalar metadata を保持しており、検索対象テキストは raw files ではなく read model 再生成時に作れる。
+  - 既存の `copilot_sessions` は `summary_payload` / `detail_payload` と scalar metadata を保持しており、本文検索用テキストは raw files ではなく read model 再生成時に作れる。
   - `GET /api/sessions` は `SessionListParams` と `SessionIndexQuery` で日付範囲を扱い、frontend は `useSessionIndex` と `SessionDateFilterForm` で applied range を維持しているため、検索条件も同じ一覧条件として統合できる。
   - 初期実装では外部検索サービスや MySQL FULLTEXT を採用せず、正規化済み `search_text` と literal substring match を使うことで、ランキング・parser・CJK tokenization の責務をこの spec に持ち込まない。
 
@@ -24,11 +24,11 @@
   - raw files は一次ソース、DB read model は再生成可能な補助層として扱う方針が steering と既存 design に明記されている。
   - `SessionRecordBuilder` は同期時に `summary_payload` と `detail_payload` を作り、`CopilotSession` attributes として返している。
   - `CopilotSession` は scalar metadata、payload JSON、degraded / issue count をすでに持つが、検索専用テキスト列はない。
-  - `HistorySyncService` は fingerprint 不変の session を skip するため、migration 後に既存 row の `search_text` が空のままだと通常の手動同期だけでは検索 projection が作られない可能性がある。
+  - `HistorySyncService` は fingerprint 不変の session を skip するため、検索 projection の生成規則を変更しても通常の手動同期だけでは既存 row が再生成されない可能性がある。
 - **Implications**:
   - 検索対象構築は `SessionRecordBuilder` から呼ばれる persistence 境界に置き、API request 時に raw files や presenter を再実行しない。
   - `search_text` は DB read model の再生成可能な補助情報として追加し、payload と同じ同期 lifecycle で更新する。
-  - sync service は fingerprint が同じでも検索 projection が未作成の row を update 対象にする。
+  - sync service は fingerprint が同じでも検索 projection version が古い row を update 対象にする。
 
 ### session list API 統合点
 - **Context**: 要件2は、検索語と日付範囲を併用した一覧取得と既存 response shape の維持を求める。
@@ -77,7 +77,7 @@
   - 利用対象はローカル履歴であり、初期実装では検索性能より既存境界と検索対象の明確さが重要である。
 - **Implications**:
   - 初期実装は `search_text` に対する escaped `LIKE` literal substring match とする。
-  - 検索語と保存テキストは Unicode 正規化、case fold、空白 collapse を行い、`%` / `_` は wildcard ではなく文字として扱う。
+  - 検索語と保存テキストは前後空白の trim と空白 collapse を行い、`%` / `_` は wildcard ではなく文字として扱う。
   - 大量履歴で性能問題が確認された場合は、`search_text` contract を維持したまま MySQL FULLTEXT や別 index へ移行できる。
 
 ## Architecture Pattern Evaluation
@@ -95,21 +95,21 @@
 - **Context**: 一覧検索は保存済み read model を参照し、raw files を直接検索しない必要がある。
 - **Alternatives Considered**:
   1. `detail_payload` JSON を query 時に検索する。
-  2. 同期時に path-aware な検索対象テキストを構築して列に保存する。
-- **Selected Approach**: `CopilotHistory::Persistence::SessionSearchTextBuilder` が summary/detail payload と scalar metadata から検索対象を集約し、`CopilotSession.search_text` に保存する。
+  2. 同期時に本文検索用の検索対象テキストを構築して列に保存する。
+- **Selected Approach**: `CopilotHistory::Persistence::SessionSearchTextBuilder` が summary/detail payload の会話本文・会話 preview・issue code / message から検索対象を集約し、`CopilotSession.search_text` に保存する。
 - **Rationale**: 検索対象の所有者が明確になり、query path は DB read model 参照だけで完結する。
 - **Trade-offs**: payload contract が変わると builder の whitelist 更新が必要になる。代わりに、検索対象外の raw JSON や UI 表示都合が検索へ漏れにくい。
-- **Follow-up**: 実装時に builder spec で会話本文、tool call、activity、issue、work context、selected model の全対象を固定する。
+- **Follow-up**: builder spec で会話本文、会話 preview、issue code / message の対象 field と、tool call、activity、work context、selected model、raw payload の非対象 field を固定する。
 
-### Decision: 検索 projection 未作成 row は同期 skip しない
-- **Context**: 既存 read model rows は migration 直後に `search_text` が空で、source fingerprint は raw files と一致している場合がある。
+### Decision: 検索 projection version が古い row は同期 skip しない
+- **Context**: 既存 read model rows は migration 直後または生成規則変更後に古い `search_text` を持ち、source fingerprint は raw files と一致している場合がある。
 - **Alternatives Considered**:
   1. migration 時に JSON payload から全 row を backfill する。
-  2. 次回明示同期時に `search_text` blank を検出し、fingerprint 不変でも update する。
-- **Selected Approach**: `HistorySyncService` の skip 判定へ「既存 row の検索 projection が未作成なら update」を追加する。
+  2. `search_text_version` を追加し、次回明示同期時にも version 不一致なら fingerprint 不変でも update する。
+- **Selected Approach**: migration で既存 rows を本文検索用に backfill し、`HistorySyncService` の skip 判定へ「既存 row の検索 projection version が古ければ update」を追加する。
 - **Rationale**: app code を使う複雑な data migration を避けつつ、利用者が既存の手動同期導線で検索可能状態へ移行できる。
 - **Trade-offs**: 初回の同期後に saved_count / updated_count が増える。これは read model projection の再生成であり、raw files 正本方針とは矛盾しない。
-- **Follow-up**: 将来 `search_text` 生成規則に破壊的変更がある場合は、projection version column か明示 reindex spec を検討する。
+- **Follow-up**: 将来 `search_text` 生成規則に破壊的変更がある場合は、`search_text_version` を進める migration か明示 reindex spec を検討する。
 
 ### Decision: 初期検索は literal substring match とする
 - **Context**: 検索結果スコアリング、semantic search、外部検索サービスは対象外である。
@@ -135,7 +135,7 @@
 
 ### Generalization
 - 日付範囲と検索語は別々の UI 部品だが、API request と reusable snapshot の観点では同じ「一覧 criteria」である。設計では `SessionIndexCriteria` と query key を導入し、current requirements では date + search だけを扱う。
-- 検索対象構築は、会話本文・tool call・activity・issue・work context・model という複数の入力の一般化として「path-aware text collection」とする。ただし実装は whitelist に閉じ、任意 JSON 全体検索には広げない。
+- 検索対象構築は、会話本文・会話 preview・issue code / message に限定した本文検索 projection とする。tool call、activity、work context、model はノイズを増やすため既定検索対象に含めず、任意 JSON 全体検索にも広げない。
 
 ### Build vs Adopt
 - 検索 UI / state は既存 React hook と component を拡張して構築する。新しい state management library は採用しない。
@@ -149,7 +149,7 @@
 ## Risks & Mitigations
 - `%term%` search が大量履歴で遅くなる — 初期は local read model の範囲に限定し、performance issue が確認されたら `search_text` contract を維持して MySQL FULLTEXT 等を別 spec で検討する。
 - 検索対象 whitelist が payload 変更に追随しない — builder spec で対象 field を固定し、payload contract 変更を revalidation trigger にする。
-- 既存 rows の `search_text` が空のまま残る — sync service が `search_text` blank を update 対象として扱い、既存の手動同期導線で projection を埋める。
+- 既存 rows の `search_text` が古い生成規則のまま残る — migration が本文検索用に backfill し、sync service が `search_text_version` の不一致を update 対象として扱う。
 - 検索語変更中に古い検索結果が表示される — hook が request id / AbortController / criteria key を使い、別 criteria の結果を current state に採用しない。
 - 検索条件エラーと通常取得失敗が混同される — backend details `field: "search"` と frontend state classification で search condition error を分ける。
 

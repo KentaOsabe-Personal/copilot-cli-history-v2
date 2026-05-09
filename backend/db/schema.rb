@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_09_001400) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_09_093000) do
   create_table "copilot_sessions", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.integer "activity_count", default: 0, null: false
     t.string "branch"
@@ -28,6 +28,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_09_001400) do
     t.integer "message_snapshot_count", default: 0, null: false
     t.string "repository"
     t.text "search_text", size: :medium, null: false
+    t.integer "search_text_version", default: 0, null: false
     t.string "selected_model"
     t.string "session_id", null: false
     t.json "source_fingerprint", null: false

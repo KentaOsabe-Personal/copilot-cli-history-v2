@@ -40,6 +40,7 @@ module CopilotHistory
             detail_payload: detail_payload,
             metadata: scalar_metadata
           ),
+          search_text_version: CopilotHistory::Persistence::SessionSearchTextBuilder::VERSION,
           message_count: conversation_summary.fetch(:message_count, 0),
           activity_count: conversation_summary.fetch(:activity_count, 0),
           source_paths: stringify_source_paths(session.source_paths),

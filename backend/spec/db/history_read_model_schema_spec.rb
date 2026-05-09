@@ -22,6 +22,7 @@ RSpec.describe "history read model schema" do
         "degraded",
         "conversation_preview",
         "search_text",
+        "search_text_version",
         "message_count",
         "activity_count",
         "source_paths",
@@ -43,6 +44,8 @@ RSpec.describe "history read model schema" do
       expect(columns["issue_count"].default).to eq(0)
       expect(columns["degraded"].default).to eq(false)
       expect(columns["search_text"].null).to be(false)
+      expect(columns["search_text_version"].default).to eq(0)
+      expect(columns["search_text_version"].null).to be(false)
       expect(columns["message_count"].default).to eq(0)
       expect(columns["activity_count"].default).to eq(0)
     end

@@ -114,7 +114,8 @@ RSpec.describe CopilotHistory::Persistence::SessionRecordBuilder do
         issue_count: 1,
         degraded: true,
         conversation_preview: "hello",
-        search_text: include("hello", "hi", "/workspace/current", "octo/example", "feature/history-db", "gpt-5-current", "event payload matched partially"),
+        search_text: include("hello", "hi", "event payload matched partially"),
+        search_text_version: CopilotHistory::Persistence::SessionSearchTextBuilder::VERSION,
         message_count: 2,
         activity_count: 0,
         source_paths: {
@@ -130,10 +131,16 @@ RSpec.describe CopilotHistory::Persistence::SessionRecordBuilder do
           "events" => include("path" => events_path.to_s, "status" => "ok")
         )
       )
+      expect(attributes.fetch(:search_text)).not_to include(
+        "/workspace/current",
+        "octo/example",
+        "feature/history-db",
+        "gpt-5-current"
+      )
       expect(CopilotSession.new(attributes)).to be_valid
     end
 
-    it "builds search text from presenter payloads and scalar metadata" do
+    it "builds search text from presenter conversation payloads without tool or scalar metadata noise" do
       source_path = write_source("current/events.jsonl", "{}\n")
       session = build_session(
         session_id: "searchable-session",
@@ -164,13 +171,16 @@ RSpec.describe CopilotHistory::Persistence::SessionRecordBuilder do
       attributes = described_class.new.call(session:, indexed_at: Time.zone.parse("2026-04-30 12:00:00"))
 
       expect(attributes.fetch(:search_text)).to include(
-        "Use ripgrep to find migration errors",
+        "Use ripgrep to find migration errors"
+      )
+      expect(attributes.fetch(:search_text)).not_to include(
         "shell",
         "rg migration",
         "/workspace/searchable",
         "octo/searchable",
         "gpt-5-search"
       )
+      expect(attributes.fetch(:search_text_version)).to eq(CopilotHistory::Persistence::SessionSearchTextBuilder::VERSION)
     end
 
     it "preserves missing history dates and maps legacy sessions through the shared contract" do
