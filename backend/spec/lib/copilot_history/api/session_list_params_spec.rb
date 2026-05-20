@@ -123,6 +123,16 @@ RSpec.describe CopilotHistory::Api::SessionListParams do
       expect(result.search_term).to eq("gpt-5")
     end
 
+    # 概要・目的: cwd 検索でも既存の search parameter だけを正規化済み検索語として使う契約を検証する。
+    # テストケース: cwd 断片のような path 文字列を search に指定し、cwd 専用 parameter は指定しない。
+    # 期待値: path 文字列が既存の search_term として保持され、新しい cwd 条件に分岐しないこと。
+    it "keeps cwd path fragments in the existing search criteria" do
+      result = parser.call(params: { search: "  /Users/example/project  " }, now: now)
+
+      expect(result).to be_a(described_class::Result)
+      expect(result.search_term).to eq("/Users/example/project")
+    end
+
     # 概要・目的: 「treats an omitted limit as unlimited」を通じて、検索・日付条件と query 組み立てを検証する。
     # テストケース: 「treats an omitted limit as unlimited」の条件・入力・操作を実行する。
     # 期待値: an omitted limit が unlimited として扱われること。

@@ -216,6 +216,39 @@ RSpec.describe CopilotHistory::Api::SessionIndexQuery do
       expect(result.meta).to eq({ count: 2, partial_results: false })
     end
 
+    # 概要・目的: 同じ search parameter で本文 projection と cwd の両方を検索対象にする契約を検証する。
+    # テストケース: search_text だけに一致する session、cwd だけに一致する session、repository だけに一致する session を作成する。
+    # 期待値: search_text または cwd に一致した session だけが返り、repository は検索対象にならないこと。
+    it "matches either stored search text or cwd without matching repository metadata" do
+      create_session(session_id: "matches-body", updated_at_source: "2026-04-27T10:00:00Z", search_text: "conversation mentioned project-alpha", cwd: "/workspace/unrelated", repository: "example/unrelated")
+      create_session(session_id: "matches-cwd", updated_at_source: "2026-04-26T10:00:00Z", search_text: "ordinary conversation", cwd: "/Users/example/project-alpha", repository: "example/unrelated")
+      create_session(session_id: "repository-only", updated_at_source: "2026-04-25T10:00:00Z", search_text: "ordinary conversation", cwd: "/workspace/unrelated", repository: "example/project-alpha")
+      create_session(session_id: "misses", updated_at_source: "2026-04-24T10:00:00Z", search_text: "ordinary conversation", cwd: nil, repository: "example/unrelated")
+
+      result = query.call(search_term: "project-alpha")
+
+      expect(result.data.map { |payload| payload["id"] }).to eq(%w[matches-body matches-cwd])
+      expect(result.meta).to eq({ count: 2, partial_results: false })
+    end
+
+    # 概要・目的: cwd 検索と日付範囲が OR ではなく AND で合成される契約を検証する。
+    # テストケース: cwd には一致するが日付範囲外の session と、cwd と日付範囲の両方に一致する session を作成する。
+    # 期待値: cwd 一致後に日付範囲でさらに絞り込まれること。
+    it "combines cwd filtering with date range criteria" do
+      create_session(session_id: "outside-date", updated_at_source: "2026-03-31T23:59:59Z", cwd: "/work/path-filter")
+      create_session(session_id: "inside-date", updated_at_source: "2026-04-20T00:00:00Z", cwd: "/work/path-filter")
+      create_session(session_id: "inside-missing", updated_at_source: "2026-04-21T00:00:00Z", cwd: "/work/other")
+
+      result = query.call(
+        from_time: Time.zone.parse("2026-04-01T00:00:00Z"),
+        to_time: Time.zone.parse("2026-04-30T23:59:59Z"),
+        search_term: "path-filter"
+      )
+
+      expect(result.data.map { |payload| payload["id"] }).to eq(%w[inside-date])
+      expect(result.meta).to eq({ count: 1, partial_results: false })
+    end
+
     # 概要・目的: 「treats wildcard characters in search text as literal user input」を通じて、検索・日付条件と query 組み立てを検証する。
     # テストケース: 「treats wildcard characters in search text as literal user input」の条件・入力・操作を実行する。
     # 期待値: wildcard characters in search text が literal user input として扱われること。
@@ -226,6 +259,19 @@ RSpec.describe CopilotHistory::Api::SessionIndexQuery do
       result = query.call(search_term: "100%_done")
 
       expect(result.data.map { |payload| payload["id"] }).to eq(%w[literal-percent])
+      expect(result.meta).to eq({ count: 1, partial_results: false })
+    end
+
+    # 概要・目的: cwd 検索でも `%` と `_` を wildcard ではなく通常文字として扱う契約を検証する。
+    # テストケース: cwd に literal の `%_` を含む session と wildcard なら一致してしまう session を作成する。
+    # 期待値: literal の `%_` を含む cwd の session だけが返ること。
+    it "treats wildcard characters in cwd as literal user input" do
+      create_session(session_id: "literal-cwd", updated_at_source: "2026-04-27T10:00:00Z", cwd: "/work/progress/100%_done", search_text: "ordinary")
+      create_session(session_id: "wildcard-would-match-cwd", updated_at_source: "2026-04-26T10:00:00Z", cwd: "/work/progress/100Xdone", search_text: "ordinary")
+
+      result = query.call(search_term: "100%_done")
+
+      expect(result.data.map { |payload| payload["id"] }).to eq(%w[literal-cwd])
       expect(result.meta).to eq({ count: 1, partial_results: false })
     end
 
@@ -246,16 +292,16 @@ RSpec.describe CopilotHistory::Api::SessionIndexQuery do
     end
   end
 
-  def create_session(session_id:, source_format: "current", created_at_source: nil, updated_at_source: nil, summary_payload: nil, search_text: nil)
+  def create_session(session_id:, source_format: "current", created_at_source: nil, updated_at_source: nil, summary_payload: nil, search_text: nil, cwd: "/work/#{session_id}", repository: "example/repo")
     CopilotSession.create!(
       session_id: session_id,
       source_format: source_format,
       source_state: "complete",
       created_at_source: parse_time(created_at_source),
       updated_at_source: parse_time(updated_at_source),
-      cwd: "/work/#{session_id}",
+      cwd: cwd,
       git_root: "/work/#{session_id}",
-      repository: "example/repo",
+      repository: repository,
       branch: "main",
       selected_model: "gpt-5",
       event_count: 1,

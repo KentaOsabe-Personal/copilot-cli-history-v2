@@ -210,7 +210,70 @@ RSpec.describe "API Sessions", type: :request do
       expect(response).to have_http_status(:ok)
       expect(JSON.parse(response.body, symbolize_names: true)[:data].map { |payload| payload[:id] }).to eq(%w[inside-date])
 
-      get "/api/sessions", params: { from: "2026-04-01", to: "2026-04-30", search: "missing" }
+      get "/api/sessions", params: { from: "2026-04-01", to: "2026-04-30", search: "absent" }
+      expect(response).to have_http_status(:ok)
+      expect(JSON.parse(response.body, symbolize_names: true)).to eq(
+        data: [],
+        meta: {
+          count: 0,
+          partial_results: false
+        }
+      )
+    end
+
+    # 概要・目的: cwd で検索した場合も既存の一覧 API response shape を維持する契約を検証する。
+    # テストケース: search_text ではなく cwd だけに一致する session を検索する。
+    # 期待値: 保存済み summary、meta、degraded、issue 情報が既存 shape のまま返ること。
+    it "filters sessions by cwd while preserving the existing response shape" do
+      create_copilot_session(
+        session_id: "matching-cwd",
+        updated_at_source: "2026-04-26T10:00:00Z",
+        cwd: "/Users/example/cwd-search-target",
+        search_text: "unrelated history",
+        summary_payload: {
+          "id" => "matching-cwd",
+          "degraded" => true,
+          "issues" => [ { "code" => "partial" } ]
+        }
+      )
+      create_copilot_session(
+        session_id: "missing-cwd",
+        updated_at_source: "2026-04-27T10:00:00Z",
+        cwd: "/Users/example/other",
+        search_text: "unrelated history",
+        summary_payload: {
+          "id" => "missing-cwd",
+          "degraded" => false,
+          "issues" => []
+        }
+      )
+
+      get "/api/sessions", params: { search: "cwd-search-target" }
+
+      expect(response).to have_http_status(:ok)
+      expect(JSON.parse(response.body, symbolize_names: true)).to eq(
+        data: [
+          {
+            id: "matching-cwd",
+            degraded: true,
+            issues: [ { code: "partial" } ]
+          }
+        ],
+        meta: {
+          count: 1,
+          partial_results: true
+        }
+      )
+    end
+
+    # 概要・目的: cwd に一致しない検索語は失敗ではなく空結果になる契約を検証する。
+    # テストケース: cwd と search_text のどちらにも一致しない検索語で一覧 API を呼び出す。
+    # 期待値: HTTP 200 と空の一覧 response が返ること。
+    it "returns an empty success response when no cwd or search text matches" do
+      create_copilot_session(session_id: "missing-cwd", cwd: "/Users/example/other", search_text: "unrelated history")
+
+      get "/api/sessions", params: { search: "cwd-search-target" }
+
       expect(response).to have_http_status(:ok)
       expect(JSON.parse(response.body, symbolize_names: true)).to eq(
         data: [],
@@ -248,10 +311,10 @@ RSpec.describe "API Sessions", type: :request do
     # テストケース: 「does not read raw files for search requests」の条件・入力・操作を実行する。
     # 期待値: read raw files for search requests しないこと。
     it "does not read raw files for search requests" do
-      create_copilot_session(session_id: "matching", search_text: "saved read model")
+      create_copilot_session(session_id: "matching", cwd: "/work/saved-read-model", search_text: "unrelated")
       expect(CopilotHistory::SessionCatalogReader).not_to receive(:new)
 
-      get "/api/sessions", params: { search: "saved" }
+      get "/api/sessions", params: { search: "saved-read-model" }
 
       expect(response).to have_http_status(:ok)
       expect(JSON.parse(response.body, symbolize_names: true)[:data].map { |payload| payload[:id] }).to eq(%w[matching])
@@ -467,14 +530,14 @@ RSpec.describe "API Sessions", type: :request do
     end
   end
 
-  def create_copilot_session(session_id:, source_format: "current", created_at_source: nil, updated_at_source: nil, summary_payload: nil, detail_payload: nil, no_display_time: false, search_text: nil)
+  def create_copilot_session(session_id:, source_format: "current", created_at_source: nil, updated_at_source: nil, summary_payload: nil, detail_payload: nil, no_display_time: false, search_text: nil, cwd: "/work/#{session_id}")
     CopilotSession.create!(
       session_id: session_id,
       source_format: source_format,
       source_state: "complete",
       created_at_source: no_display_time ? nil : parse_time(created_at_source),
       updated_at_source: no_display_time ? nil : parse_time(updated_at_source || created_at_source || "2026-04-26T10:00:00Z"),
-      cwd: "/work/#{session_id}",
+      cwd: cwd,
       git_root: "/work/#{session_id}",
       repository: "example/repo",
       branch: "main",

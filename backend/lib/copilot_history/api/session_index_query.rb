@@ -60,7 +60,12 @@ module CopilotHistory
         return scope if search_term.blank?
 
         escaped_term = ActiveRecord::Base.sanitize_sql_like(search_term, "!")
-        scope.where("search_text LIKE ? ESCAPE '!'", "%#{escaped_term}%")
+        like_term = "%#{escaped_term}%"
+        scope.where(
+          "search_text LIKE ? ESCAPE '!' OR cwd LIKE ? ESCAPE '!'",
+          like_term,
+          like_term
+        )
       end
     end
   end

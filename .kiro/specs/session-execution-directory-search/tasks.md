@@ -18,8 +18,8 @@
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 4.4_
   - _Boundary: HistorySyncService_
 
-- [ ] 2. 一覧 API で cwd 検索できるようにする
-- [ ] 2.1 (P) 既存の検索パラメータだけで cwd 検索も扱う
+- [x] 2. 一覧 API で cwd 検索できるようにする
+- [x] 2.1 (P) 既存の検索パラメータだけで cwd 検索も扱う
   - `search` の trim、空白正規化、200 文字上限、制御文字拒否をそのまま使う。
   - cwd 専用 parameter や repository / branch / model filter は追加しない。
   - 無効な検索語は、通常の一覧取得失敗ではなく検索条件エラーとして返る状態を保つ。
@@ -27,7 +27,7 @@
   - _Requirements: 3.2, 4.2, 5.5_
   - _Boundary: SessionListParams_
 
-- [ ] 2.2 (P) `search` で本文と cwd の両方に一致させる
+- [x] 2.2 (P) `search` で本文と cwd の両方に一致させる
   - 既存の本文 / preview / issue 検索は維持し、同じ検索語で cwd の部分一致も見るようにする。
   - 日付範囲が指定された場合は、本文一致または cwd 一致した session をさらに日付範囲で絞り込む。
   - `%` と `_` は wildcard ではなく普通の文字として検索する。
@@ -36,7 +36,7 @@
   - _Requirements: 1.2, 1.5, 3.1, 3.2, 3.3, 3.4, 4.1, 4.3, 4.5_
   - _Boundary: SessionIndexQuery_
 
-- [ ] 2.3 cwd 検索でも既存の一覧 API response を崩さない
+- [x] 2.3 cwd 検索でも既存の一覧 API response を崩さない
   - cwd で検索した場合も、返す summary、meta、degraded、issue 情報の形を変えない。
   - 通常表示と検索表示のどちらも保存済み read model だけを使い、request 中に raw files を直接読まない。
   - cwd に一致しない検索語は、エラーではなく空の一覧として返す。
