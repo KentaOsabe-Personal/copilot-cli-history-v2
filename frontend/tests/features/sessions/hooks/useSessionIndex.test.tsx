@@ -903,6 +903,60 @@ describe('useSessionIndex', () => {
   })
 
   /**
+   * 概要・目的: cwd 由来のパス断片検索を適用・解除しても、現在の日付範囲を同じ一覧条件として維持する契約を検証する。
+   * テストケース: 実行ディレクトリの一部にあたる検索語を適用し、その後検索語を解除する。
+   * 期待値: 検索適用時も解除時も既存の日付範囲が API query に残り、検索語だけが追加・削除されること。
+   */
+  it('applies and clears a cwd path fragment while preserving the current date range', async () => {
+    const initialPayload = buildIndexResponse()
+    const cwdSearchPayload = buildIndexResponse([{ ...initialPayload.data[0], id: 'cwd-search-result' }])
+    const clearedPayload = buildIndexResponse([{ ...initialPayload.data[0], id: 'cwd-cleared-result' }])
+    const searchRequest = deferred<SessionApiResult<SessionIndexResponse>>()
+    const clearRequest = deferred<SessionApiResult<SessionIndexResponse>>()
+    const fetchSessionIndex = vi
+      .fn<SessionApiClient['fetchSessionIndex']>()
+      .mockResolvedValueOnce({ status: 'success', data: initialPayload })
+      .mockReturnValueOnce(searchRequest.promise)
+      .mockReturnValueOnce(clearRequest.promise)
+    const client = createClient(fetchSessionIndex)
+    const { ref } = renderStateProbe(client)
+
+    await waitFor(() => expect(readState().status).toBe('success'))
+
+    await act(async () => {
+      const searchPromise = applySearch(ref, ' /workspace/copilot-cli-history ')
+      searchRequest.resolve({ status: 'success', data: cwdSearchPayload })
+      await searchPromise
+    })
+
+    await act(async () => {
+      const clearPromise = clearSearch(ref)
+      clearRequest.resolve({ status: 'success', data: clearedPayload })
+      await clearPromise
+    })
+
+    expect(fetchSessionIndex).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        query: {
+          ...DEFAULT_QUERY,
+          search: '/workspace/copilot-cli-history',
+        },
+        signal: expect.any(AbortSignal),
+      }),
+    )
+    expect(fetchSessionIndex).toHaveBeenNthCalledWith(
+      3,
+      expect.objectContaining({
+        query: DEFAULT_QUERY,
+        signal: expect.any(AbortSignal),
+      }),
+    )
+    expect(readAppliedRange()).toEqual(DEFAULT_RANGE)
+    expect(readAppliedSearchTerm()).toBe('')
+  })
+
+  /**
    * 概要・目的: 「preserves search while applying a new date range and while reloading after
    *   sync」を通じて、同期処理の状態管理と副作用を検証する。
    * テストケース: 「preserves search while applying a new date range and while reloading after sync」の条件・入力・操作を実行する。
