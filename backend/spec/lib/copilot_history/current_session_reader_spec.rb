@@ -62,6 +62,35 @@ RSpec.describe CopilotHistory::CurrentSessionReader, :copilot_history do
       end
     end
 
+    # 概要・目的: 実運用の workspace.yaml と同じ unquoted timestamp を含む current session でも cwd metadata を失わない契約を検証する。
+    # テストケース: created_at / updated_at を YAML timestamp として解釈される非引用値に書き換えた workspace.yaml を読む。
+    # 期待値: workspace parse failed にせず、cwd / git_root / repository / branch と時刻 metadata を正規化できること。
+    it "keeps workspace metadata when current workspace timestamps are unquoted YAML timestamps" do
+      with_copilot_history_fixture("current_valid") do |root|
+        workspace_path = root.join("session-state/current-valid/workspace.yaml")
+        workspace_path.write(<<~YAML)
+          session_id: current-valid
+          cwd: /workspace/current-valid
+          git_root: /workspace/current-valid
+          repository: octo/example
+          branch: main
+          created_at: 2026-04-26T09:00:00Z
+          updated_at: 2026-04-26T09:00:00Z
+        YAML
+
+        session = described_class.new.call(build_source(root, "current-valid"))
+
+        expect(session.cwd.to_s).to eq("/workspace/current-valid")
+        expect(session.git_root.to_s).to eq("/workspace/current-valid")
+        expect(session.repository).to eq("octo/example")
+        expect(session.branch).to eq("main")
+        expect(session.created_at).to eq(Time.iso8601("2026-04-26T09:00:00Z"))
+        expect(session.issues).not_to include(
+          have_attributes(code: CopilotHistory::Errors::ReadErrorCode::CURRENT_WORKSPACE_PARSE_FAILED)
+        )
+      end
+    end
+
     # 概要・目的: 「keeps readable events when workspace.yaml cannot be parsed」を通じて、reader と fixture
     #   の読取・劣化時の扱いを検証する。
     # テストケース: 「keeps readable events when workspace.yaml cannot be parsed」の条件・入力・操作を実行する。

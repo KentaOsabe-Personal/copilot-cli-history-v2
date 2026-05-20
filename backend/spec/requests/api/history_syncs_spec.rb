@@ -60,6 +60,57 @@ RSpec.describe "API History Syncs", :copilot_history, type: :request do
       end
     end
 
+    # 概要・目的: current session の明示同期で保存された cwd が、そのまま一覧 API の表示 payload と検索根拠になる利用者フローを検証する。
+    # テストケース: current と legacy を含む fixture を同期し、DB scalar と summary payload を確認したうえで cwd 断片で一覧検索する。
+    # 期待値: current session だけが既存 response shape で返り、cwd がない legacy session には推測値が付かず検索にも一致しないこと。
+    it "syncs current cwd metadata and searches the saved list by the same cwd" do
+      with_copilot_history_fixture("current_schema_mixed_root") do |root|
+        ENV["COPILOT_HOME"] = root.to_s
+
+        post "/api/history/sync"
+        expect(response).to have_http_status(:ok)
+
+        current_session = CopilotSession.find_by!(session_id: "current-schema-mixed")
+        legacy_session = CopilotSession.find_by!(session_id: "legacy-schema-mixed")
+        expect(current_session.cwd).to eq("/workspace/current-schema-mixed")
+        expect(current_session.summary_payload).to include(
+          "work_context" => include(
+            "cwd" => "/workspace/current-schema-mixed",
+            "repository" => "octo/example",
+            "branch" => "feature/current-schema"
+          )
+        )
+        expect(legacy_session.cwd).to be_nil
+        expect(legacy_session.summary_payload).to include(
+          "work_context" => include("cwd" => nil)
+        )
+
+        get "/api/sessions", params: { from: "2026-04-01", to: "2026-04-30", search: "current-schema-mixed" }
+
+        expect(response).to have_http_status(:ok)
+        payload = JSON.parse(response.body, symbolize_names: true)
+        expect(payload.dig(:meta, :count)).to eq(1)
+        expect(payload.dig(:meta, :partial_results)).to be(false)
+        expect(payload.fetch(:data).map { |session_payload| session_payload.fetch(:id) }).to eq([ "current-schema-mixed" ])
+        expect(payload.dig(:data, 0, :work_context)).to include(
+          cwd: "/workspace/current-schema-mixed",
+          repository: "octo/example",
+          branch: "feature/current-schema"
+        )
+
+        get "/api/sessions", params: { from: "2026-04-01", to: "2026-04-30", search: "legacy-schema-mixed" }
+
+        expect(response).to have_http_status(:ok)
+        expect(JSON.parse(response.body, symbolize_names: true)).to eq(
+          data: [],
+          meta: {
+            count: 0,
+            partial_results: false
+          }
+        )
+      end
+    end
+
     # 概要・目的: 「skips unchanged sessions on a repeated sync without rewriting payloads or indexed
     #   timestamps」を通じて、DB 保存・validation・一意性制約を検証する。
     # テストケース: 「skips unchanged sessions on a repeated sync without rewriting payloads or indexed

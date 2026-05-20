@@ -17,8 +17,7 @@ function AppShell() {
                 この画面は閲覧専用です。
               </p>
               <p className="mt-2 text-sm leading-6 text-slate-400">
-                セッション一覧では日付範囲だけで絞り込めます。検索、repository / branch / model
-                などの追加条件、編集、削除、共有、自動更新は提供しません。
+                セッション一覧では日付範囲と検索語で絞り込めます。検索語は会話本文、preview、issue、実行ディレクトリを対象にします。repository / branch / model の専用フィルタ、編集、削除、共有、自動更新は提供しません。
               </p>
             </div>
 

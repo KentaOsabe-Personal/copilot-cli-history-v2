@@ -1,4 +1,5 @@
 require "json"
+require "date"
 require "psych"
 
 module CopilotHistory
@@ -39,7 +40,7 @@ module CopilotHistory
     def read_workspace(workspace_path)
       return [ {}, [ error_issue(CopilotHistory::Errors::ReadErrorCode::CURRENT_WORKSPACE_UNREADABLE, "workspace.yaml is not accessible", workspace_path) ] ] unless readable_file?(workspace_path)
 
-      payload = Psych.safe_load(workspace_path.read, permitted_classes: [], aliases: false)
+      payload = Psych.safe_load(workspace_path.read, permitted_classes: [ Date, Time ], aliases: false)
       unless payload.is_a?(Hash)
         return [ {}, [ error_issue(CopilotHistory::Errors::ReadErrorCode::CURRENT_WORKSPACE_PARSE_FAILED, "workspace.yaml could not be parsed", workspace_path) ] ]
       end

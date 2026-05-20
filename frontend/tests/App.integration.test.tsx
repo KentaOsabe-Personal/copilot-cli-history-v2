@@ -174,7 +174,7 @@ describe('App integration', () => {
       expect(screen.getByText('この画面は閲覧専用です。')).toBeInTheDocument()
       expect(
         screen.getByText(
-          'セッション一覧では日付範囲だけで絞り込めます。検索、repository / branch / model などの追加条件、編集、削除、共有、自動更新は提供しません。',
+          'セッション一覧では日付範囲と検索語で絞り込めます。検索語は会話本文、preview、issue、実行ディレクトリを対象にします。repository / branch / model の専用フィルタ、編集、削除、共有、自動更新は提供しません。',
         ),
       ).toBeInTheDocument()
       expect(sessionApiClientMock.fetchSessionIndex).toHaveBeenNthCalledWith(
@@ -250,6 +250,89 @@ describe('App integration', () => {
         screen.getByRole('link', { name: 'legacy-filtered-session を開く' }),
       ).toBeInTheDocument()
       expect(screen.getByText('この画面は閲覧専用です。')).toBeInTheDocument()
+      expect(
+        screen.getByText(
+          'セッション一覧では日付範囲と検索語で絞り込めます。検索語は会話本文、preview、issue、実行ディレクトリを対象にします。repository / branch / model の専用フィルタ、編集、削除、共有、自動更新は提供しません。',
+        ),
+      ).toBeInTheDocument()
     },
   )
+
+  /**
+   * 概要・目的: cwd 由来の検索語を一覧画面で適用・解除しても、現在の日付範囲と条件表示、カードの実行ディレクトリ表示が保たれることを検証する。
+   * テストケース: 初期一覧表示後に実行ディレクトリの一部で検索し、その検索を解除する。
+   * 期待値: 検索 request は日付範囲と search を併用し、検索結果カードに cwd / repository / branch / preview が併存し、解除後は同じ日付範囲で検索語なしに戻ること。
+   */
+  it('applies and clears cwd search while keeping the date range and visible card context', async () => {
+    const defaultQuery = toSessionIndexQuery(buildDefaultRange(new Date()))
+    const cwdSearchSession = buildSessionSummary({
+      id: 'cwd-search-result',
+      work_context: {
+        cwd: '/Users/example/work/current-session/frontend',
+        git_root: '/Users/example/work/current-session',
+        repository: 'octo/current-session',
+        branch: 'feature/cwd-search',
+      },
+      conversation_summary: {
+        has_conversation: true,
+        message_count: 2,
+        preview: 'cwd 検索で見つかった会話',
+        activity_count: 1,
+      },
+    })
+    sessionApiClientMock.fetchSessionIndex
+      .mockResolvedValueOnce(buildIndexResponse([buildSessionSummary()]))
+      .mockResolvedValueOnce(buildIndexResponse([cwdSearchSession]))
+      .mockResolvedValueOnce(buildIndexResponse([buildSessionSummary({ id: 'cleared-session' })]))
+
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    await waitFor(() =>
+      expect(screen.getByRole('link', { name: 'current-session を開く' })).toBeInTheDocument(),
+    )
+
+    fireEvent.change(screen.getByLabelText('検索語'), {
+      target: { value: ' current-session/frontend ' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '検索する' }))
+
+    await waitFor(() =>
+      expect(screen.getByRole('link', { name: 'cwd-search-result を開く' })).toBeInTheDocument(),
+    )
+
+    expect(sessionApiClientMock.fetchSessionIndex).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        query: {
+          ...defaultQuery,
+          search: 'current-session/frontend',
+        },
+        signal: expect.any(AbortSignal),
+      }),
+    )
+    expect(
+      screen.getByText('現在の表示条件: 2026-04-28 〜 2026-05-04 / 検索: current-session/frontend の検索結果を表示しています。'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('実行ディレクトリ')).toBeInTheDocument()
+    expect(screen.getByText('/Users/example/work/current-session/frontend')).toBeInTheDocument()
+    expect(screen.getByText('octo/current-session @ feature/cwd-search')).toBeInTheDocument()
+    expect(screen.getByText('cwd 検索で見つかった会話')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: '検索を解除' }))
+
+    await waitFor(() =>
+      expect(screen.getByRole('link', { name: 'cleared-session を開く' })).toBeInTheDocument(),
+    )
+    expect(sessionApiClientMock.fetchSessionIndex).toHaveBeenNthCalledWith(
+      3,
+      expect.objectContaining({
+        query: defaultQuery,
+        signal: expect.any(AbortSignal),
+      }),
+    )
+  })
 })

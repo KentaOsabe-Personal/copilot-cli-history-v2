@@ -81,8 +81,8 @@
   - _Requirements: 5.2, 5.3, 5.4_
   - _Boundary: useSessionIndex, sessionIndexCriteria_
 
-- [ ] 5. 同期・検索・表示をまとめて確認する
-- [ ] 5.1 backend の利用者フローを通して確認する
+- [x] 5. 同期・検索・表示をまとめて確認する
+- [x] 5.1 backend の利用者フローを通して確認する
   - current session を明示同期した後、DB と一覧 API payload に同じ cwd が入ることを確認する。
   - cwd の一部文字列で一覧検索したとき、対象 session が既存 response shape のまま返ることを確認する。
   - cwd がない session に推測値が付かず、cwd 検索にも一致しないことを確認する。
@@ -91,7 +91,7 @@
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 3.1, 3.5, 4.4, 4.5_
   - _Boundary: HistorySyncService, SessionIndexQuery, SessionsController_
 
-- [ ] 5.2 frontend の一覧表示と検索フローを通して確認する
+- [x] 5.2 frontend の一覧表示と検索フローを通して確認する
   - cwd を持つ session summary が一覧カードに表示され、repository / branch と preview も併存することを確認する。
   - cwd 由来の検索語を適用・解除しても、日付範囲と条件表示が保たれることを確認する。
   - 検索条件エラーと通常の一覧取得失敗が区別され、利用者が条件を見直せる表示になることを確認する。
