@@ -22,3 +22,5 @@ backend/.github
 !backend/tmp/pids/.keep
 !backend/tmp/storage/.keep
 !backend/storage/.keep
+
+memo.md
