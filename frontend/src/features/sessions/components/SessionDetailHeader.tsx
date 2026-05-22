@@ -19,7 +19,6 @@ function SessionDetailHeader({ detail }: SessionDetailHeaderProps) {
     selectedModel: detail.selected_model,
   })
   const signals = buildSessionDetailSignals({
-    degraded: detail.degraded,
     sourceState: detail.source_state,
   })
 

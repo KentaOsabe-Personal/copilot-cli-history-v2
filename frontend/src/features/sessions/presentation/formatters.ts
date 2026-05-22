@@ -182,34 +182,19 @@ export function buildSessionSummarySignals(input: {
 
 const DEGRADED_LABEL = '一部欠損あり'
 
-function buildSessionConstraintBadge(input: {
-  degraded: boolean
-  sourceState: SessionSourceState
-}): SessionSignalBadge | null {
-  if (input.degraded || input.sourceState === 'degraded') {
-    return {
-      label: DEGRADED_LABEL,
-      tone: 'warning',
-    }
-  }
-
-  if (input.sourceState === 'workspace_only') {
-    return {
-      label: 'workspace-only',
-      tone: 'warning',
-    }
-  }
-
-  return null
-}
-
 export function buildSessionDetailSignals(input: {
-  degraded: boolean
   sourceState: SessionSourceState
 }): readonly SessionSignalBadge[] {
-  const constraintBadge = buildSessionConstraintBadge(input)
+  if (input.sourceState === 'workspace_only') {
+    return [
+      {
+        label: 'workspace-only',
+        tone: 'warning',
+      },
+    ]
+  }
 
-  return constraintBadge == null ? [] : [constraintBadge]
+  return []
 }
 
 export function formatIssueMetadata(

@@ -52,11 +52,11 @@ describe('SessionDetailHeader', () => {
   })
 
   /**
-   * 概要・目的: 「keeps degraded and workspace-only constraints visible in the header」を通じて、同期処理の状態管理と副作用を検証する。
-   * テストケース: 「keeps degraded and workspace-only constraints visible in the header」の条件・入力・操作を実行する。
-   * 期待値: degraded が維持され、workspace-only constraints visible in the headerこと。
+   * 概要・目的: 詳細ヘッダーで作業領域のみの制約は示しつつ、degraded ラベルを表示ノイズにしないことを検証する。
+   * テストケース: workspace-only と degraded の detail を順にヘッダーへ渡す。
+   * 期待値: workspace-only は表示され、degraded detail では「一部欠損あり」が表示されないこと。
    */
-  it('keeps degraded and workspace-only constraints visible in the header', () => {
+  it('keeps workspace-only visible while omitting the degraded badge', () => {
     const { rerender } = render(
       <MemoryRouter>
         <SessionDetailHeader detail={sessionUiDetailScenarios.workspaceOnly} />
@@ -72,7 +72,7 @@ describe('SessionDetailHeader', () => {
       </MemoryRouter>,
     )
 
-    expect(screen.getByText('一部欠損あり')).toBeInTheDocument()
+    expect(screen.queryByText('一部欠損あり')).not.toBeInTheDocument()
   })
 
   /**

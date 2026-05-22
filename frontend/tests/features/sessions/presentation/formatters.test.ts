@@ -246,10 +246,9 @@ describe('formatters', () => {
   })
 
   /**
-   * 概要・目的: 「builds only exceptional session signals for summary and detail
-   *   surfaces」を通じて、正規化・projection・presenter の変換契約を検証する。
-   * テストケース: 「builds only exceptional session signals for summary and detail surfaces」の条件・入力・操作を実行する。
-   * 期待値: only exceptional session signals for summary and detail surfaces が構築されること。
+   * 概要・目的: summary と detail で表示対象に残す session signal の境界を検証する。
+   * テストケース: 会話有無、workspace-only、degraded の signal を summary と detail 向けに構築する。
+   * 期待値: summary は既存の例外 signal を維持し、detail の degraded signal は表示対象から外れること。
    */
   it('builds only exceptional session signals for summary and detail surfaces', () => {
     expect(
@@ -289,9 +288,8 @@ describe('formatters', () => {
     ).toEqual([])
     expect(
       buildSessionDetailSignals({
-        degraded: true,
         sourceState: 'degraded',
       }),
-    ).toEqual([{ label: '一部欠損あり', tone: 'warning' }])
+    ).toEqual([])
   })
 })

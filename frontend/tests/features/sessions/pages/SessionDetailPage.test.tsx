@@ -228,7 +228,7 @@ describe('SessionDetailPage', () => {
    *   response」を通じて、同期処理の状態管理と副作用を検証する。
    * テストケース: 「renders header metadata, session issues, and timeline entries for a degraded success
    *   response」の条件・入力・操作を実行する。
-   * 期待値: header metadata, session issues, が表示され、timeline entries for a degraded success responseこと。
+   * 期待値: header metadata, session issues, timeline entries が表示され、degraded ラベルは表示されないこと。
    */
   it('renders header metadata, session issues, and timeline entries for a degraded success response', () => {
     mockedUseSessionDetail.mockReturnValue({
@@ -245,7 +245,7 @@ describe('SessionDetailPage', () => {
 
     expect(screen.getAllByText('session-123').length).toBeGreaterThan(0)
     expect(screen.getByRole('link', { name: 'セッション一覧へ戻る' })).toHaveAttribute('href', '/')
-    expect(screen.getAllByText('一部欠損あり').length).toBeGreaterThan(0)
+    expect(screen.queryByText('一部欠損あり')).not.toBeInTheDocument()
     expect(screen.getByText('2026-04-26 18:05:00 JST')).toBeInTheDocument()
     expect(screen.getByText('2026-04-26 18:00:02 JST')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: '会話' })).toBeInTheDocument()
@@ -705,7 +705,7 @@ describe('SessionDetailPage', () => {
    *   too」を通じて、同期処理の状態管理と副作用を検証する。
    * テストケース: 「preserves conversation, activity, degraded, and issue metadata for legacy detail responses
    *   too」の条件・入力・操作を実行する。
-   * 期待値: conversation, activity, degraded, が保持され、issue metadata for legacy detail responses tooこと。
+   * 期待値: conversation, activity, issue metadata が保持され、degraded ラベルは表示されないこと。
    */
   it('preserves conversation, activity, degraded, and issue metadata for legacy detail responses too', async () => {
     const user = userEvent.setup()
@@ -795,7 +795,7 @@ describe('SessionDetailPage', () => {
     renderDetailPage('/sessions/legacy-session-456')
 
     expect(screen.getAllByText('legacy-session-456').length).toBeGreaterThan(0)
-    expect(screen.getAllByText('一部欠損あり').length).toBeGreaterThan(0)
+    expect(screen.queryByText('一部欠損あり')).not.toBeInTheDocument()
     expect(screen.getByText('legacy transcript remains readable')).toBeInTheDocument()
     expect(screen.getByText('legacy assistant message is partial')).toBeInTheDocument()
 
