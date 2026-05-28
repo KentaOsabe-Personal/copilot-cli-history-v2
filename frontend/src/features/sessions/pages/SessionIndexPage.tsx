@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useId, useMemo, useState } from 'react'
 
 import HistorySyncControl from '../components/HistorySyncControl.tsx'
 import HistorySyncStatus from '../components/HistorySyncStatus.tsx'
 import SessionDateFilterForm from '../components/SessionDateFilterForm.tsx'
+import SessionDirectoryTabs from '../components/SessionDirectoryTabs.tsx'
 import SessionEmptyState from '../components/SessionEmptyState.tsx'
 import SessionList from '../components/SessionList.tsx'
 import SessionSearchForm from '../components/SessionSearchForm.tsx'
@@ -18,6 +19,13 @@ import {
   formatCriteriaLabel,
   type SessionIndexCriteria,
 } from '../presentation/sessionIndexCriteria.ts'
+import {
+  buildSessionDirectoryTabs,
+  coerceDirectoryTabKey,
+  getSessionsForDirectoryTab,
+  type SessionDirectoryTab,
+  type SessionDirectoryTabKey,
+} from '../presentation/sessionDirectoryTabs.ts'
 
 interface DraftRangeState {
   appliedRangeKey: string
@@ -25,6 +33,8 @@ interface DraftRangeState {
 }
 
 function SessionIndexPage() {
+  const directoryTabsId = useId()
+  const directoryPanelId = `${directoryTabsId}-panel`
   const {
     state,
     appliedRange,
@@ -41,6 +51,8 @@ function SessionIndexPage() {
     appliedRangeKey,
     draftRange: appliedRange,
   }))
+  const [selectedDirectoryTabKey, setSelectedDirectoryTabKey] =
+    useState<SessionDirectoryTabKey>('all')
   const appliedRangeLabel = formatRangeLabel(appliedRange)
   const appliedCriteria: SessionIndexCriteria = {
     range: appliedRange,
@@ -55,6 +67,45 @@ function SessionIndexPage() {
     draftState.appliedRangeKey === appliedRangeKey
       ? draftState.draftRange
       : appliedRange
+  const directoryTabs = useMemo(
+    () => (state.status === 'success' ? buildSessionDirectoryTabs(state.sessions).tabs : []),
+    [state],
+  )
+  const coercedDirectoryTabKey =
+    state.status === 'success'
+      ? coerceDirectoryTabKey(selectedDirectoryTabKey, directoryTabs)
+      : 'all'
+  const visibleSessions =
+    state.status === 'success'
+      ? getSessionsForDirectoryTab(state.sessions, coercedDirectoryTabKey)
+      : []
+  const selectedDirectoryTab =
+    state.status === 'success'
+      ? directoryTabs.find((tab) => tab.key === coercedDirectoryTabKey) ?? null
+      : null
+
+  useEffect(() => {
+    if (
+      state.status !== 'success' ||
+      selectedDirectoryTabKey === coercedDirectoryTabKey
+    ) {
+      return undefined
+    }
+
+    let shouldApply = true
+    queueMicrotask(() => {
+      if (shouldApply) {
+        setSelectedDirectoryTabKey(coercedDirectoryTabKey)
+      }
+    })
+
+    return () => {
+      shouldApply = false
+    }
+  }, [coercedDirectoryTabKey, selectedDirectoryTabKey, state.status])
+
+  const getDirectoryTabId = (key: SessionDirectoryTabKey) =>
+    `${directoryTabsId}-tab-${encodeURIComponent(key)}`
 
   return (
     <section className="flex flex-col gap-6">
@@ -144,13 +195,56 @@ function SessionIndexPage() {
         <div className="flex flex-col gap-4">
           {hasAppliedSearch ? (
             <p className="text-sm text-slate-300">
-              現在の表示条件: {appliedCriteriaLabel} の検索結果を表示しています。
+              現在の表示条件: {appliedCriteriaLabel} の検索結果を表示しています。作業ディレクトリは一覧タブで切り替えられます。
             </p>
           ) : null}
-          <SessionList sessions={state.sessions} />
+          <SessionDirectoryTabs
+            tabs={directoryTabs}
+            selectedKey={coercedDirectoryTabKey}
+            panelId={directoryPanelId}
+            getTabId={getDirectoryTabId}
+            onSelect={setSelectedDirectoryTabKey}
+          />
+          <div
+            id={directoryPanelId}
+            role="tabpanel"
+            aria-labelledby={getDirectoryTabId(coercedDirectoryTabKey)}
+            className="flex flex-col gap-3"
+          >
+            <SelectedDirectoryTabSummary tab={selectedDirectoryTab} />
+            <SessionList sessions={visibleSessions} />
+          </div>
         </div>
       ) : null}
     </section>
+  )
+}
+
+interface SelectedDirectoryTabSummaryProps {
+  tab: SessionDirectoryTab | null
+}
+
+function SelectedDirectoryTabSummary({ tab }: SelectedDirectoryTabSummaryProps) {
+  if (tab == null || tab.kind === 'all') {
+    return (
+      <p className="text-sm text-slate-300">
+        すべてのセッションを表示しています。
+      </p>
+    )
+  }
+
+  if (tab.kind === 'unset') {
+    return (
+      <p className="text-sm text-slate-300">
+        作業ディレクトリが未設定のセッションを表示しています。
+      </p>
+    )
+  }
+
+  return (
+    <p className="break-words text-sm text-slate-300">
+      作業ディレクトリ: {tab.fullPath}
+    </p>
   )
 }
 

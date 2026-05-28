@@ -14,7 +14,7 @@ function expectReadOnlyScopeCopy() {
   expect(screen.getByText('この画面は閲覧専用です。')).toBeInTheDocument()
   expect(
     screen.getByText(
-      'セッション一覧では日付範囲と検索語で絞り込めます。検索語は会話本文、preview、issue、実行ディレクトリを対象にします。repository / branch / model の専用フィルタ、編集、削除、共有、自動更新は提供しません。',
+      'セッション一覧では日付範囲と検索語で絞り込めます。検索語は会話本文、preview、issue を対象にし、作業ディレクトリは検索結果の一覧タブで切り替えられます。repository / branch / model の専用フィルタ、編集、削除、共有、自動更新は提供しません。',
     ),
   ).toBeInTheDocument()
   expect(

@@ -27,7 +27,12 @@ describe('SessionSearchForm', () => {
     )
 
     expect(screen.getByText('現在の検索条件: 2026-04-28 〜 2026-05-04 / 検索: apply patch')).toBeInTheDocument()
-    expect(screen.getByText('会話本文、会話 preview、issue、実行ディレクトリの内容を検索します。')).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        '会話本文、会話 preview、issue を検索します。作業ディレクトリは検索結果の一覧タブで切り替えられます。',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/実行ディレクトリの内容を検索/)).not.toBeInTheDocument()
 
     await user.clear(screen.getByLabelText('検索語'))
     await user.type(screen.getByLabelText('検索語'), 'tool failure')

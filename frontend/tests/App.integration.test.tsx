@@ -174,7 +174,7 @@ describe('App integration', () => {
       expect(screen.getByText('この画面は閲覧専用です。')).toBeInTheDocument()
       expect(
         screen.getByText(
-          'セッション一覧では日付範囲と検索語で絞り込めます。検索語は会話本文、preview、issue、実行ディレクトリを対象にします。repository / branch / model の専用フィルタ、編集、削除、共有、自動更新は提供しません。',
+          'セッション一覧では日付範囲と検索語で絞り込めます。検索語は会話本文、preview、issue を対象にし、作業ディレクトリは検索結果の一覧タブで切り替えられます。repository / branch / model の専用フィルタ、編集、削除、共有、自動更新は提供しません。',
         ),
       ).toBeInTheDocument()
       expect(sessionApiClientMock.fetchSessionIndex).toHaveBeenNthCalledWith(
@@ -252,7 +252,7 @@ describe('App integration', () => {
       expect(screen.getByText('この画面は閲覧専用です。')).toBeInTheDocument()
       expect(
         screen.getByText(
-          'セッション一覧では日付範囲と検索語で絞り込めます。検索語は会話本文、preview、issue、実行ディレクトリを対象にします。repository / branch / model の専用フィルタ、編集、削除、共有、自動更新は提供しません。',
+          'セッション一覧では日付範囲と検索語で絞り込めます。検索語は会話本文、preview、issue を対象にし、作業ディレクトリは検索結果の一覧タブで切り替えられます。repository / branch / model の専用フィルタ、編集、削除、共有、自動更新は提供しません。',
         ),
       ).toBeInTheDocument()
     },
@@ -315,7 +315,7 @@ describe('App integration', () => {
       }),
     )
     expect(
-      screen.getByText('現在の表示条件: 2026-04-28 〜 2026-05-04 / 検索: current-session/frontend の検索結果を表示しています。'),
+      screen.getByText('現在の表示条件: 2026-04-28 〜 2026-05-04 / 検索: current-session/frontend の検索結果を表示しています。作業ディレクトリは一覧タブで切り替えられます。'),
     ).toBeInTheDocument()
     expect(screen.getByText('実行ディレクトリ')).toBeInTheDocument()
     expect(screen.getByText('/Users/example/work/current-session/frontend')).toBeInTheDocument()

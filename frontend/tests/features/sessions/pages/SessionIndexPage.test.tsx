@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -370,7 +370,7 @@ describe('SessionIndexPage', () => {
     )
 
     expect(
-      screen.getByText('現在の表示条件: 2026-04-28 〜 2026-05-04 / 検索: apply patch の検索結果を表示しています。'),
+      screen.getByText('現在の表示条件: 2026-04-28 〜 2026-05-04 / 検索: apply patch の検索結果を表示しています。作業ディレクトリは一覧タブで切り替えられます。'),
     ).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'session-123 を開く' })).toBeInTheDocument()
   })
@@ -484,6 +484,376 @@ describe('SessionIndexPage', () => {
       'href',
       '/sessions/session-b',
     )
+  })
+
+  /**
+   * 概要・目的: 成功状態の取得済みセッション集合だけから作業ディレクトリ別タブを作り、選択範囲の一覧へ切り替える契約を検証する。
+   * テストケース: cwd が異なる 2 件と cwd 未設定 1 件を成功状態で表示し、作業ディレクトリ別タブと未設定タブをクリックする。
+   * 期待値: タブごとの件数、一覧カード、tabpanel の関連付け、完全パス補助行が選択状態に一致すること。
+   */
+  it('renders directory tabs in the success state and filters the list locally by selected tab', async () => {
+    const user = userEvent.setup()
+    const sessions = [
+      buildSessionSummary({
+        id: 'frontend-session',
+        work_context: {
+          cwd: '/workspace/frontend',
+          git_root: '/workspace/frontend',
+          repository: 'octo/frontend',
+          branch: 'main',
+        },
+      }),
+      buildSessionSummary({
+        id: 'backend-session',
+        work_context: {
+          cwd: '/workspace/backend',
+          git_root: '/workspace/backend',
+          repository: 'octo/backend',
+          branch: 'main',
+        },
+      }),
+      buildSessionSummary({
+        id: 'unset-session',
+        work_context: {
+          cwd: null,
+          git_root: null,
+          repository: null,
+          branch: null,
+        },
+      }),
+    ]
+
+    mockedUseSessionIndex.mockReturnValue(buildUseSessionIndexResult({
+      status: 'success',
+      sessions,
+      meta: { count: 3, partial_results: false },
+    }))
+
+    render(
+      <MemoryRouter>
+        <SessionIndexPage />
+      </MemoryRouter>,
+    )
+
+    const tablist = screen.getByRole('tablist', { name: '作業ディレクトリ別セッション一覧タブ、全 3 件' })
+    const allTab = screen.getByRole('tab', { name: 'すべて、3 件' })
+    const frontendTab = screen.getByRole('tab', {
+      name: 'frontend、1 件、完全パス /workspace/frontend',
+    })
+    const unsetTab = screen.getByRole('tab', {
+      name: 'ディレクトリ未設定、1 件、作業ディレクトリ未設定',
+    })
+    const panel = screen.getByRole('tabpanel')
+
+    expect(tablist).toBeInTheDocument()
+    expect(allTab).toHaveAttribute('aria-selected', 'true')
+    expect(panel).toHaveAttribute('aria-labelledby', allTab.id)
+    expect(screen.getByRole('link', { name: 'frontend-session を開く' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'backend-session を開く' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'unset-session を開く' })).toBeInTheDocument()
+
+    await user.click(frontendTab)
+
+    expect(frontendTab).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('tabpanel')).toHaveAttribute('aria-labelledby', frontendTab.id)
+    expect(screen.getByText('作業ディレクトリ: /workspace/frontend')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'frontend-session を開く' })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'backend-session を開く' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'unset-session を開く' })).not.toBeInTheDocument()
+
+    await user.click(unsetTab)
+
+    expect(screen.getByText('作業ディレクトリが未設定のセッションを表示しています。')).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'frontend-session を開く' })).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'unset-session を開く' })).toBeInTheDocument()
+  })
+
+  /**
+   * 概要・目的: タブ選択が取得済みセッションの local filtering に閉じ、検索・日付・同期操作を発火しないことを検証する。
+   * テストケース: 成功状態でディレクトリタブをクリックし、hook から渡された操作関数の呼び出し有無を確認する。
+   * 期待値: タブ切替では applyRange、applySearch、clearSearch、reloadSessions、startSync が呼ばれず、一覧だけが切り替わること。
+   */
+  it('does not trigger date search or sync operations when switching directory tabs', async () => {
+    const user = userEvent.setup()
+    const applyRange = vi.fn(async () => ({ status: 'empty' } as const))
+    const applySearch = vi.fn(async () => ({ status: 'empty' } as const))
+    const clearSearch = vi.fn(async () => ({ status: 'empty' } as const))
+    const reloadSessions = vi.fn(async () => ({ status: 'empty' } as const))
+    const startSync = vi.fn(async () => undefined)
+
+    mockedUseSessionIndex.mockReturnValue(buildUseSessionIndexResult(
+      {
+        status: 'success',
+        sessions: [
+          buildSessionSummary({
+            id: 'frontend-session',
+            work_context: {
+              cwd: '/workspace/frontend',
+              git_root: '/workspace/frontend',
+              repository: null,
+              branch: null,
+            },
+          }),
+          buildSessionSummary({
+            id: 'backend-session',
+            work_context: {
+              cwd: '/workspace/backend',
+              git_root: '/workspace/backend',
+              repository: null,
+              branch: null,
+            },
+          }),
+        ],
+        meta: { count: 2, partial_results: false },
+      },
+      DEFAULT_APPLIED_RANGE,
+      { applyRange, applySearch, clearSearch, reloadSessions },
+    ))
+    mockedUseHistorySync.mockReturnValue(
+      buildUseHistorySyncResult({ status: 'idle' }, { startSync }),
+    )
+
+    render(
+      <MemoryRouter>
+        <SessionIndexPage />
+      </MemoryRouter>,
+    )
+
+    await user.click(screen.getByRole('tab', {
+      name: 'backend、1 件、完全パス /workspace/backend',
+    }))
+
+    expect(screen.getByRole('link', { name: 'backend-session を開く' })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'frontend-session を開く' })).not.toBeInTheDocument()
+    expect(applyRange).not.toHaveBeenCalled()
+    expect(applySearch).not.toHaveBeenCalled()
+    expect(clearSearch).not.toHaveBeenCalled()
+    expect(reloadSessions).not.toHaveBeenCalled()
+    expect(startSync).not.toHaveBeenCalled()
+  })
+
+  /**
+   * 概要・目的: 検索済み成功結果では、その結果集合だけからタブを構築し、検索文脈の説明を維持することを検証する。
+   * テストケース: 検索語が適用された成功状態に cwd が異なるセッションを渡し、片方のタブを選択する。
+   * 期待値: 検索結果の集合内だけでタブ件数と一覧が切り替わり、作業ディレクトリは一覧タブで切り替える説明が表示されること。
+   */
+  it('builds directory tabs from the applied search result set only', async () => {
+    const user = userEvent.setup()
+
+    mockedUseSessionIndex.mockReturnValue(buildUseSessionIndexResult(
+      {
+        status: 'success',
+        sessions: [
+          buildSessionSummary({
+            id: 'search-frontend',
+            work_context: {
+              cwd: '/workspace/frontend',
+              git_root: '/workspace/frontend',
+              repository: null,
+              branch: null,
+            },
+          }),
+          buildSessionSummary({
+            id: 'search-backend',
+            work_context: {
+              cwd: '/workspace/backend',
+              git_root: '/workspace/backend',
+              repository: null,
+              branch: null,
+            },
+          }),
+        ],
+        meta: { count: 2, partial_results: false },
+      },
+      DEFAULT_APPLIED_RANGE,
+      { appliedSearchTerm: 'apply patch' },
+    ))
+
+    render(
+      <MemoryRouter>
+        <SessionIndexPage />
+      </MemoryRouter>,
+    )
+
+    expect(
+      screen.getByText('現在の表示条件: 2026-04-28 〜 2026-05-04 / 検索: apply patch の検索結果を表示しています。作業ディレクトリは一覧タブで切り替えられます。'),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'すべて、2 件' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('tab', {
+      name: 'frontend、1 件、完全パス /workspace/frontend',
+    }))
+
+    expect(screen.getByRole('link', { name: 'search-frontend を開く' })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'search-backend を開く' })).not.toBeInTheDocument()
+  })
+
+  /**
+   * 概要・目的: 新しい成功結果で選択中ディレクトリが消えた場合、存在しないタブ表示に残留しない補正を検証する。
+   * テストケース: frontend タブ選択後、成功状態の sessions を backend のみに差し替えて rerender する。
+   * 期待値: 選択状態と tabpanel の関連付けが `すべて` に戻り、新しい集合のセッションだけが表示されること。
+   */
+  it('coerces the selected directory tab back to all when a new success result removes it', async () => {
+    const user = userEvent.setup()
+
+    mockedUseSessionIndex.mockReturnValue(buildUseSessionIndexResult({
+      status: 'success',
+      sessions: [
+        buildSessionSummary({
+          id: 'frontend-session',
+          work_context: {
+            cwd: '/workspace/frontend',
+            git_root: '/workspace/frontend',
+            repository: null,
+            branch: null,
+          },
+        }),
+        buildSessionSummary({
+          id: 'backend-session',
+          work_context: {
+            cwd: '/workspace/backend',
+            git_root: '/workspace/backend',
+            repository: null,
+            branch: null,
+          },
+        }),
+      ],
+      meta: { count: 2, partial_results: false },
+    }))
+
+    const { rerender } = render(
+      <MemoryRouter>
+        <SessionIndexPage />
+      </MemoryRouter>,
+    )
+
+    await user.click(screen.getByRole('tab', {
+      name: 'frontend、1 件、完全パス /workspace/frontend',
+    }))
+
+    mockedUseSessionIndex.mockReturnValue(buildUseSessionIndexResult({
+      status: 'success',
+      sessions: [
+        buildSessionSummary({
+          id: 'backend-session',
+          work_context: {
+            cwd: '/workspace/backend',
+            git_root: '/workspace/backend',
+            repository: null,
+            branch: null,
+          },
+        }),
+      ],
+      meta: { count: 1, partial_results: false },
+    }))
+
+    rerender(
+      <MemoryRouter>
+        <SessionIndexPage />
+      </MemoryRouter>,
+    )
+
+    const allTab = screen.getByRole('tab', { name: 'すべて、1 件' })
+
+    await waitFor(() => {
+      expect(allTab).toHaveAttribute('aria-selected', 'true')
+    })
+    expect(screen.getByRole('tabpanel')).toHaveAttribute('aria-labelledby', allTab.id)
+    expect(screen.queryByRole('tab', {
+      name: 'frontend、1 件、完全パス /workspace/frontend',
+    })).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'backend-session を開く' })).toBeInTheDocument()
+
+    mockedUseSessionIndex.mockReturnValue(buildUseSessionIndexResult({
+      status: 'success',
+      sessions: [
+        buildSessionSummary({
+          id: 'frontend-session',
+          work_context: {
+            cwd: '/workspace/frontend',
+            git_root: '/workspace/frontend',
+            repository: null,
+            branch: null,
+          },
+        }),
+        buildSessionSummary({
+          id: 'backend-session',
+          work_context: {
+            cwd: '/workspace/backend',
+            git_root: '/workspace/backend',
+            repository: null,
+            branch: null,
+          },
+        }),
+      ],
+      meta: { count: 2, partial_results: false },
+    }))
+
+    rerender(
+      <MemoryRouter>
+        <SessionIndexPage />
+      </MemoryRouter>,
+    )
+
+    const restoredAllTab = screen.getByRole('tab', { name: 'すべて、2 件' })
+
+    expect(restoredAllTab).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('tabpanel')).toHaveAttribute('aria-labelledby', restoredAllTab.id)
+    expect(screen.getByRole('link', { name: 'frontend-session を開く' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'backend-session を開く' })).toBeInTheDocument()
+  })
+
+  /**
+   * 概要・目的: loading、empty、error、検索 empty の既存状態では成功状態用のタブ列を表示しない契約を検証する。
+   * テストケース: 非成功状態と検索 empty 状態を順に描画し、状態表示とタブ列の有無を確認する。
+   * 期待値: 既存の状態表示は残り、作業ディレクトリ別 tablist は表示されないこと。
+   */
+  it('does not render directory tabs outside the success state', () => {
+    mockedUseSessionIndex.mockReturnValue(buildUseSessionIndexResult({ status: 'loading' }))
+
+    const { rerender } = render(
+      <MemoryRouter>
+        <SessionIndexPage />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByRole('heading', { name: 'セッション一覧を読み込んでいます' })).toBeInTheDocument()
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument()
+
+    mockedUseSessionIndex.mockReturnValue(buildUseSessionIndexResult(
+      { status: 'empty' },
+      DEFAULT_APPLIED_RANGE,
+      { appliedSearchTerm: 'apply patch' },
+    ))
+
+    rerender(
+      <MemoryRouter>
+        <SessionIndexPage />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByRole('heading', { name: '検索条件に一致するセッションはありません' })).toBeInTheDocument()
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument()
+
+    mockedUseSessionIndex.mockReturnValue(buildUseSessionIndexResult({
+      status: 'error',
+      error: {
+        kind: 'backend',
+        httpStatus: 503,
+        code: 'root_missing',
+        message: 'history root does not exist',
+        details: { path: '/tmp/.copilot' },
+      },
+    }))
+
+    rerender(
+      <MemoryRouter>
+        <SessionIndexPage />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByRole('heading', { name: 'セッション一覧を表示できません' })).toBeInTheDocument()
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument()
   })
 
   /**
