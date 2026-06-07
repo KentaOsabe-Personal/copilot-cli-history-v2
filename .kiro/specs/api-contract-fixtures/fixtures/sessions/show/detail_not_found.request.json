@@ -1,0 +1,6 @@
+{
+  "method": "GET",
+  "path": "/api/sessions/missing-session",
+  "query": {},
+  "body": null
+}

@@ -1,0 +1,126 @@
+{
+  "status": 200,
+  "body": {
+    "data": {
+      "id": "current-schema-mixed",
+      "source_format": "current",
+      "created_at": "2026-04-28T04:00:01Z",
+      "updated_at": "2026-04-28T04:00:02Z",
+      "work_context": {
+        "cwd": "/workspace/current-schema-mixed",
+        "git_root": "/workspace/current-schema-mixed",
+        "repository": "octo/example",
+        "branch": "feature/current-schema"
+      },
+      "selected_model": "gpt-5",
+      "source_state": "complete",
+      "degraded": false,
+      "raw_included": false,
+      "issues": [],
+      "message_snapshots": [
+        {
+          "role": "user",
+          "content": "current mixed question",
+          "raw_payload": null
+        },
+        {
+          "role": "assistant",
+          "content": "current mixed answer",
+          "raw_payload": null
+        }
+      ],
+      "conversation": {
+        "entries": [
+          {
+            "sequence": 1,
+            "role": "user",
+            "content": "current mixed question",
+            "occurred_at": "2026-04-28T04:00:01Z",
+            "tool_calls": [],
+            "degraded": false,
+            "issues": []
+          },
+          {
+            "sequence": 2,
+            "role": "assistant",
+            "content": "current mixed answer",
+            "occurred_at": "2026-04-28T04:00:02Z",
+            "tool_calls": [
+              {
+                "name": "apply_patch",
+                "arguments_preview": "{\"cmd\":\"patch\"}",
+                "is_truncated": false,
+                "status": "complete"
+              }
+            ],
+            "degraded": false,
+            "issues": []
+          }
+        ],
+        "message_count": 2,
+        "empty_reason": null,
+        "summary": {
+          "has_conversation": true,
+          "message_count": 2,
+          "preview": "current mixed question",
+          "activity_count": 1
+        }
+      },
+      "activity": {
+        "entries": [
+          {
+            "sequence": 2,
+            "category": "tool_call",
+            "title": "apply_patch",
+            "summary": "patched fixture files",
+            "raw_type": "assistant.message",
+            "mapping_status": "complete",
+            "occurred_at": "2026-04-28T04:00:02Z",
+            "source_path": "/tmp/copilot/session-state/current-schema-mixed/events.jsonl",
+            "raw_available": true,
+            "raw_payload": null,
+            "degraded": false,
+            "issues": []
+          }
+        ]
+      },
+      "timeline": [
+        {
+          "sequence": 1,
+          "kind": "message",
+          "mapping_status": "complete",
+          "raw_type": "user.message",
+          "occurred_at": "2026-04-28T04:00:01Z",
+          "role": "user",
+          "content": "current mixed question",
+          "tool_calls": [],
+          "detail": null,
+          "raw_payload": null,
+          "degraded": false,
+          "issues": []
+        },
+        {
+          "sequence": 2,
+          "kind": "message",
+          "mapping_status": "complete",
+          "raw_type": "assistant.message",
+          "occurred_at": "2026-04-28T04:00:02Z",
+          "role": "assistant",
+          "content": "current mixed answer",
+          "tool_calls": [
+            {
+              "name": "apply_patch",
+              "arguments_preview": "{\"cmd\":\"patch\"}",
+              "is_truncated": false,
+              "status": "complete"
+            }
+          ],
+          "detail": null,
+          "raw_payload": null,
+          "degraded": false,
+          "issues": []
+        }
+      ]
+    }
+  }
+}

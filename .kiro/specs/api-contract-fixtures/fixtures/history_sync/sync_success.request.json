@@ -1,0 +1,6 @@
+{
+  "method": "POST",
+  "path": "/api/history/sync",
+  "query": {},
+  "body": null
+}

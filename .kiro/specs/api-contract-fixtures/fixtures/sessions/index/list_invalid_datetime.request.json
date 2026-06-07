@@ -1,0 +1,8 @@
+{
+  "method": "GET",
+  "path": "/api/sessions",
+  "query": {
+    "from": "not-a-date"
+  },
+  "body": null
+}

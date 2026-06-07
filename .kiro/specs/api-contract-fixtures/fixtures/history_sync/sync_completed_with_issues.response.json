@@ -1,0 +1,22 @@
+{
+  "status": 200,
+  "body": {
+    "data": {
+      "sync_run": {
+        "id": 102,
+        "status": "completed_with_issues",
+        "started_at": "2026-04-30T08:56:00Z",
+        "finished_at": "2026-04-30T08:56:02Z"
+      },
+      "counts": {
+        "processed_count": 2,
+        "inserted_count": 2,
+        "updated_count": 0,
+        "saved_count": 2,
+        "skipped_count": 0,
+        "failed_count": 0,
+        "degraded_count": 1
+      }
+    }
+  }
+}

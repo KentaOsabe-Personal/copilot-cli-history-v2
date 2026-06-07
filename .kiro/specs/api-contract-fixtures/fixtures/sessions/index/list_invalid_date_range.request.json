@@ -1,0 +1,9 @@
+{
+  "method": "GET",
+  "path": "/api/sessions",
+  "query": {
+    "from": "2026-05-01",
+    "to": "2026-04-01"
+  },
+  "body": null
+}

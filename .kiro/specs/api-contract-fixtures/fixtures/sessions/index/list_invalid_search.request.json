@@ -1,0 +1,8 @@
+{
+  "method": "GET",
+  "path": "/api/sessions",
+  "query": {
+    "search": "hello\u0000world"
+  },
+  "body": null
+}

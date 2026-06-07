@@ -1,0 +1,12 @@
+{
+  "status": 404,
+  "body": {
+    "error": {
+      "code": "session_not_found",
+      "message": "session was not found",
+      "details": {
+        "session_id": "missing-session"
+      }
+    }
+  }
+}

@@ -27,6 +27,7 @@ services:
       - "30000:30000"
     volumes:
       - ./backend:/app
+      - ./.kiro:/workspace/.kiro:ro
       - ${HOME}/.copilot:/copilot-home:ro
       - backend_bundle:/usr/local/bundle
       - backend_tmp:/app/tmp

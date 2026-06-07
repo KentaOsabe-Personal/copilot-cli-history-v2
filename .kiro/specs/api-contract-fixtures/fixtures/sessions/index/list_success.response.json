@@ -1,0 +1,59 @@
+{
+  "status": 200,
+  "body": {
+    "data": [
+      {
+        "id": "current-schema-mixed",
+        "source_format": "current",
+        "created_at": "2026-04-28T04:00:01Z",
+        "updated_at": "2026-04-28T04:00:02Z",
+        "work_context": {
+          "cwd": "/workspace/current-schema-mixed",
+          "git_root": "/workspace/current-schema-mixed",
+          "repository": "octo/example",
+          "branch": "feature/current-schema"
+        },
+        "selected_model": "gpt-5",
+        "source_state": "complete",
+        "event_count": 2,
+        "message_snapshot_count": 2,
+        "conversation_summary": {
+          "has_conversation": true,
+          "message_count": 2,
+          "preview": "current mixed question",
+          "activity_count": 0
+        },
+        "degraded": false,
+        "issues": []
+      },
+      {
+        "id": "legacy-schema-mixed",
+        "source_format": "legacy",
+        "created_at": "2026-04-27T03:00:01Z",
+        "updated_at": "2026-04-27T03:00:02Z",
+        "work_context": {
+          "cwd": null,
+          "git_root": null,
+          "repository": null,
+          "branch": null
+        },
+        "selected_model": null,
+        "source_state": "complete",
+        "event_count": 2,
+        "message_snapshot_count": 2,
+        "conversation_summary": {
+          "has_conversation": true,
+          "message_count": 2,
+          "preview": "legacy mixed question",
+          "activity_count": 0
+        },
+        "degraded": false,
+        "issues": []
+      }
+    ],
+    "meta": {
+      "count": 2,
+      "partial_results": false
+    }
+  }
+}

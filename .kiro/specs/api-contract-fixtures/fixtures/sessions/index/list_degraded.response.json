@@ -1,0 +1,44 @@
+{
+  "status": 200,
+  "body": {
+    "data": [
+      {
+        "id": "current-schema-degraded",
+        "source_format": "current",
+        "created_at": "2026-04-28T04:00:01Z",
+        "updated_at": "2026-04-28T04:00:02Z",
+        "work_context": {
+          "cwd": "/workspace/current-schema-degraded",
+          "git_root": "/workspace/current-schema-degraded",
+          "repository": "octo/example",
+          "branch": "feature/current-schema"
+        },
+        "selected_model": "gpt-5",
+        "source_state": "degraded",
+        "event_count": 3,
+        "message_snapshot_count": 2,
+        "conversation_summary": {
+          "has_conversation": true,
+          "message_count": 2,
+          "preview": "partially readable session",
+          "activity_count": 1
+        },
+        "degraded": true,
+        "issues": [
+          {
+            "code": "current.workspace_unreadable",
+            "severity": "warning",
+            "message": "workspace metadata is not accessible",
+            "source_path": "/tmp/copilot/session-state/current-schema-degraded/workspace.yaml",
+            "scope": "session",
+            "event_sequence": null
+          }
+        ]
+      }
+    ],
+    "meta": {
+      "count": 1,
+      "partial_results": true
+    }
+  }
+}

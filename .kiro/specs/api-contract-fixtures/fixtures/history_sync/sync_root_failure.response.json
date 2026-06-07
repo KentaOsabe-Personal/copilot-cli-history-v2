@@ -1,0 +1,29 @@
+{
+  "status": 503,
+  "body": {
+    "error": {
+      "code": "root_missing",
+      "message": "history root does not exist",
+      "details": {
+        "path": "/tmp/copilot-missing-home/.copilot"
+      }
+    },
+    "meta": {
+      "sync_run": {
+        "id": 103,
+        "status": "failed",
+        "started_at": "2026-04-30T08:57:00Z",
+        "finished_at": "2026-04-30T08:57:01Z"
+      },
+      "counts": {
+        "processed_count": 0,
+        "inserted_count": 0,
+        "updated_count": 0,
+        "saved_count": 0,
+        "skipped_count": 0,
+        "failed_count": 1,
+        "degraded_count": 0
+      }
+    }
+  }
+}

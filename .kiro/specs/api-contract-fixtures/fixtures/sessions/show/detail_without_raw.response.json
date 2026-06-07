@@ -1,0 +1,31 @@
+{
+  "status": 200,
+  "body": {
+    "data": {
+      "id": "current-schema-mixed",
+      "raw_included": false,
+      "message_snapshots": [
+        {
+          "role": "user",
+          "content": "current mixed question",
+          "raw_payload": null
+        }
+      ],
+      "activity": {
+        "entries": [
+          {
+            "sequence": 2,
+            "raw_available": true,
+            "raw_payload": null
+          }
+        ]
+      },
+      "timeline": [
+        {
+          "sequence": 2,
+          "raw_payload": null
+        }
+      ]
+    }
+  }
+}

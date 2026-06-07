@@ -1,0 +1,30 @@
+{
+  "status": 500,
+  "body": {
+    "error": {
+      "code": "history_sync_failed",
+      "message": "history sync failed",
+      "details": {
+        "failure_class": "ActiveRecord::RecordInvalid",
+        "sync_run_id": 104
+      }
+    },
+    "meta": {
+      "sync_run": {
+        "id": 104,
+        "status": "failed",
+        "started_at": "2026-04-30T08:58:00Z",
+        "finished_at": "2026-04-30T08:58:01Z"
+      },
+      "counts": {
+        "processed_count": 0,
+        "inserted_count": 0,
+        "updated_count": 0,
+        "saved_count": 0,
+        "skipped_count": 0,
+        "failed_count": 1,
+        "degraded_count": 0
+      }
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "status": 400,
+  "body": {
+    "error": {
+      "code": "invalid_session_list_query",
+      "message": "session list query is invalid",
+      "details": {
+        "field": "limit",
+        "reason": "positive_integer_required",
+        "value": "0"
+      }
+    }
+  }
+}

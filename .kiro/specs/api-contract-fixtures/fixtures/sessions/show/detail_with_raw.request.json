@@ -1,0 +1,8 @@
+{
+  "method": "GET",
+  "path": "/api/sessions/current-schema-mixed",
+  "query": {
+    "include_raw": "true"
+  },
+  "body": null
+}
