@@ -1,0 +1,5 @@
+session_id: current-valid
+cwd: /workspace/current
+repository: copilot-cli-history-v2
+branch: main
+selected_model: gpt-5

@@ -1,0 +1,35 @@
+{
+  "current-mixed": {
+    "activity": [],
+    "conversation": [
+      {
+        "content": "mixed current",
+        "role": "assistant",
+        "sequence": 1
+      }
+    ],
+    "issues": [
+      {
+        "code": "event.partial_mapping",
+        "sequence": 1,
+        "severity": "warning"
+      }
+    ],
+    "search_parts": [
+      "mixed current",
+      "event payload matched partially"
+    ],
+    "selected_model": null,
+    "source_format": "current",
+    "source_state": "degraded"
+  },
+  "legacy-mixed": {
+    "activity": [],
+    "conversation": [],
+    "issues": [],
+    "search_parts": [],
+    "selected_model": null,
+    "source_format": "legacy",
+    "source_state": "complete"
+  }
+}
