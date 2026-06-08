@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=80"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "copilot-cli-history-backend"
+version = "0.1.0"
+description = "Django backend foundation for Copilot CLI history"
+requires-python = ">=3.14,<3.15"
+dependencies = [
+  "Django>=5.2.8,<5.3",
+]
+
+[project.optional-dependencies]
+dev = [
+  "django-stubs>=5.2,<5.3",
+  "mypy>=1.18,<2",
+  "pytest>=9,<10",
+  "pytest-django>=4.11,<5",
+  "ruff>=0.14,<1",
+]
+
+[tool.setuptools.packages.find]
+include = ["backend_config", "health"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "backend_config.settings"
+python_files = ["test_*.py", "*_test.py"]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py314"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.14"
+plugins = ["mypy_django_plugin.main"]
+strict = true
+mypy_path = ["."]
+
+[tool.django-stubs]
+django_settings_module = "backend_config.settings"
