@@ -21,8 +21,8 @@
   - 完了時には fixture と contract tests だけで reader 実装前の型・境界期待を検証できる
   - _Requirements: 4.4, 4.5, 6.3, 6.4, 6.5_
 
-- [ ] 2. 履歴 root と session source の発見境界を実装する
-- [ ] 2.1 履歴 root の解決と fatal failure 分類を実装する
+- [x] 2. 履歴 root と session source の発見境界を実装する
+- [x] 2.1 履歴 root の解決と fatal failure 分類を実装する
   - 明示 root、`COPILOT_HOME`、fallback root の優先順位で local filesystem root を解決する
   - 存在しない、directory でない、参照できない root を session issue ではなく root failure として分類する
   - file watch、外部送信、自動監視を行わない read-only 境界を守る
@@ -30,7 +30,7 @@
   - _Requirements: 1.1, 1.4, 1.5, 6.2_
   - _Boundary: RootResolver_
 
-- [ ] 2.2 current / legacy の session source 列挙を実装する
+- [x] 2.2 current / legacy の session source 列挙を実装する
   - current source は session id、source format、raw file location、workspace / event artifact path を識別できる形で返す
   - legacy source は JSON file から session id fallback、source format、raw file location を識別できる形で返す
   - current と legacy が同じ root に共存しても deterministic order で同じ一覧へ含める
@@ -38,7 +38,7 @@
   - _Requirements: 1.1, 1.2, 1.3, 2.1, 3.1_
   - _Boundary: SourceCatalog_
 
-- [ ] 2.3 root / source discovery の失敗・共存ケースをテストで固定する
+- [x] 2.3 root / source discovery の失敗・共存ケースをテストで固定する
   - missing root、unreadable root、non-directory root を fatal failure として検証する
   - mixed root の current / legacy source と artifact path を検証する
   - 追加する各 test case の直前に `概要・目的`、`テストケース`、`期待値` コメントを置く
@@ -46,8 +46,8 @@
   - _Requirements: 1.2, 1.3, 1.4, 1.5, 6.2, 6.4_
   - _Boundary: RootResolver, SourceCatalog_
 
-- [ ] 3. Raw event を normalized event へ変換する中核を実装する
-- [ ] 3.1 既知 message / activity event の分類を実装する
+- [x] 3. Raw event を normalized event へ変換する中核を実装する
+- [x] 3.1 既知 message / activity event の分類を実装する
   - current と legacy の user / assistant / system message を role、content、timestamp、raw traceability 付きで分類する
   - assistant turn、tool execution、hook、skill などの detail event を activity で追跡できる情報へ分類する
   - sequence は reader から渡された source order を保持する
@@ -55,7 +55,7 @@
   - _Requirements: 2.3, 4.1, 4.4_
   - _Boundary: EventNormalizer_
 
-- [ ] 3.2 unknown / partial event と tool call の追跡性を実装する
+- [x] 3.2 unknown / partial event と tool call の追跡性を実装する
   - 未知 shape は unknown event として raw content を保持する
   - 属性不足や壊れた tool request は partial mapping issue として返し、読めた属性は保持する
   - tool call arguments は secret 系 key を再帰的に redact し、長い preview は truncate 状態を示す
@@ -63,7 +63,7 @@
   - _Requirements: 2.5, 4.1, 4.2, 4.3, 6.1_
   - _Boundary: EventNormalizer_
 
-- [ ] 3.3 event normalization の互換テストを追加する
+- [x] 3.3 event normalization の互換テストを追加する
   - known message、detail、unknown、partial、tool call redaction、tool call truncation を単体テストで検証する
   - current / legacy の代表 raw event が同じ normalized contract へ写像されることを検証する
   - 追加する各 test case の直前に `概要・目的`、`テストケース`、`期待値` コメントを置く

@@ -167,6 +167,26 @@ class ReadFailureResult:
         _validate_literal("code", self.code, ROOT_FAILURE_CODE_VALUES)
 
 
+RootFailure = ReadFailureResult
+
+
+@dataclass(frozen=True)
+class SessionSource:
+    session_id: str
+    source_format: SourceFormat
+    source_path: str
+    artifact_paths: Mapping[str, str]
+    metadata: Mapping[str, str] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if not self.session_id:
+            msg = "session_id must not be empty"
+            raise ValueError(msg)
+        _validate_literal("source_format", self.source_format, SOURCE_FORMAT_VALUES)
+        object.__setattr__(self, "artifact_paths", _readonly_mapping(self.artifact_paths))
+        object.__setattr__(self, "metadata", _readonly_mapping(self.metadata))
+
+
 @dataclass(frozen=True)
 class ConversationEntry:
     sequence: int
@@ -226,3 +246,12 @@ class SearchTextSource:
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "parts", tuple(self.parts))
+
+
+@dataclass(frozen=True)
+class NormalizationResult:
+    event: NormalizedEvent
+    issues: tuple[ReadIssue, ...]
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "issues", tuple(self.issues))
