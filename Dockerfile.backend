@@ -1,20 +1,26 @@
-FROM ruby:4-bookworm
+FROM python:3.14-bookworm AS backend-base
 
 WORKDIR /app
 
-ENV PATH="/usr/local/bundle/bin:${PATH}"
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
 RUN apt-get update \
   && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     build-essential \
-    default-libmysqlclient-dev \
-    default-mysql-client \
     git \
-    pkg-config \
-    libyaml-dev \
   && rm -rf /var/lib/apt/lists/*
 
-RUN gem install bundler --no-document \
-  && gem install rails -v '~> 8.1.0' --no-document
+COPY backend/pyproject.toml ./
+
+RUN python -m pip install --upgrade pip \
+  && python -m pip install -e ".[dev]"
+
+FROM backend-base AS dependency-check
 
 CMD ["bash"]
+
+FROM backend-base AS development
+
+CMD ["python", "-m", "django", "runserver", "0.0.0.0:30000"]

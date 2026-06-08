@@ -22,28 +22,14 @@ services:
       dockerfile: Dockerfile.backend
     container_name: copilot-cli-history-backend
     working_dir: /app
-    command: bash -c "rm -f tmp/pids/server.pid && bundle install && bin/rails db:prepare && exec bin/rails server -b 0.0.0.0 -p 30000"
+    command: python -m django runserver 0.0.0.0:30000
     ports:
       - "30000:30000"
     volumes:
       - ./backend:/app
-      - ./.kiro:/workspace/.kiro:ro
-      - ${HOME}/.copilot:/copilot-home:ro
-      - backend_bundle:/usr/local/bundle
-      - backend_tmp:/app/tmp
-      - backend_log:/app/log
     environment:
-      COPILOT_HOME: /copilot-home
-      DB_HOST: mysql
-      DB_PORT: "3306"
-      DB_NAME: copilot_cli_history_development
-      DB_TEST_NAME: copilot_cli_history_test
-      DB_USERNAME: copilot
-      DB_PASSWORD: copilot
-      RAILS_ENV: development
-    depends_on:
-      mysql:
-        condition: service_healthy
+      DJANGO_SETTINGS_MODULE: backend_config.settings
+      PYTHONUNBUFFERED: "1"
 
   mysql:
     image: mysql:9.7
@@ -66,8 +52,5 @@ services:
       start_period: 10s
 
 volumes:
-  backend_bundle:
-  backend_log:
-  backend_tmp:
   frontend_pnpm_store:
   mysql_data:
