@@ -71,8 +71,8 @@
   - _Requirements: 4.1, 4.2, 4.3, 6.3, 6.4_
   - _Boundary: EventNormalizer_
 
-- [ ] 4. Current / legacy format reader を実装する
-- [ ] 4.1 (P) current session の workspace metadata 読取を実装する
+- [x] 4. Current / legacy format reader を実装する
+- [x] 4.1 (P) current session の workspace metadata 読取を実装する
   - workspace metadata から session id、作業ディレクトリ、repository context、created / updated timestamp を normalized session へ対応付ける
   - YAML は safe load に限定し、欠損、非 mapping、parse failure、unreadable file を session issue として扱う
   - events が存在しない場合は workspace_only state と issue で表し、session 自体は返す
@@ -80,7 +80,7 @@
   - _Requirements: 2.1, 2.2, 2.4, 4.4, 6.1_
   - _Boundary: CurrentReader_
 
-- [ ] 4.2 (P) legacy session JSON 読取を実装する
+- [x] 4.2 (P) legacy session JSON 読取を実装する
   - legacy JSON から session id、開始時刻、selected model、timeline、chat message snapshot を normalized session へ対応付ける
   - 空、欠損、parse failure、unreadable file を対象 session の issue として扱い、raw traceability を保持する
   - current-only field がない場合は `None` として扱い、legacy raw payload 由来の情報を追跡可能にする
@@ -88,7 +88,7 @@
   - _Requirements: 3.1, 3.2, 3.4, 3.5, 4.4, 6.1_
   - _Boundary: LegacyReader_
 
-- [ ] 4.3 current events JSONL の読取と selected model 判定を実装する
+- [x] 4.3 current events JSONL の読取と selected model 判定を実装する
   - events JSONL を line order で読み、parse 可能な event を source order のまま normalizer へ渡す
   - 解釈不能な行や部分的な event は読める event を保持したまま session degraded issue にする
   - selected model は設計の優先順位と同一優先度で後勝ちの rule に従って決定する
@@ -96,7 +96,7 @@
   - _Requirements: 2.1, 2.3, 2.5, 4.1, 4.4, 6.1_
   - _Depends: 3.1, 3.2, 4.1_
 
-- [ ] 4.4 current / legacy reader の単体テストを追加する
+- [x] 4.4 current / legacy reader の単体テストを追加する
   - current metadata、event order、selected model 優先順位、workspace parse failure、JSONL parse failure、workspace_only を検証する
   - legacy field mapping、timeline normalization、message snapshot、invalid JSON、unreadable source を検証する
   - 追加する各 test case の直前に `概要・目的`、`テストケース`、`期待値` コメントを置く
@@ -104,8 +104,8 @@
   - _Requirements: 2.2, 2.3, 2.4, 2.5, 3.2, 3.4, 3.5, 6.1, 6.4_
   - _Depends: 4.1, 4.2, 4.3_
 
-- [ ] 5. Catalog reader と projection を統合する
-- [ ] 5.1 root 解決から current / legacy reader 呼び出しまでの catalog reader を実装する
+- [x] 5. Catalog reader と projection を統合する
+- [x] 5.1 root 解決から current / legacy reader 呼び出しまでの catalog reader を実装する
   - root failure 時は source 列挙や session read に進まず failure result を返す
   - current と legacy session を同じ success result の sessions としてまとめる
   - 個別 session の degraded issue を root failure へ昇格させず、他 session の読取を継続する
@@ -113,7 +113,7 @@
   - _Requirements: 1.2, 1.4, 2.6, 3.3, 3.4, 6.1, 6.2_
   - _Depends: 2.1, 2.2, 4.1, 4.2, 4.3_
 
-- [ ] 5.2 conversation projection を実装する
+- [x] 5.2 conversation projection を実装する
   - user / assistant の非空本文 message を source order の conversation entry として返す
   - assistant の tool-only event は空 conversation entry にせず、tool context を activity 側で追えるように残す
   - message count、preview、empty reason を downstream が参照できる summary として返す
@@ -121,7 +121,7 @@
   - _Requirements: 5.1, 5.2, 5.4_
   - _Boundary: Projectors_
 
-- [ ] 5.3 activity と search text source の projection を実装する
+- [x] 5.3 activity と search text source の projection を実装する
   - system、tool execution、hook、skill、unknown、非会話 event を conversation と区別した activity entry として返す
   - conversation content、preview、issue message を検索用テキストの基礎情報としてまとめる
   - semantic search、ranking、外部 index 更新、保存 schema 生成は含めない
@@ -129,7 +129,7 @@
   - _Requirements: 5.2, 5.3, 5.5, 5.6, 6.5_
   - _Boundary: Projectors_
 
-- [ ] 5.4 catalog reader と projection の統合テストを追加する
+- [x] 5.4 catalog reader と projection の統合テストを追加する
   - mixed root で current / legacy が同じ success result に含まれることを検証する
   - root failure、session degraded、conversation、activity、search text source の代表結果を検証する
   - 追加する各 test case の直前に `概要・目的`、`テストケース`、`期待値` コメントを置く
@@ -137,8 +137,8 @@
   - _Requirements: 2.6, 3.3, 5.1, 5.2, 5.3, 5.4, 5.5, 6.2, 6.3, 6.4_
   - _Depends: 5.1, 5.2, 5.3_
 
-- [ ] 6. Python reader 全体の互換性と対象外責務を検証する
-- [ ] 6.1 Rails / API contract fixture 由来の代表互換性を検証する
+- [x] 6. Python reader 全体の互換性と対象外責務を検証する
+- [x] 6.1 Rails / API contract fixture 由来の代表互換性を検証する
   - current / legacy の normalized session、conversation projection、activity projection、issue 表現を fixture で比較できるようにする
   - Rails 参照実装と同じ source semantics を保ちつつ、Python contract として検証する
   - 追加する各 test case の直前に `概要・目的`、`テストケース`、`期待値` コメントを置く
@@ -146,14 +146,14 @@
   - _Requirements: 3.3, 4.4, 5.1, 5.3, 6.3, 6.4_
   - _Depends: 5.4_
 
-- [ ] 6.2 対象外責務が reader package に混入していないことを検証する
+- [x] 6.2 対象外責務が reader package に混入していないことを検証する
   - summary / detail presenter、HTTP error envelope、BigQuery 保存、HTTP request / response handling、frontend 表示、Rails / MySQL 削除を reader 完了条件に含めないことを確認する
   - read-only local filesystem、safe YAML load、外部送信なしの境界を quality checks とテストで守る
   - 完了時には reader package の public surface が raw reader、normalized contract、projection に限定されている
   - _Requirements: 1.5, 4.5, 5.6, 6.5_
   - _Depends: 6.1_
 
-- [ ] 6.3 backend quality gate を通して実装完了を確認する
+- [x] 6.3 backend quality gate を通して実装完了を確認する
   - Python unit tests、lint、strict typecheck を既存 backend entrypoint で実行する
   - 失敗した場合は reader contract、fixture、typing、formatting のいずれかへ原因を戻して修正する
   - 完了時には backend quality command が成功し、すべての spec 要件が tasks 上で実装済みとして追跡できる
