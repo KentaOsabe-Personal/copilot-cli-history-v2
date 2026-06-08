@@ -1,6 +1,9 @@
 import importlib
+import tomllib
+from pathlib import Path
 
 import pytest
+from django.apps import apps
 from django.core.exceptions import ImproperlyConfigured
 from django.urls import Resolver404, resolve
 
@@ -17,6 +20,51 @@ def test_settings_import_uses_minimal_sqlite_configuration() -> None:
     assert "bigquery" not in repr(settings.DATABASES).lower()
     assert "mysql" not in repr(settings.DATABASES).lower()
     assert "COPILOT_HOME" not in vars(settings)
+
+
+# 概要・目的: BigQuery read model app が Django の app registry で discover される契約を守る。
+# テストケース: settings の INSTALLED_APPS と Django app registry を確認する。
+# 期待値: history_read_model app が登録済みで、management command discovery の対象になる。
+def test_history_read_model_app_is_registered_for_django_discovery() -> None:
+    settings = importlib.import_module("backend_config.settings")
+
+    assert "history_read_model" in settings.INSTALLED_APPS
+    assert apps.get_app_config("history_read_model").name == "history_read_model"
+
+
+# 概要・目的: BigQuery read model package と runtime dependency が配布対象に入る契約を守る。
+# テストケース: pyproject.toml の package discovery と dependencies を確認する。
+# 期待値: history_read_model* が include され、google-cloud-bigquery の version range が固定される。
+def test_history_read_model_package_and_bigquery_dependency_are_declared() -> None:
+    pyproject_path = Path(__file__).resolve().parents[1] / "pyproject.toml"
+    pyproject = tomllib.loads(pyproject_path.read_text())
+
+    includes = pyproject["tool"]["setuptools"]["packages"]["find"]["include"]
+    dependencies = pyproject["project"]["dependencies"]
+
+    assert "history_read_model*" in includes
+    assert "google-cloud-bigquery>=3.41,<4" in dependencies
+
+
+# 概要・目的: settings import が BigQuery client 生成や
+# client module import に依存しない契約を守る。
+# テストケース: google.cloud.bigquery import を失敗させた状態で settings module を再読み込みする。
+# 期待値: settings は BigQuery client module に触れずに読み込める。
+def test_settings_import_does_not_require_bigquery_client_module(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    original_import_module = importlib.import_module
+
+    def guarded_import_module(name: str, package: str | None = None) -> object:
+        if name == "google.cloud.bigquery":
+            raise AssertionError("settings import must not import google.cloud.bigquery")
+        return original_import_module(name, package)
+
+    monkeypatch.setattr(importlib, "import_module", guarded_import_module)
+
+    settings = importlib.reload(original_import_module("backend_config.settings"))
+
+    assert settings.INSTALLED_APPS
 
 
 # 概要・目的: 明示的に不正な secret が設定されたときに設定不足として失敗させる。

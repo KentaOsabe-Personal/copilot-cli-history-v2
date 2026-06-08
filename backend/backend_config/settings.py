@@ -28,7 +28,7 @@ ALLOWED_HOSTS = os.environ.get(
     "localhost,127.0.0.1,0.0.0.0",
 ).split(",")
 
-INSTALLED_APPS: list[str] = ["health"]
+INSTALLED_APPS: list[str] = ["health", "history_read_model"]
 MIDDLEWARE: list[str] = []
 
 ROOT_URLCONF = "backend_config.urls"

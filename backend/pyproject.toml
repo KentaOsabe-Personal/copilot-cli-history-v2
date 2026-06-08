@@ -9,6 +9,7 @@ description = "Django backend foundation for Copilot CLI history"
 requires-python = ">=3.14,<3.15"
 dependencies = [
   "Django>=5.2.8,<5.3",
+  "google-cloud-bigquery>=3.41,<4",
 ]
 
 [project.optional-dependencies]
@@ -21,7 +22,7 @@ dev = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["backend_config", "health"]
+include = ["backend_config", "health", "history_read_model*"]
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "backend_config.settings"
