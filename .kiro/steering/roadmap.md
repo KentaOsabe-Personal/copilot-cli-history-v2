@@ -39,7 +39,7 @@ Frontend は現行 React SPA を維持し、利用者から見える API contrac
 - [x] api-contract-fixtures -- Rails API と frontend 型を基準に list / detail / sync / error の request / response fixture を固定する。Dependencies: none
 - [x] django-backend-foundation -- Django 5.2 backend の起動、health endpoint、Python 3.14 Docker runtime、品質ツール、pytest 基盤を作る。Dependencies: none
 - [x] bigquery-read-model-schema -- BigQuery dataset / table schema と初期化 script、環境変数、fake repository 前提を定義する。Dependencies: django-backend-foundation
-- [ ] copilot-history-python-reader -- Rails の raw file reader / normalizer / projection を Python に移植し、normalized session を作れるようにする。Dependencies: django-backend-foundation, api-contract-fixtures
+- [x] copilot-history-python-reader -- Rails の raw file reader / normalizer / projection を Python に移植し、normalized session を作れるようにする。Dependencies: django-backend-foundation, api-contract-fixtures
 - [ ] django-presenters-contract -- Python presenter で summary / detail payload と error envelope を現行 API fixture に一致させる。Dependencies: copilot-history-python-reader, api-contract-fixtures
 - [ ] bigquery-session-repository -- BigQuery の sessions query / detail query / staging + MERGE upsert repository を実装する。Dependencies: bigquery-read-model-schema, django-presenters-contract
 - [ ] django-history-api -- Django で sync / list / detail API を実装し、現行 frontend が使う URL と JSON shape を返す。Dependencies: bigquery-session-repository

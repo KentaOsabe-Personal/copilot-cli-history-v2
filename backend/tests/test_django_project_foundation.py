@@ -46,6 +46,22 @@ def test_history_read_model_package_and_bigquery_dependency_are_declared() -> No
     assert "google-cloud-bigquery>=3.41,<4" in dependencies
 
 
+# 概要・目的: Python reader package が backend quality command の
+# import / typecheck 対象になる契約を守る。
+# テストケース: pyproject.toml の package discovery と runtime dependencies を確認する。
+# 期待値: copilot_history* が include され、
+# workspace.yaml 読取用の PyYAML version range が固定される。
+def test_copilot_history_reader_package_and_yaml_dependency_are_declared() -> None:
+    pyproject_path = Path(__file__).resolve().parents[1] / "pyproject.toml"
+    pyproject = tomllib.loads(pyproject_path.read_text())
+
+    includes = pyproject["tool"]["setuptools"]["packages"]["find"]["include"]
+    dependencies = pyproject["project"]["dependencies"]
+
+    assert "copilot_history*" in includes
+    assert "PyYAML>=6.0.3,<7" in dependencies
+
+
 # 概要・目的: settings import が BigQuery client 生成や
 # client module import に依存しない契約を守る。
 # テストケース: google.cloud.bigquery import を失敗させた状態で settings module を再読み込みする。
