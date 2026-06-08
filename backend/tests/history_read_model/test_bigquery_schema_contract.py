@@ -69,6 +69,8 @@ def test_history_sync_runs_schema_defines_lifecycle_and_count_contract() -> None
     columns = table.column_map
 
     assert table.name == "history_sync_runs"
+    assert columns["sync_run_id"].type == "STRING"
+    assert columns["sync_run_id"].mode == "REQUIRED"
     assert columns["status"].type == "STRING"
     assert columns["status"].mode == "REQUIRED"
     assert columns["status"].allowed_values == SYNC_STATUS_VALUES
@@ -83,6 +85,8 @@ def test_history_sync_runs_schema_defines_lifecycle_and_count_contract() -> None
     assert columns["degradation_summary"].type == "STRING"
     assert columns["running_lock_key"].type == "STRING"
     assert columns["running_lock_key"].mode == "NULLABLE"
+    assert columns["indexed_at"].type == "TIMESTAMP"
+    assert columns["indexed_at"].mode == "REQUIRED"
 
     for field_name in HISTORY_SYNC_RUN_COUNT_FIELDS:
         assert columns[field_name].type == "INT64"

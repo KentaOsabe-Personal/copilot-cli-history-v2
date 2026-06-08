@@ -245,6 +245,11 @@ def _copilot_sessions_table(table_prefix: str) -> BigQueryTable:
 def _history_sync_runs_table(table_prefix: str) -> BigQueryTable:
     columns = (
         _required_column(
+            "sync_run_id",
+            "STRING",
+            "Stable identity for this explicit sync attempt.",
+        ),
+        _required_column(
             "status",
             "STRING",
             "Sync lifecycle status for the explicit read model refresh.",
@@ -274,6 +279,11 @@ def _history_sync_runs_table(table_prefix: str) -> BigQueryTable:
             "running_lock_key",
             "STRING",
             "Lock identity present only while a sync run is running.",
+        ),
+        _required_column(
+            "indexed_at",
+            "TIMESTAMP",
+            "Timestamp when this sync run row was written.",
         ),
     )
     return BigQueryTable(

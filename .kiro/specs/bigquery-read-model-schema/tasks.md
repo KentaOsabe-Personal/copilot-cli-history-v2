@@ -51,7 +51,7 @@
   - _Requirements: 3.1, 3.2, 5.2, 5.4_
   - _Boundary: MetadataComparator_
 
-- [ ] 4. BigQuery 実接続なしの fake repository 契約を実装する
+- [x] 4. BigQuery 実接続なしの fake repository 契約を実装する
   - session row と sync run row の required fields、enum、count fields、payload object、search text version、sync lifecycle を保存前に検証する
   - valid rows は in-memory に保存され、invalid rows は契約違反として失敗する
   - fake は SchemaDefinition を共有参照し、schema required fields や enum と fake validation がずれた場合に契約違反として検出できる
@@ -60,30 +60,30 @@
   - _Requirements: 4.4, 5.1, 5.3, 5.4, 5.5, 6.1, 6.5_
   - _Boundary: FakeRepository_
 
-- [ ] 5. 初期化 management command を統合する
-- [ ] 5.1 dry-run first の初期化 command を追加する
+- [x] 5. 初期化 management command を統合する
+- [x] 5.1 dry-run first の初期化 command を追加する
   - 既定実行では BigQuery client を生成せず、target dataset / tables と作成 SQL を stdout に提示する
   - `--execute` のときだけ BigQuery client を作成し、dataset / tables を create-if-missing で用意する
   - repository query / detail / staging + MERGE upsert を呼び出さないことが command の境界として確認できる
   - _Depends: 1.2, 3.1_
   - _Requirements: 3.1, 3.3, 3.4, 3.5, 3.6, 4.3_
 
-- [ ] 5.2 compare mode で既存 schema 照合結果を表示する
+- [x] 5.2 compare mode で既存 schema 照合結果を表示する
   - `--compare` のときだけ information schema metadata を取得し、metadata comparator の結果を stdout / stderr に表示する
   - schema 一致、不足、非互換差分、追加情報を開発者が識別できる result summary と diff details を返す
   - 非互換差分は失敗として扱い、destructive change や自動 ALTER は実行しない
   - _Depends: 3.1, 3.2, 5.1_
   - _Requirements: 3.1, 3.2, 3.3, 4.3, 5.2_
 
-- [ ] 6. Schema-only と command behavior のテストを追加する
-- [ ] 6.1 schema contract と DDL generation の単体テストを追加する
+- [x] 6. Schema-only と command behavior のテストを追加する
+- [x] 6.1 schema contract と DDL generation の単体テストを追加する
   - table schema、必須列、型、nullable、enum、timestamp / count fields、JSON payload 領域、partition / clustering 設定を検証する
   - DDL が dataset / table、partition、clustering、`require_partition_filter`、JSON columns、metadata comparison query を含むことを検証する
   - 各 test case の直前に `概要・目的`、`テストケース`、`期待値` コメントを残す
   - _Depends: 2.1, 2.2, 2.3, 3.1_
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.1, 2.2, 2.3, 5.2_
 
-- [ ] 6.2 settings と fake repository の単体テストを追加する
+- [x] 6.2 settings と fake repository の単体テストを追加する
   - env 欠落が外部接続前に識別され、unit / dry-run mode では credentials を要求しないことを検証する
   - fake repository が required fields、status / source enum、count invariant、payload object、search text version を検証することを確認する
   - fake repository が SchemaDefinition と共有する required fields / enum から drift を契約違反として検出できることを確認する
@@ -91,7 +91,7 @@
   - _Depends: 1.2, 4_
   - _Requirements: 3.3, 4.2, 4.4, 5.1, 5.3, 5.4_
 
-- [ ] 6.3 metadata comparator の単体テストを追加する
+- [x] 6.3 metadata comparator の単体テストを追加する
   - missing column、type mismatch、mode mismatch、partition / clustering mismatch を incompatible として検証する
   - extra column は informational として扱われ、自動削除や失敗扱いにしないことを検証する
   - diff categories と compatible 判定が command 表示に使える決定的な結果になることを確認する
@@ -99,7 +99,7 @@
   - _Depends: 3.2_
   - _Requirements: 3.2, 5.2, 5.4_
 
-- [ ] 6.4 command integration tests と opt-in integration guard を追加する
+- [x] 6.4 command integration tests と opt-in integration guard を追加する
   - Django command discovery、default dry-run output、client 非生成、fake client による execute / compare path を検証する
   - 実 BigQuery dataset を使う validation は integration flag と required env / credentials が揃った場合だけ動くようにする
   - 通常テストで BigQuery 実接続が発生しないことを確認できる
@@ -107,7 +107,7 @@
   - _Depends: 5.1, 5.2_
   - _Requirements: 3.1, 3.2, 3.3, 3.5, 4.2, 4.3, 4.4_
 
-- [ ] 7. BigQuery read model contract の完了境界を検証する
+- [x] 7. BigQuery read model contract の完了境界を検証する
   - Django foundation の既存品質入口で package registration、settings import、schema-only tests が通ることを確認する
   - BigQuery 実接続なしでも後続 `bigquery-session-repository` が参照できる dataset / table / env / fake repository 契約が揃っていることを確認する
   - Rails / MySQL read model 削除、Django API endpoint、request validation、HTTP response、frontend 接続変更が変更範囲に含まれていないことを確認する
