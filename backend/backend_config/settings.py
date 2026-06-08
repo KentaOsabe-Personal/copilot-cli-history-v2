@@ -28,7 +28,7 @@ ALLOWED_HOSTS = os.environ.get(
     "localhost,127.0.0.1,0.0.0.0",
 ).split(",")
 
-INSTALLED_APPS: list[str] = []
+INSTALLED_APPS: list[str] = ["health"]
 MIDDLEWARE: list[str] = []
 
 ROOT_URLCONF = "backend_config.urls"
@@ -44,5 +44,5 @@ DATABASES = {
 }
 
 USE_TZ = True
-LANGUAGE_CODE = "en-us"
-TIME_ZONE = "UTC"
+LANGUAGE_CODE = "ja"
+TIME_ZONE = "Asia/Tokyo"

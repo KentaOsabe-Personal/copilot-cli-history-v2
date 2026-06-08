@@ -1,12 +1,12 @@
 # Copilot CLI Session History
 
-Docker ベースで frontend / backend / MySQL を起動する Phase 1 の開発環境です。
+Docker ベースで frontend / backend / MySQL を起動する開発環境です。現在の active backend runtime は Django backend foundation です。
 
 | Service | Stack | Version line | Port |
 | --- | --- | --- | --- |
 | frontend | React + TypeScript + Vite + Vitest + Tailwind CSS | React 19.2 / TypeScript 6 / Node.js 24 / pnpm | 51730 |
-| backend | Rails API + RSpec | Ruby 4 / Rails 8.1 | 30000 |
-| db | MySQL | MySQL 9.7 | 33006 |
+| backend | Django + pytest + ruff + mypy | Python 3.14 / Django 5.2 | 30000 |
+| mysql | MySQL | MySQL 9.7 | 33006 |
 
 ## 起動
 
@@ -14,63 +14,74 @@ Docker ベースで frontend / backend / MySQL を起動する Phase 1 の開発
 docker compose up --build
 ```
 
-- 初回起動では frontend の `pnpm install`、backend の `bundle install`、`bin/rails db:prepare` もあわせて実行されます。
 - frontend: http://localhost:51730
 - backend: http://localhost:30000
 - backend health: http://localhost:30000/up
+- frontend の API base URL は `VITE_API_BASE_URL=http://localhost:30000` を維持します。
 - frontend の依存は bind mount された `frontend/node_modules` に入るため、ホストの VSCode でも `vite/client` や `vitest/globals` を含む型解決ができます。
-- この frontend 構成は個人利用の開発環境を前提としており、`pnpm install` / `pnpm dev` / `pnpm test` / `pnpm build` はコンテナ内だけで実行します。ホスト側では `pnpm` を使った実行を想定していません。
-- mysql: `localhost:33006`
-- backend はホストの `~/.copilot` を read-only で `/copilot-home` にマウントし、`COPILOT_HOME=/copilot-home` で会話履歴を参照します。
-- backend の `/app/tmp` は named volume のため、古い `tmp/pids/server.pid` が見えないまま残ることがあります。起動時に stale PID を削除してから Rails を立ち上げます。
+- frontend の `pnpm install` / `pnpm dev` / `pnpm test` / `pnpm build` はコンテナ内実行を前提にします。
+- mysql service は compose に残りますが、この Django foundation の backend 起動・health check・settings import の必須条件ではありません。
 
-## 使い始めの流れ
+backend だけを確認する場合は次を使います。
 
-1. `docker compose up --build` を実行します。
-2. frontend の http://localhost:51730 を開きます。
-3. セッション一覧画面で **「履歴を最新化」** を押して、ホストの `~/.copilot` にある履歴を MySQL に取り込みます。
-4. 一覧からセッションを開いて詳細を確認します。
+```bash
+docker compose up --build backend
+curl http://localhost:30000/up
+```
 
-- **初回利用時は MySQL が空** なので、最初に手動同期しないと一覧は表示されません。
-- 画面の一覧は **直近 7 日** を初期表示にしているため、古い履歴を見たい場合は日付範囲を変更してください。
-- Copilot CLI で新しい会話が増えても **自動では同期されません**。最新状態を見たいときは、もう一度 **「履歴を最新化」** を押してください。
+`GET /up` の期待 response は最小 JSON です。
 
-## セッション詳細画面の初期表示
+```json
+{"status":"ok"}
+```
 
-- **「セッションの issue」** と **「内部 activity」** は、詳細画面では初期状態で折りたたまれています。必要なときだけ **「表示」** を押して確認します。
-- **会話** では、次の発話は初期状態で本文を隠します。
-  - 先頭が `<skill-context ...>` の発話
-  - 本文として見える prose / code がなく、ツール呼び出しだけを含む発話
-- ツール呼び出しの **arguments** は、preview がある場合でも初期状態では折りたたまれます。ツール名や `partial` / `truncated` などの状態は表示されたままです。
+## Backend コマンド
+
+```bash
+docker compose run --rm backend bin/test
+docker compose run --rm backend bin/lint
+docker compose run --rm backend bin/typecheck
+docker compose run --rm backend bin/quality
+```
+
+| Command | 実行内容 |
+| --- | --- |
+| `bin/test` | `python -m pytest` |
+| `bin/lint` | `ruff check .` |
+| `bin/typecheck` | `mypy .` |
+| `bin/quality` | lint、typecheck、test の順次実行 |
+
+## Frontend コマンド
+
+```bash
+docker compose run --rm frontend sh -lc "pnpm install --no-frozen-lockfile && pnpm lint"
+docker compose run --rm frontend sh -lc "pnpm install --no-frozen-lockfile && pnpm build"
+docker compose run --rm frontend sh -lc "pnpm install --no-frozen-lockfile && pnpm test"
+```
 
 ## データの流れ
 
 - **一次ソース**: ホストの `~/.copilot` にある Copilot CLI の raw files
-- **同期処理**: `POST /api/history/sync` が raw files を読み取り、MySQL の read model に保存
-- **通常の表示**: `GET /api/sessions` / `GET /api/sessions/:id` は raw files を毎回読まず、**MySQL から取得**
+- **同期処理**: 後続 spec で raw files を読み取り、再生成可能な read model に保存する
+- **通常の表示**: 後続 spec で read model から session API を返す
 
-つまり、このアプリは **「表示はDB参照、raw files の反映は手動同期」** という構成です。  
-raw files に履歴が存在していても、同期前は画面に出ません。
+この foundation は raw files を一次ソースとして扱うプロダクト原則を変更しません。
 
-## 手動同期の方法
+## この foundation で維持するもの
 
-- 画面から: セッション一覧の **「履歴を最新化」** ボタン
-- API から:
+- frontend の接続先は `http://localhost:30000` のままです。
+- backend host port は `30000` のままです。
+- mysql service は compose に残ります。
+- backend は Django project と pytest / lint / type check / quality の入口を提供します。
 
-```bash
-curl -X POST http://localhost:30000/api/history/sync
-```
+## この foundation の対象外
 
-同期が成功すると、その時点の raw files の内容が MySQL に保存され、以後の一覧・詳細表示はその保存済みデータを参照します。
+- BigQuery schema / 接続
+- Copilot raw history reader の Python 移植
+- `POST /api/history/sync`
+- `GET /api/sessions`
+- `GET /api/sessions/:id`
+- Django admin / auth / session 機能
+- Rails / MySQL stack の全面削除
 
-## テスト
-
-```bash
-docker compose run --rm frontend sh -lc "pnpm install --no-frozen-lockfile && pnpm test"
-docker compose run --rm -e RAILS_ENV=test backend bundle exec rspec
-```
-
-## 補足
-
-- ルートの `Dockerfile.frontend` / `Dockerfile.backend` と `docker-compose.yml` を開発環境の正本とします。
-- backend は `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_TEST_NAME`, `DB_USERNAME`, `DB_PASSWORD` を使って MySQL に接続します。
+後続 spec は `backend/README.md` の追加先と検証入口を確認してから実装します。

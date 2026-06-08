@@ -20,8 +20,8 @@ dev = [
   "ruff>=0.14,<1",
 ]
 
-[tool.setuptools]
-packages = []
+[tool.setuptools.packages.find]
+include = ["backend_config", "health"]
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "backend_config.settings"

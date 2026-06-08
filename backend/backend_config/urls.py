@@ -1,3 +1,7 @@
-from django.urls import URLPattern, URLResolver
+from django.urls import URLPattern, URLResolver, path
 
-urlpatterns: list[URLPattern | URLResolver] = []
+from health.views import up
+
+urlpatterns: list[URLPattern | URLResolver] = [
+    path("up", up, name="up"),
+]

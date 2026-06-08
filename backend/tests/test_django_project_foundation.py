@@ -2,6 +2,7 @@ import importlib
 
 import pytest
 from django.core.exceptions import ImproperlyConfigured
+from django.urls import Resolver404, resolve
 
 
 # 概要・目的: Django project の settings が外部サービスなしで読み込める契約を守る。
@@ -44,3 +45,15 @@ def test_management_asgi_and_wsgi_entrypoints_load_settings() -> None:
     assert manage.DEFAULT_SETTINGS_MODULE == "backend_config.settings"
     assert asgi.application is not None
     assert wsgi.application is not None
+
+
+# 概要・目的: foundation spec が対象外 API route を提供しない境界を守る。
+# テストケース: 履歴同期 API と session API の path を Django URL resolver で解決する。
+# 期待値: いずれも root URLconf では未定義として Resolver404 になる。
+@pytest.mark.parametrize(
+    "path",
+    ["/api/history/sync", "/api/sessions", "/api/sessions/example-session-id"],
+)
+def test_foundation_does_not_register_out_of_scope_history_api_routes(path: str) -> None:
+    with pytest.raises(Resolver404):
+        resolve(path)

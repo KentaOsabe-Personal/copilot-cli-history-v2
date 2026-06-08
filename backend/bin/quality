@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+set -eu
+
+echo "==> lint"
+"$(dirname "$0")/lint"
+
+echo "==> typecheck"
+"$(dirname "$0")/typecheck"
+
+echo "==> test"
+"$(dirname "$0")/test"
