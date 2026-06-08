@@ -27,30 +27,14 @@ services:
       - "30000:30000"
     volumes:
       - ./backend:/app
+      - ~/.config/gcloud:/root/.config/gcloud:ro
     environment:
       DJANGO_SETTINGS_MODULE: backend_config.settings
       PYTHONUNBUFFERED: "1"
-
-  mysql:
-    image: mysql:9.7
-    container_name: copilot-cli-history-mysql
-    ports:
-      - "33006:3306"
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: copilot_cli_history_development
-      MYSQL_USER: copilot
-      MYSQL_PASSWORD: copilot
-    volumes:
-      - mysql_data:/var/lib/mysql
-      - ./mysql/init:/docker-entrypoint-initdb.d:ro
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-proot"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
-      start_period: 10s
-
+      BIGQUERY_PROJECT_ID:
+      BIGQUERY_DATASET_ID:
+      BIGQUERY_LOCATION:
+      BIGQUERY_TABLE_PREFIX:
+      BIGQUERY_READ_MODEL_INTEGRATION: 1
 volumes:
   frontend_pnpm_store:
-  mysql_data:

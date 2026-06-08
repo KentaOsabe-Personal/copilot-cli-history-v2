@@ -38,7 +38,7 @@ Frontend は現行 React SPA を維持し、利用者から見える API contrac
 
 - [x] api-contract-fixtures -- Rails API と frontend 型を基準に list / detail / sync / error の request / response fixture を固定する。Dependencies: none
 - [x] django-backend-foundation -- Django 5.2 backend の起動、health endpoint、Python 3.14 Docker runtime、品質ツール、pytest 基盤を作る。Dependencies: none
-- [ ] bigquery-read-model-schema -- BigQuery dataset / table schema と初期化 script、環境変数、fake repository 前提を定義する。Dependencies: django-backend-foundation
+- [x] bigquery-read-model-schema -- BigQuery dataset / table schema と初期化 script、環境変数、fake repository 前提を定義する。Dependencies: django-backend-foundation
 - [ ] copilot-history-python-reader -- Rails の raw file reader / normalizer / projection を Python に移植し、normalized session を作れるようにする。Dependencies: django-backend-foundation, api-contract-fixtures
 - [ ] django-presenters-contract -- Python presenter で summary / detail payload と error envelope を現行 API fixture に一致させる。Dependencies: copilot-history-python-reader, api-contract-fixtures
 - [ ] bigquery-session-repository -- BigQuery の sessions query / detail query / staging + MERGE upsert repository を実装する。Dependencies: bigquery-read-model-schema, django-presenters-contract
@@ -60,4 +60,4 @@ Frontend は現行 React SPA を維持し、利用者から見える API contrac
 - [x] session-api-db-query -- 既存 session list/detail API を DB query に切り替え、日付範囲指定を DB 側で処理する。Dependencies: history-db-read-model, history-sync-api, frontend-history-sync-ui
 - [x] session-date-filtering -- セッション一覧に日付フィルタ UI を追加し、初期表示を直近 1 週間へ絞る。Dependencies: session-api-db-query, frontend-session-ui, frontend-history-sync-ui
 - [x] session-full-text-search -- セッション一覧に全文検索を追加し、保存済み read model から会話本文・関連メタ情報に一致するセッションを探せるようにする。Dependencies: session-api-db-query, session-date-filtering, history-sync-api
-- [ ] cwd-session-tabs -- セッション一覧に作業ディレクトリ別タブを追加し、取得済み一覧を cwd ごとに切り替えて確認できるようにする。Dependencies: session-api-db-query, session-date-filtering, session-full-text-search, session-execution-directory-search
+- [x] cwd-session-tabs -- セッション一覧に作業ディレクトリ別タブを追加し、取得済み一覧を cwd ごとに切り替えて確認できるようにする。Dependencies: session-api-db-query, session-date-filtering, session-full-text-search, session-execution-directory-search
