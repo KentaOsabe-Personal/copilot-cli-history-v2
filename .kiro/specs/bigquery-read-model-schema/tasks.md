@@ -14,28 +14,28 @@
   - secrets や credentials 内容を repository に保存せず、エラーや出力にも credential content を含めない
   - _Requirements: 3.3, 4.1, 4.2, 4.3, 4.4, 4.5_
 
-- [ ] 2. BigQuery schema contract を実装する
-- [ ] 2.1 `copilot_sessions` の table schema 契約を固定する
+- [x] 2. BigQuery schema contract を実装する
+- [x] 2.1 `copilot_sessions` の table schema 契約を固定する
   - session identity、source format / state、source timestamps、workspace metadata、counts、degraded flag、conversation preview、source paths、source fingerprint、summary payload、detail payload、search text、search text version、indexed timestamp を保持する列契約を定義する
   - required / nullable、BigQuery type、default equivalent、enum、non-negative count invariant、JSON object payload 領域を確認できるようにする
   - `summary_payload` と `detail_payload` は presenter JSON shape を失わず保存する JSON 領域として扱い、raw files は一次ソースで read model は再生成可能な補助層である前提を schema 契約から追跡できる
   - _Requirements: 1.1, 1.2, 1.4, 1.5, 5.2, 6.5_
 
-- [ ] 2.2 `history_sync_runs` の table schema 契約を固定する
+- [x] 2.2 `history_sync_runs` の table schema 契約を固定する
   - sync lifecycle status、started / finished timestamps、processed / inserted / updated / saved / skipped / failed / degraded counts、failure / degradation summary、running lock identity を保持する列契約を定義する
   - required / nullable、BigQuery type、default equivalent、terminal / running lifecycle invariant、saved count invariant を確認できるようにする
   - 後続 repository が sync status と直近 run の保存契約を BigQuery 実接続なしで参照できる状態にする
   - _Requirements: 1.1, 1.3, 5.2, 6.1_
 
-- [ ] 2.3 partition / clustering と table naming の layout 契約を固定する
+- [x] 2.3 partition / clustering と table naming の layout 契約を固定する
   - `copilot_sessions` は日付 range 用の `source_partition_date` partition と session / repository / branch / source format clustering を契約化する
   - `history_sync_runs` は started_at 由来 partition と status / started_at / running lock clustering を契約化する
   - prefix 付き table names を in-scope の設定契約として扱い、高度な cost optimization だけを初期 scope 外として確認できる
   - 後続 list / detail query 設計が date range、session id、search text、sync status の利用前提を参照できる状態にする
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 4.1, 6.1_
 
-- [ ] 3. SchemaDefinition から DDL と metadata comparison を生成する
-- [ ] 3.1 dataset / table 作成 SQL と metadata 取得 SQL を dry-run 表示できる形で生成する
+- [x] 3. SchemaDefinition から DDL と metadata comparison を生成する
+- [x] 3.1 dataset / table 作成 SQL と metadata 取得 SQL を dry-run 表示できる形で生成する
   - dataset 作成 SQL と 2 table の `CREATE TABLE IF NOT EXISTS` SQL を schema 契約から決定的に生成する
   - `--compare` 用に `INFORMATION_SCHEMA.COLUMNS` / `TABLE_OPTIONS` を取得する comparison SQL を生成する
   - SQL には partition、clustering、`require_partition_filter`、JSON columns、safe identifier handling が反映される
@@ -43,7 +43,7 @@
   - _Requirements: 3.1, 3.4, 3.5, 5.2_
   - _Boundary: DDLBuilder_
 
-- [ ] 3.2 (P) 既存 BigQuery metadata と schema 契約の差分分類を実装する
+- [x] 3.2 (P) 既存 BigQuery metadata と schema 契約の差分分類を実装する
   - column name、type、nullability、partition / clustering related options を expected schema と比較する
   - missing / incompatible / extra informational を決定的に分類し、missing または incompatible がある場合は compatible false として扱う
   - 既存 table に余分な列がある場合は自動削除せず informational として報告できる
