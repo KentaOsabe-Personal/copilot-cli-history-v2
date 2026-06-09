@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date, datetime
-from typing import Any, Literal
+from typing import Any, Literal, overload
 
 from history_read_model.bigquery_schema import (
     COPILOT_SESSIONS_BASE_NAME,
@@ -11,6 +11,18 @@ from history_read_model.bigquery_schema import (
     BigQueryColumn,
     BigQueryTable,
     read_model_tables,
+)
+from history_read_model.repository import (
+    RepositoryExecutionOptions,
+    SessionDetailResult,
+    SessionListCriteria,
+    SessionListResult,
+    SyncRunLookupResult,
+    SyncRunResult,
+    SyncWriteResult,
+    validate_repository_options,
+    validate_session_id,
+    validate_session_list_criteria,
 )
 
 
@@ -82,11 +94,38 @@ class FakeBigQueryReadModelRepository:
         _validate_row_contract(table, row)
         self._sessions_by_id[row.session_id] = row
 
-    def save_sync_run(self, row: HistorySyncRunRow) -> None:
+    @overload
+    def save_sync_run(self, row: HistorySyncRunRow) -> None: ...
+
+    @overload
+    def save_sync_run(
+        self,
+        row: HistorySyncRunRow,
+        options: RepositoryExecutionOptions,
+    ) -> SyncRunResult: ...
+
+    def save_sync_run(
+        self,
+        row: HistorySyncRunRow,
+        options: RepositoryExecutionOptions | None = None,
+    ) -> SyncRunResult | None:
         table = self._table(HISTORY_SYNC_RUNS_BASE_NAME)
         _validate_row_contract(table, row)
         _validate_sync_lifecycle(table, row)
+        if options is not None:
+            error = validate_repository_options(options)
+            if error is not None:
+                return SyncRunResult.failure(error)
+            if options.dry_run:
+                return SyncRunResult.success(
+                    row.sync_run_id,
+                    dry_run=True,
+                    planned_operations=("validate_sync_run",),
+                )
         self._sync_runs_by_id[row.sync_run_id] = row
+        if options is not None:
+            return SyncRunResult.success(row.sync_run_id)
+        return None
 
     def get_session(self, session_id: str) -> CopilotSessionRow | None:
         return self._sessions_by_id.get(session_id)
@@ -94,8 +133,127 @@ class FakeBigQueryReadModelRepository:
     def get_sync_run(self, sync_run_id: str) -> HistorySyncRunRow | None:
         return self._sync_runs_by_id.get(sync_run_id)
 
-    def list_sessions(self) -> tuple[CopilotSessionRow, ...]:
+    def list_session_rows(self) -> tuple[CopilotSessionRow, ...]:
         return tuple(self._sessions_by_id.values())
+
+    @overload
+    def list_sessions(self) -> tuple[CopilotSessionRow, ...]: ...
+
+    @overload
+    def list_sessions(
+        self,
+        criteria: SessionListCriteria,
+        options: RepositoryExecutionOptions,
+    ) -> SessionListResult: ...
+
+    def list_sessions(
+        self,
+        criteria: SessionListCriteria | None = None,
+        options: RepositoryExecutionOptions | None = None,
+    ) -> SessionListResult | tuple[CopilotSessionRow, ...]:
+        if criteria is None:
+            return self.list_session_rows()
+
+        execution_options = options or RepositoryExecutionOptions()
+        error = validate_repository_options(execution_options) or validate_session_list_criteria(
+            criteria
+        )
+        if error is not None:
+            return SessionListResult.failure(error)
+
+        matching_rows = [
+            row
+            for row in self._sessions_by_id.values()
+            if _matches_list_criteria(row, criteria)
+        ]
+        matching_rows.sort(key=_list_sort_key)
+        if criteria.limit is not None:
+            matching_rows = matching_rows[: criteria.limit]
+
+        return SessionListResult.success(
+            [row.summary_payload for row in matching_rows],
+            dry_run=execution_options.dry_run,
+            planned_operations=("filter_in_memory",) if execution_options.dry_run else (),
+        )
+
+    def get_session_detail(
+        self,
+        session_id: str,
+        options: RepositoryExecutionOptions | None = None,
+    ) -> SessionDetailResult:
+        execution_options = options or RepositoryExecutionOptions()
+        error = validate_repository_options(execution_options) or validate_session_id(session_id)
+        if error is not None:
+            return SessionDetailResult.failure(error)
+
+        row = self._sessions_by_id.get(session_id)
+        if row is None:
+            return SessionDetailResult.not_found(session_id)
+
+        return SessionDetailResult.success(
+            row.detail_payload,
+            session_id=session_id,
+            dry_run=execution_options.dry_run,
+            planned_operations=("lookup_in_memory",) if execution_options.dry_run else (),
+        )
+
+    def save_sessions(
+        self,
+        rows: Sequence[object],
+        options: RepositoryExecutionOptions | None = None,
+    ) -> SyncWriteResult:
+        from history_read_model.repository_write_planner import (
+            ExistingSessionMetadata,
+            plan_sync_write,
+        )
+
+        execution_options = options or RepositoryExecutionOptions()
+        error = validate_repository_options(execution_options)
+        if error is not None:
+            return SyncWriteResult.failure(error)
+
+        existing_metadata = {
+            row.session_id: ExistingSessionMetadata(
+                session_id=row.session_id,
+                source_fingerprint=row.source_fingerprint,
+                search_text_version=row.search_text_version,
+            )
+            for row in self._sessions_by_id.values()
+        }
+        plan = plan_sync_write(rows, existing_metadata=existing_metadata)  # type: ignore[arg-type]
+        result = plan.to_result(dry_run=execution_options.dry_run)
+        if execution_options.dry_run:
+            return result
+
+        for row in plan.rows_for_merge:
+            self.save_session(row)
+        return result
+
+    def find_running_sync_run(
+        self,
+        options: RepositoryExecutionOptions | None = None,
+    ) -> SyncRunLookupResult:
+        execution_options = options or RepositoryExecutionOptions()
+        error = validate_repository_options(execution_options)
+        if error is not None:
+            return SyncRunLookupResult.failure(error)
+        if execution_options.dry_run:
+            return SyncRunLookupResult(
+                ok=True,
+                found=False,
+                dry_run=True,
+                planned_operations=("running_sync_lookup",),
+            )
+
+        running_rows = [
+            row
+            for row in self._sync_runs_by_id.values()
+            if row.status == "running" and row.running_lock_key is not None
+        ]
+        if not running_rows:
+            return SyncRunLookupResult.not_found()
+        running_rows.sort(key=lambda row: (row.started_at, row.sync_run_id))
+        return SyncRunLookupResult.success(running_rows[0].sync_run_id)
 
     def list_sync_runs(self) -> tuple[HistorySyncRunRow, ...]:
         return tuple(self._sync_runs_by_id.values())
@@ -193,3 +351,31 @@ def _row_values(row: object) -> Mapping[str, Any]:
     if not hasattr(row, "__dict__"):
         raise ReadModelContractError(f"Unsupported read model row type: {type(row).__name__}")
     return row.__dict__
+
+
+def _matches_list_criteria(row: CopilotSessionRow, criteria: SessionListCriteria) -> bool:
+    display_time = _display_time(row)
+    if display_time is None:
+        return False
+
+    if criteria.from_datetime is None or criteria.to_datetime is None:
+        return False
+
+    if display_time < criteria.from_datetime or display_time > criteria.to_datetime:
+        return False
+
+    search_term = criteria.search_term.strip().lower() if criteria.search_term is not None else ""
+    if not search_term:
+        return True
+
+    return search_term in row.search_text.lower() or search_term in (row.cwd or "").lower()
+
+
+def _display_time(row: CopilotSessionRow) -> datetime | None:
+    return row.updated_at_source or row.created_at_source
+
+
+def _list_sort_key(row: CopilotSessionRow) -> tuple[float, str]:
+    display_time = _display_time(row)
+    timestamp = display_time.timestamp() if display_time is not None else float("-inf")
+    return (-timestamp, row.session_id)
