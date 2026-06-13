@@ -13,12 +13,15 @@ from history_read_model.bigquery_schema import (
     read_model_tables,
 )
 from history_read_model.repository import (
+    RepositoryError,
     RepositoryExecutionOptions,
     SessionDetailResult,
     SessionListCriteria,
     SessionListResult,
+    SyncRunConflict,
     SyncRunLookupResult,
     SyncRunResult,
+    SyncRunStartResult,
     SyncWriteResult,
     validate_repository_options,
     validate_session_id,
@@ -126,6 +129,47 @@ class FakeBigQueryReadModelRepository:
         if options is not None:
             return SyncRunResult.success(row.sync_run_id)
         return None
+
+    def start_sync_run(
+        self,
+        row: HistorySyncRunRow,
+        options: RepositoryExecutionOptions | None = None,
+    ) -> SyncRunStartResult:
+        execution_options = options or RepositoryExecutionOptions()
+        error = validate_repository_options(execution_options)
+        if error is not None:
+            return SyncRunStartResult.failure(error)
+        if execution_options.dry_run:
+            return SyncRunStartResult.started_success(
+                row.sync_run_id,
+                dry_run=True,
+                planned_operations=("atomic_sync_start",),
+            )
+
+        running = self.find_running_sync_run(execution_options)
+        if not running.ok:
+            return SyncRunStartResult.failure(_repository_error(running.error))
+        if running.found and running.sync_run_id is not None and running.started_at is not None:
+            return SyncRunStartResult.conflict_result(
+                SyncRunConflict(
+                    sync_run_id=running.sync_run_id,
+                    started_at=running.started_at,
+                )
+            )
+
+        saved = self.save_sync_run(row, execution_options)
+        if saved is None:
+            return SyncRunStartResult.started_success(row.sync_run_id)
+        if not saved.ok:
+            return SyncRunStartResult.failure(_repository_error(saved.error))
+        return SyncRunStartResult.started_success(row.sync_run_id)
+
+    def finish_sync_run(
+        self,
+        row: HistorySyncRunRow,
+        options: RepositoryExecutionOptions | None = None,
+    ) -> SyncRunResult:
+        return self.save_sync_run(row, options or RepositoryExecutionOptions())
 
     def get_session(self, session_id: str) -> CopilotSessionRow | None:
         return self._sessions_by_id.get(session_id)
@@ -253,7 +297,10 @@ class FakeBigQueryReadModelRepository:
         if not running_rows:
             return SyncRunLookupResult.not_found()
         running_rows.sort(key=lambda row: (row.started_at, row.sync_run_id))
-        return SyncRunLookupResult.success(running_rows[0].sync_run_id)
+        return SyncRunLookupResult.success(
+            running_rows[0].sync_run_id,
+            started_at=running_rows[0].started_at,
+        )
 
     def list_sync_runs(self) -> tuple[HistorySyncRunRow, ...]:
         return tuple(self._sync_runs_by_id.values())
@@ -263,6 +310,12 @@ class FakeBigQueryReadModelRepository:
             return self._tables_by_base_name[base_name]
         except KeyError as exc:
             raise ReadModelContractError(f"{base_name} schema table is not configured") from exc
+
+
+def _repository_error(error: object) -> RepositoryError:
+    if isinstance(error, RepositoryError):
+        return error
+    return RepositoryError(kind="query_failed", message="repository operation failed")
 
 
 def _validate_row_contract(table: BigQueryTable, row: object) -> None:

@@ -28,7 +28,7 @@ ALLOWED_HOSTS = os.environ.get(
     "localhost,127.0.0.1,0.0.0.0",
 ).split(",")
 
-INSTALLED_APPS: list[str] = ["health", "history_read_model"]
+INSTALLED_APPS: list[str] = ["health", "history_read_model", "history_api"]
 MIDDLEWARE: list[str] = []
 
 ROOT_URLCONF = "backend_config.urls"
@@ -46,3 +46,17 @@ DATABASES = {
 USE_TZ = True
 LANGUAGE_CODE = "ja"
 TIME_ZONE = "Asia/Tokyo"
+
+HISTORY_API_REPOSITORY_BACKEND = os.environ.get("HISTORY_API_REPOSITORY_BACKEND", "fake").strip()
+HISTORY_API_ALLOWED_ORIGINS = tuple(
+    origin.strip()
+    for origin in os.environ.get(
+        "HISTORY_API_ALLOWED_ORIGINS",
+        "http://localhost:51730,http://127.0.0.1:51730",
+    ).split(",")
+    if origin.strip()
+)
+HISTORY_API_BIGQUERY_INTEGRATION_ENABLED = os.environ.get(
+    "BIGQUERY_READ_MODEL_INTEGRATION",
+    "",
+).strip().lower() in {"1", "true", "yes", "on"}

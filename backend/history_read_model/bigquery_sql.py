@@ -243,6 +243,70 @@ WHEN NOT MATCHED THEN
     )
 
 
+def build_sync_run_start_query(
+    *,
+    project_id: str,
+    dataset_id: str,
+    table_prefix: str,
+    row: HistorySyncRunRow,
+    options: RepositoryExecutionOptions,
+) -> BigQuerySql:
+    table = _qualified_table(project_id, dataset_id, table_prefix, HISTORY_SYNC_RUNS_BASE_NAME)
+    columns = tuple(
+        column.name for column in table_by_base_name(HISTORY_SYNC_RUNS_BASE_NAME).columns
+    )
+    source_columns = ",\n      ".join(f"@{column} AS {column}" for column in columns)
+    insert_columns = ", ".join(columns)
+    insert_values = ", ".join(f"source.{column}" for column in columns)
+    parameters = tuple(
+        QueryParameter(
+            column,
+            getattr(row, column),
+            table_by_base_name(HISTORY_SYNC_RUNS_BASE_NAME).column_map[column].type,
+        )
+        for column in columns
+    )
+    return BigQuerySql(
+        sql=f"""
+DECLARE running_sync_run_id STRING DEFAULT (
+  SELECT sync_run_id
+  FROM {table}
+  WHERE status = @running_status
+    AND running_lock_key IS NOT NULL
+  ORDER BY started_at ASC, sync_run_id ASC
+  LIMIT 1
+);
+DECLARE running_started_at TIMESTAMP DEFAULT (
+  SELECT started_at
+  FROM {table}
+  WHERE sync_run_id = running_sync_run_id
+  LIMIT 1
+);
+
+IF running_sync_run_id IS NULL THEN
+  MERGE {table} AS target
+  USING (
+    SELECT
+      {source_columns}
+  ) AS source
+  ON target.sync_run_id = source.sync_run_id
+  WHEN NOT MATCHED THEN
+    INSERT ({insert_columns})
+    VALUES ({insert_values});
+  SELECT TRUE AS started, @sync_run_id AS sync_run_id, @started_at AS started_at;
+ELSE
+  SELECT FALSE AS started, running_sync_run_id AS sync_run_id, running_started_at AS started_at;
+END IF
+""".strip(),
+        parameters=(
+            *parameters,
+            QueryParameter("running_status", "running", "STRING"),
+        ),
+        dry_run=options.dry_run,
+        maximum_bytes_billed=options.maximum_bytes_billed,
+    )
+
+
 def build_running_sync_run_query(
     *,
     project_id: str,
@@ -253,7 +317,7 @@ def build_running_sync_run_query(
     table = _qualified_table(project_id, dataset_id, table_prefix, HISTORY_SYNC_RUNS_BASE_NAME)
     return BigQuerySql(
         sql=f"""
-SELECT sync_run_id
+SELECT sync_run_id, started_at
 FROM {table}
 WHERE status = @running_status
   AND running_lock_key IS NOT NULL
@@ -297,5 +361,6 @@ __all__ = [
     "build_session_list_query",
     "build_session_merge_query",
     "build_session_metadata_query",
+    "build_sync_run_start_query",
     "build_sync_run_upsert_query",
 ]

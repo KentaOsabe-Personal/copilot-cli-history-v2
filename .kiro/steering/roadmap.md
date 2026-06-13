@@ -42,7 +42,7 @@ Frontend は現行 React SPA を維持し、利用者から見える API contrac
 - [x] copilot-history-python-reader -- Rails の raw file reader / normalizer / projection を Python に移植し、normalized session を作れるようにする。Dependencies: django-backend-foundation, api-contract-fixtures
 - [x] django-presenters-contract -- Python presenter で summary / detail payload と error envelope を現行 API fixture に一致させる。Dependencies: copilot-history-python-reader, api-contract-fixtures
 - [x] bigquery-session-repository -- BigQuery の sessions query / detail query / staging + MERGE upsert repository を実装する。Dependencies: bigquery-read-model-schema, django-presenters-contract
-- [ ] django-history-api -- Django で sync / list / detail API を実装し、現行 frontend が使う URL と JSON shape を返す。Dependencies: bigquery-session-repository
+- [x] django-history-api -- Django で sync / list / detail API を実装し、現行 frontend が使う URL と JSON shape を返す。Dependencies: bigquery-session-repository
 - [ ] rails-django-parity-validation -- Rails backend と Django backend を並行稼働し、同じ raw files / fixture で payload 差分を検証する。Dependencies: django-history-api
 - [ ] remove-rails-mysql-stack -- parity 確認後に Rails / MySQL 依存を削除し、Docker Compose、README、steering を Django / BigQuery 前提へ更新する。Dependencies: rails-django-parity-validation
 

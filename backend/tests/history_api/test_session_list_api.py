@@ -104,7 +104,7 @@ def test_session_list_api_rejects_invalid_datetime_query() -> None:
     assert response.json() == {
         "error": {
             "code": "invalid_session_list_query",
-            "message": "Invalid session list query.",
+            "message": "session list query is invalid",
             "details": {
                 "field": "from",
                 "reason": "invalid_datetime",
@@ -116,7 +116,7 @@ def test_session_list_api_rejects_invalid_datetime_query() -> None:
 
 # 概要・目的: 一覧 API が無効な期間順序を validation error として返す。
 # テストケース: from が to より後になる query で GET /api/sessions を呼ぶ。
-# 期待値: HTTP 400 と range field の invalid_range details が返る。
+# 期待値: HTTP 400 と range field の from_after_to details が返る。
 def test_session_list_api_rejects_invalid_range_query() -> None:
     with dependency_overrides(repository=build_history_api_test_repository()):
         response = Client().get(
@@ -127,13 +127,13 @@ def test_session_list_api_rejects_invalid_range_query() -> None:
     assert response.json()["error"]["code"] == "invalid_session_list_query"
     assert response.json()["error"]["details"] == {
         "field": "range",
-        "reason": "invalid_range",
+        "reason": "from_after_to",
     }
 
 
 # 概要・目的: 一覧 API が limit の許可範囲外指定を validation error として返す。
 # テストケース: limit=0 で GET /api/sessions を呼ぶ。
-# 期待値: HTTP 400 と limit field の out_of_range details が返る。
+# 期待値: HTTP 400 と limit field の positive_integer_required details が返る。
 def test_session_list_api_rejects_invalid_limit_query() -> None:
     with dependency_overrides(repository=build_history_api_test_repository()):
         response = Client().get(f"/api/sessions?{_query(limit='0')}")
@@ -141,7 +141,7 @@ def test_session_list_api_rejects_invalid_limit_query() -> None:
     assert response.status_code == 400
     assert response.json()["error"]["details"] == {
         "field": "limit",
-        "reason": "out_of_range",
+        "reason": "positive_integer_required",
         "value": "0",
     }
 

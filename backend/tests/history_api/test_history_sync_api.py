@@ -158,7 +158,6 @@ def test_history_sync_api_returns_save_failure_error() -> None:
         "code": "history_sync_failed",
         "message": "history sync failed",
         "details": {
-            "kind": "query_failed",
             "mode": "save_failure",
             "sync_run_id": 1781006400000000,
         },

@@ -143,29 +143,29 @@
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 7.1, 7.6_
   - _Boundary: History sync API tests_
 
-- [ ] 7. Contract fixture と integration 入口で互換性を検証する
-- [ ] 7.1 Contract fixture scenario と Django response の比較テストを追加する
+- [x] 7. Contract fixture と integration 入口で互換性を検証する
+- [x] 7.1 Contract fixture scenario と Django response の比較テストを追加する
   - fixture の request method、endpoint、expected status、expected body と API response を比較する。
   - list、detail、raw detail、not found、validation、sync success、sync conflict、sync failure の代表 scenario を fake data で再現する。
   - fixture と API response が一致すれば Rails 互換 contract を機械的に確認できる。
   - _Depends: 6.1, 6.2, 6.3, 6.4_
   - _Requirements: 1.5, 7.1, 7.2, 7.6_
 
-- [ ] 7.2 Contract fixture 差分の診断出力を整える
+- [x] 7.2 Contract fixture 差分の診断出力を整える
   - body mismatch では scenario、HTTP status、差分 field path を識別できる失敗メッセージを返す。
   - status mismatch と body mismatch が混ざらず、レビュー担当者が原因箇所を追える。
   - 意図的な fixture drift が発生した場合に、失敗結果から修正対象 scenario を特定できる。
   - _Depends: 7.1_
   - _Requirements: 7.3_
 
-- [ ] 7.3 BigQuery integration opt-in の入口を検証する
+- [x] 7.3 BigQuery integration opt-in の入口を検証する
   - 明示 opt-in と credentials / dataset が揃う場合だけ実 repository smoke が実行される。
   - credentials がない場合でも fake repository と contract fixture の主要 API 検証は継続する。
   - integration gate の結果から、実接続未設定と実 repository failure を区別できる。
   - _Depends: 1.3, 5.2_
   - _Requirements: 7.4, 7.5_
 
-- [ ] 7.4 Backend quality gate で Django History API の完了状態を確認する
+- [x] 7.4 Backend quality gate で Django History API の完了状態を確認する
   - backend の test、lint、typecheck が新規 API 層と repository 拡張を含めて通る。
   - 対象 endpoint の成功 response、error response、HTTP status code が contract fixture と照合済みになる。
   - Rails / Django 差分レポート作成、Rails / MySQL stack 削除、frontend UI 変更が完了条件に含まれていないことを確認できる。

@@ -106,7 +106,7 @@ def test_session_detail_api_returns_not_found_error() -> None:
     assert response.json() == {
         "error": {
             "code": "session_not_found",
-            "message": "Session was not found.",
+            "message": "session was not found",
             "details": {"session_id": "missing-session"},
         }
     }

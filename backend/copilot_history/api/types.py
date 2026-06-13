@@ -175,14 +175,17 @@ class ApiSessionDetailProjection:
 
 @dataclass(frozen=True)
 class HistorySyncRunPresentationInput:
-    id: int
+    id: int | str
     status: str
     started_at: datetime | None
     finished_at: datetime | None
 
     def __post_init__(self) -> None:
-        if self.id < 1:
+        if isinstance(self.id, int) and self.id < 1:
             msg = "id must be greater than or equal to 1"
+            raise ValueError(msg)
+        if isinstance(self.id, str) and not self.id:
+            msg = "id must not be empty"
             raise ValueError(msg)
         if not self.status:
             msg = "status must not be empty"

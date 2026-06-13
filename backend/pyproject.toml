@@ -23,7 +23,7 @@ dev = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["backend_config", "health", "history_read_model*", "copilot_history*"]
+include = ["backend_config", "health", "history_api*", "history_read_model*", "copilot_history*"]
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "backend_config.settings"

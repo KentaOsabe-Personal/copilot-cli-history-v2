@@ -5,7 +5,11 @@ from datetime import UTC, date, datetime
 
 from history_read_model.bigquery_repository import BigQuerySessionReadModelRepository
 from history_read_model.bigquery_settings import BigQueryReadModelSettings
-from history_read_model.fake_repository import CopilotSessionRow, HistorySyncRunRow
+from history_read_model.fake_repository import (
+    CopilotSessionRow,
+    FakeBigQueryReadModelRepository,
+    HistorySyncRunRow,
+)
 from history_read_model.repository import RepositoryExecutionOptions, SessionListCriteria
 
 
@@ -122,6 +126,29 @@ def _sync_run_row(sync_run_id: str) -> HistorySyncRunRow:
         degradation_summary=None,
         running_lock_key="history-sync",
         indexed_at=started_at,
+    )
+
+
+def _finished_sync_run_row(sync_run_id: str) -> HistorySyncRunRow:
+    started_at = datetime(2026, 6, 9, 10, tzinfo=UTC)
+    finished_at = datetime(2026, 6, 9, 10, 1, tzinfo=UTC)
+    return HistorySyncRunRow(
+        sync_run_id=sync_run_id,
+        status="succeeded",
+        started_at=started_at,
+        finished_at=finished_at,
+        started_partition_date=started_at.date(),
+        processed_count=2,
+        inserted_count=1,
+        updated_count=1,
+        saved_count=2,
+        skipped_count=0,
+        failed_count=0,
+        degraded_count=0,
+        failure_summary=None,
+        degradation_summary=None,
+        running_lock_key=None,
+        indexed_at=finished_at,
     )
 
 
@@ -255,7 +282,17 @@ def test_bigquery_repository_save_sessions_stages_and_merges_only_changed_rows()
 # テストケース: sync run upsert と running lookup を client double で呼ぶ。
 # 期待値: history_sync_runs の MERGE と running lookup が実行され、repository result が返る。
 def test_bigquery_repository_saves_sync_run_and_finds_running_sync_run() -> None:
-    client = _ClientDouble(query_rows=((), ({"sync_run_id": "sync-running"},)))
+    client = _ClientDouble(
+        query_rows=(
+            (),
+            (
+                {
+                    "sync_run_id": "sync-running",
+                    "started_at": datetime(2026, 6, 9, 10, tzinfo=UTC),
+                },
+            ),
+        )
+    )
     repository = BigQuerySessionReadModelRepository(client=client, settings=_settings())
 
     saved = repository.save_sync_run(_sync_run_row("sync-running"), RepositoryExecutionOptions())
@@ -266,8 +303,98 @@ def test_bigquery_repository_saves_sync_run_and_finds_running_sync_run() -> None
     assert running.ok is True
     assert running.found is True
     assert running.sync_run_id == "sync-running"
+    assert running.started_at == datetime(2026, 6, 9, 10, tzinfo=UTC)
     assert "history_sync_runs" in client.queries[0][0]
     assert "running_lock_key IS NOT NULL" in client.queries[1][0]
+
+
+# 概要・目的: fake repository が同期開始を running lock として扱い、重複開始を conflict にする。
+# テストケース: running row で start_sync_run を 2 回呼び、2 回目は別 ID を指定する。
+# 期待値: 1 回目は started、2 回目は既存 sync_run_id と started_at を持つ conflict になる。
+def test_fake_repository_start_sync_run_returns_conflict_with_started_at() -> None:
+    repository = FakeBigQueryReadModelRepository()
+    running = _sync_run_row("sync-running")
+
+    started = repository.start_sync_run(running, RepositoryExecutionOptions())
+    conflict = repository.start_sync_run(_sync_run_row("sync-next"), RepositoryExecutionOptions())
+
+    assert started.ok is True
+    assert started.started is True
+    assert started.sync_run_id == "sync-running"
+    assert conflict.ok is True
+    assert conflict.started is False
+    assert conflict.conflict is not None
+    assert conflict.conflict.sync_run_id == "sync-running"
+    assert conflict.conflict.started_at == running.started_at
+
+
+# 概要・目的: fake repository が同じ lifecycle 上で同期終了を保存できることを守る。
+# テストケース: running start 後に terminal row で finish_sync_run を呼ぶ。
+# 期待値: sync run は terminal status に更新され、running lookup から消える。
+def test_fake_repository_finish_sync_run_releases_running_lock() -> None:
+    repository = FakeBigQueryReadModelRepository()
+    repository.start_sync_run(_sync_run_row("sync-running"), RepositoryExecutionOptions())
+
+    finished = repository.finish_sync_run(
+        _finished_sync_run_row("sync-running"),
+        RepositoryExecutionOptions(),
+    )
+    running = repository.find_running_sync_run(RepositoryExecutionOptions())
+    saved_row = repository.get_sync_run("sync-running")
+
+    assert finished.ok is True
+    assert finished.sync_run_id == "sync-running"
+    assert saved_row is not None
+    assert saved_row.status == "succeeded"
+    assert running.ok is True
+    assert running.found is False
+
+
+# 概要・目的: BigQuery adapter が start_sync_run を単一 query operation として実行する。
+# テストケース: client double が started=true の row を返す状態で start_sync_run を呼ぶ。
+# 期待値: result は started になり、query には running conflict 判定と upsert が含まれる。
+def test_bigquery_repository_start_sync_run_uses_atomic_query_result() -> None:
+    started_at = datetime(2026, 6, 9, 10, tzinfo=UTC)
+    client = _ClientDouble(
+        query_rows=(({"started": True, "sync_run_id": "sync-running", "started_at": started_at},),)
+    )
+    repository = BigQuerySessionReadModelRepository(client=client, settings=_settings())
+
+    result = repository.start_sync_run(_sync_run_row("sync-running"), RepositoryExecutionOptions())
+
+    assert result.ok is True
+    assert result.started is True
+    assert result.sync_run_id == "sync-running"
+    assert len(client.queries) == 1
+    assert "IF running_sync_run_id IS NULL THEN" in client.queries[0][0]
+    assert "MERGE `local-project.history_dataset.dev_history_sync_runs`" in client.queries[0][0]
+
+
+# 概要・目的: BigQuery adapter が running conflict を既存 sync_run_id と started_at で返す。
+# テストケース: atomic start query の結果 row に started=false と既存実行情報を返す。
+# 期待値: reader や保存処理に進む前に conflict として識別できる result になる。
+def test_bigquery_repository_start_sync_run_maps_conflict_result() -> None:
+    started_at = datetime(2026, 6, 9, 9, 59, tzinfo=UTC)
+    client = _ClientDouble(
+        query_rows=(
+            (
+                {
+                    "started": False,
+                    "sync_run_id": "sync-existing",
+                    "started_at": started_at,
+                },
+            ),
+        )
+    )
+    repository = BigQuerySessionReadModelRepository(client=client, settings=_settings())
+
+    result = repository.start_sync_run(_sync_run_row("sync-next"), RepositoryExecutionOptions())
+
+    assert result.ok is True
+    assert result.started is False
+    assert result.conflict is not None
+    assert result.conflict.sync_run_id == "sync-existing"
+    assert result.conflict.started_at == started_at
 
 
 # 概要・目的: BigQuery adapter が client query 例外を repository error として分類する。

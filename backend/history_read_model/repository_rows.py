@@ -42,7 +42,7 @@ def build_copilot_session_write_input(
 
     response_projector = projector or SessionResponseProjector()
     summary_payload = response_projector.project_summary(session)
-    detail_payload = response_projector.project_detail(session, include_raw=False)
+    detail_payload = response_projector.project_detail(session, include_raw=True)
     conversation_summary = _mapping_value(summary_payload.get("conversation_summary"))
 
     row = CopilotSessionRow(
