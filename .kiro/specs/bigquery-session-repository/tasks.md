@@ -130,15 +130,15 @@
   - 完了時には、opt-in 条件が満たされた環境でのみ BigQuery 実接続検証が走る。
   - _Requirements: 6.4, 6.5, 6.6_
 
-- [ ] 6. Package 統合と品質ゲートを通す
-- [ ] 6.1 repository 実装を backend package から利用できる状態に統合する
+- [x] 6. Package 統合と品質ゲートを通す
+- [x] 6.1 repository 実装を backend package から利用できる状態に統合する
   - port、fake、BigQuery adapter、SQL、error mapping、write planner が package 内の一貫した依存方向で import できるようにする。
   - BigQuery client 生成は adapter 境界に閉じ、Django settings import や fake 利用時に実接続を要求しない。
   - endpoint、HTTP status 判定、raw file parsing、schema 初期化、Search Index、semantic search はこの統合に含めない。
   - 完了時には、後続の Django API / sync service spec が repository port を import して利用できる。
   - _Requirements: 1.1, 1.5, 5.5, 5.6, 6.1, 6.5_
 
-- [ ] 6.2 lint、type check、repository tests を実行して回帰を解消する
+- [x] 6.2 lint、type check、repository tests を実行して回帰を解消する
   - repository 関連の unit、contract、SQL、error mapping tests を実行し、失敗があれば原因を実装または test contract 側で解消する。
   - mypy strict と ruff の対象範囲で、repository 追加分が既存品質基準を満たすようにする。
   - 追加・更新した pytest test case がすべて `概要・目的`、`テストケース`、`期待値` コメントを持つことを確認する。
