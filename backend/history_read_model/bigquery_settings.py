@@ -11,6 +11,7 @@ REQUIRED_ENV_KEYS = (
 )
 GOOGLE_APPLICATION_CREDENTIALS = "GOOGLE_APPLICATION_CREDENTIALS"
 CREDENTIALS_SOURCE_LABEL = "credentials source (GOOGLE_APPLICATION_CREDENTIALS or ADC)"
+MAXIMUM_BYTES_BILLED_DEFAULT = "BIGQUERY_MAX_BYTES_BILLED_DEFAULT"
 TABLE_PREFIX_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 DATASET_ID_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 LOCATION_PATTERN = re.compile(r"^[A-Za-z0-9_-]+$")
@@ -24,6 +25,7 @@ class BigQueryReadModelSettings:
     location: str
     table_prefix: str
     credentials_path: str | None
+    maximum_bytes_billed_default: int | None = None
 
 
 class BigQuerySettingsError(Exception):
@@ -73,6 +75,7 @@ def load_bigquery_settings(require_credentials: bool) -> BigQueryReadModelSettin
         location=_env_value(environ, "BIGQUERY_LOCATION") or "",
         table_prefix=_env_value(environ, "BIGQUERY_TABLE_PREFIX") or "",
         credentials_path=credentials_path,
+        maximum_bytes_billed_default=_maximum_bytes_billed_default(environ),
     )
 
 
@@ -97,6 +100,7 @@ def _invalid_env_keys(environ: Mapping[str, str]) -> tuple[str, ...]:
     dataset_id = _env_value(environ, "BIGQUERY_DATASET_ID")
     location = _env_value(environ, "BIGQUERY_LOCATION")
     table_prefix = _env_value(environ, "BIGQUERY_TABLE_PREFIX")
+    maximum_bytes_billed_default = _env_value(environ, MAXIMUM_BYTES_BILLED_DEFAULT)
 
     if dataset_id is not None and not DATASET_ID_PATTERN.fullmatch(dataset_id):
         invalid_keys.append("BIGQUERY_DATASET_ID")
@@ -104,8 +108,23 @@ def _invalid_env_keys(environ: Mapping[str, str]) -> tuple[str, ...]:
         invalid_keys.append("BIGQUERY_LOCATION")
     if table_prefix is not None and not TABLE_PREFIX_PATTERN.fullmatch(table_prefix):
         invalid_keys.append("BIGQUERY_TABLE_PREFIX")
+    if maximum_bytes_billed_default is not None:
+        try:
+            parsed_maximum_bytes_billed = int(maximum_bytes_billed_default)
+        except ValueError:
+            invalid_keys.append(MAXIMUM_BYTES_BILLED_DEFAULT)
+        else:
+            if parsed_maximum_bytes_billed <= 0:
+                invalid_keys.append(MAXIMUM_BYTES_BILLED_DEFAULT)
 
     return tuple(invalid_keys)
+
+
+def _maximum_bytes_billed_default(environ: Mapping[str, str]) -> int | None:
+    value = _env_value(environ, MAXIMUM_BYTES_BILLED_DEFAULT)
+    if value is None:
+        return None
+    return int(value)
 
 
 def _adc_credentials_path() -> Path:

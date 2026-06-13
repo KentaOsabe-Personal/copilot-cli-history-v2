@@ -28,6 +28,24 @@ def test_load_bigquery_settings_does_not_require_credentials_for_unit_mode(
     assert settings.location == "asia-northeast1"
     assert settings.table_prefix == "dev_"
     assert settings.credentials_path is None
+    assert settings.maximum_bytes_billed_default is None
+
+
+# 概要・目的: repository 実行が cost guardrail 既定値を credentials なしで参照できる。
+# テストケース: unit mode で BIGQUERY_MAX_BYTES_BILLED_DEFAULT を正の整数として設定する。
+# 期待値: BigQuery client を生成せず、settings object に int の既定上限が保持される。
+def test_load_bigquery_settings_reads_maximum_bytes_billed_default_without_credentials(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("BIGQUERY_PROJECT_ID", "local-project")
+    monkeypatch.setenv("BIGQUERY_DATASET_ID", "copilot_history")
+    monkeypatch.setenv("BIGQUERY_LOCATION", "asia-northeast1")
+    monkeypatch.setenv("BIGQUERY_MAX_BYTES_BILLED_DEFAULT", "1048576")
+    monkeypatch.delenv("GOOGLE_APPLICATION_CREDENTIALS", raising=False)
+
+    settings = load_bigquery_settings(require_credentials=False)
+
+    assert settings.maximum_bytes_billed_default == 1048576
 
 
 # 概要・目的: execute / compare mode が BigQuery 接続前に必須 env 不足を列挙する契約を守る。
@@ -96,6 +114,26 @@ def test_bigquery_settings_error_does_not_include_secret_values(
     assert "BIGQUERY_TABLE_PREFIX" in message
     assert "invalid-secret-prefix!" not in message
     assert "/tmp/super-secret-key.json" not in message
+
+
+# 概要・目的: maximum bytes billed の不正な既定値を BigQuery 実行前の設定エラーにする。
+# テストケース: BIGQUERY_MAX_BYTES_BILLED_DEFAULT に 0 と非整数値を設定して読み込む。
+# 期待値: invalid keys に env key 名だけが入り、値そのものは error message に出ない。
+@pytest.mark.parametrize("raw_value", ["0", "not-a-number"])
+def test_load_bigquery_settings_rejects_invalid_maximum_bytes_billed_default(
+    monkeypatch: pytest.MonkeyPatch,
+    raw_value: str,
+) -> None:
+    monkeypatch.setenv("BIGQUERY_PROJECT_ID", "local-project")
+    monkeypatch.setenv("BIGQUERY_DATASET_ID", "copilot_history")
+    monkeypatch.setenv("BIGQUERY_LOCATION", "US")
+    monkeypatch.setenv("BIGQUERY_MAX_BYTES_BILLED_DEFAULT", raw_value)
+
+    with pytest.raises(BigQuerySettingsError) as exc_info:
+        load_bigquery_settings(require_credentials=False)
+
+    assert exc_info.value.invalid_keys == ("BIGQUERY_MAX_BYTES_BILLED_DEFAULT",)
+    assert raw_value not in str(exc_info.value)
 
 
 # 概要・目的: 実 BigQuery integration validation が明示 opt-in のときだけ有効になる契約を守る。
