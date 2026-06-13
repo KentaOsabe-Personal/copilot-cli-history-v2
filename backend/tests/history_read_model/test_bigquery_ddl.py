@@ -61,6 +61,26 @@ def test_build_create_table_sql_for_history_sync_runs_includes_schema_and_layout
     assert "OPTIONS(require_partition_filter = FALSE);" in sql
 
 
+# 概要・目的: session_write_stage の物理 layout が同期 MERGE 前の投入先として作成される契約を守る。
+# テストケース: prefix 付き session_write_stage table から CREATE TABLE SQL を生成する。
+# 期待値: copilot_sessions と同じ JSON payload 列を持ち、
+# staging 用に partition filter を要求しない。
+def test_build_create_table_sql_for_session_write_stage_includes_payload_columns() -> None:
+    table = table_by_base_name("session_write_stage", table_prefix="dev_")
+    sql = build_create_table_sql(_settings(), table)
+
+    assert (
+        "CREATE TABLE IF NOT EXISTS `local-project.copilot_history.dev_session_write_stage`"
+        in sql
+    )
+    assert "`session_id` STRING NOT NULL" in sql
+    assert "`summary_payload` JSON NOT NULL" in sql
+    assert "`detail_payload` JSON NOT NULL" in sql
+    assert "PARTITION BY source_partition_date" in sql
+    assert "CLUSTER BY session_id" in sql
+    assert "OPTIONS(require_partition_filter = FALSE);" in sql
+
+
 # 概要・目的: compare mode が schema / option metadata を取得する SQL 契約を守る。
 # テストケース: settings から metadata comparison 用 SQL を生成する。
 # 期待値: COLUMNS と TABLE_OPTIONS の両方を参照し、対象 table names に限定される。
@@ -70,6 +90,7 @@ def test_build_schema_metadata_sql_includes_columns_and_table_options_queries() 
     assert "`local-project.copilot_history.INFORMATION_SCHEMA.COLUMNS`" in sql
     assert "`local-project.copilot_history.INFORMATION_SCHEMA.TABLE_OPTIONS`" in sql
     assert "'dev_copilot_sessions'" in sql
+    assert "'dev_session_write_stage'" in sql
     assert "'dev_history_sync_runs'" in sql
     assert "clustering_ordinal_position" in sql
     assert "option_name" in sql

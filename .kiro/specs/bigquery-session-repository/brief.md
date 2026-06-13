@@ -30,7 +30,7 @@ Python の BigQuery repository が、session 一覧 query、詳細 query、sync 
 
 ## Upstream / Downstream
 - **Upstream**: `bigquery-read-model-schema`、`django-presenters-contract`
-- **Downstream**: `django-history-api`、`rails-django-parity-validation`
+- **Downstream**: `django-history-api`
 
 ## Existing Spec Touchpoints
 - **Extends**: なし。MySQL query / persistence の置換境界として新規 spec にする。

@@ -114,6 +114,7 @@ def build_session_detail_query(
 SELECT detail_payload
 FROM {table}
 WHERE session_id = @session_id
+  AND source_partition_date BETWEEN DATE '1970-01-01' AND CURRENT_DATE()
 LIMIT 1
 """.strip(),
         parameters=(QueryParameter("session_id", session_id, "STRING"),),
@@ -161,7 +162,13 @@ def build_session_merge_query(
     options: RepositoryExecutionOptions,
 ) -> BigQuerySql:
     target = _qualified_table(project_id, dataset_id, table_prefix, COPILOT_SESSIONS_BASE_NAME)
-    source = f"`{staging_table_id}`"
+    source = f"""
+(
+  SELECT * FROM `{staging_table_id}`
+  WHERE session_id IN UNNEST(@session_ids)
+  QUALIFY ROW_NUMBER() OVER (PARTITION BY session_id ORDER BY indexed_at DESC) = 1
+)
+""".strip()
     from_date, to_date = _partition_date_bounds(partition_dates)
     columns = tuple(
         column.name for column in table_by_base_name(COPILOT_SESSIONS_BASE_NAME).columns
@@ -178,7 +185,6 @@ MERGE {target} AS target
 USING {source} AS source
 ON target.session_id = source.session_id
   AND target.source_partition_date BETWEEN @from_date AND @to_date
-  AND source.session_id IN UNNEST(@session_ids)
 WHEN MATCHED THEN
   UPDATE SET
     {update_clause}

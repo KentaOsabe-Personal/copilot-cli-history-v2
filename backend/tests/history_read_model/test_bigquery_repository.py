@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from collections.abc import Mapping
 from datetime import UTC, date, datetime
 
@@ -28,6 +29,15 @@ class _QueryJob:
         return self._rows
 
 
+class _LoadJob:
+    def __init__(self, result_error: Exception | None = None) -> None:
+        self._result_error = result_error
+
+    def result(self) -> None:
+        if self._result_error is not None:
+            raise self._result_error
+
+
 class _ClientDouble:
     def __init__(
         self,
@@ -42,6 +52,7 @@ class _ClientDouble:
         self.insert_errors = insert_errors or []
         self.queries: list[tuple[str, object | None, str | None]] = []
         self.inserted_rows: list[tuple[str, list[dict[str, object]]]] = []
+        self.loaded_files: list[tuple[str, list[dict[str, object]], str | None]] = []
 
     def query(
         self,
@@ -63,6 +74,20 @@ class _ClientDouble:
     ) -> list[object]:
         self.inserted_rows.append((table, json_rows))
         return self.insert_errors
+
+    def load_table_from_file(
+        self,
+        file_obj: object,
+        table: str,
+        *,
+        job_config: object | None = None,
+        location: str | None = None,
+    ) -> _LoadJob:
+        del job_config
+        data = file_obj.read().decode("utf-8")  # type: ignore[attr-defined]
+        rows = [json.loads(line) for line in data.splitlines() if line]
+        self.loaded_files.append((table, rows, location))
+        return _LoadJob(result_error=self.result_error)
 
 
 def _settings() -> BigQueryReadModelSettings:
@@ -240,7 +265,7 @@ def test_bigquery_repository_save_sessions_dry_run_skips_mutation_after_planning
 
 # 概要・目的: BigQuery adapter が insert/update 対象だけを staging と MERGE に送ることを守る。
 # テストケース: 新規 row、更新 row、skip row を save_sessions に渡す。
-# 期待値: staging には insert/update の 2 row だけが投入され、MERGE query が実行される。
+# 期待値: insert/update の 2 row だけが staging に投入され、MERGE query が実行される。
 def test_bigquery_repository_save_sessions_stages_and_merges_only_changed_rows() -> None:
     client = _ClientDouble(
         query_rows=(
@@ -270,12 +295,34 @@ def test_bigquery_repository_save_sessions_stages_and_merges_only_changed_rows()
     assert result.inserted_count == 1
     assert result.updated_count == 1
     assert result.skipped_count == 1
-    assert len(client.inserted_rows) == 1
-    assert [row["session_id"] for row in client.inserted_rows[0][1]] == ["inserted", "updated"]
+    assert len(client.queries) == 2
+    assert len(client.loaded_files) == 1
+    assert [row["session_id"] for row in client.loaded_files[0][1]] == ["inserted", "updated"]
+    assert client.loaded_files[0][1][0]["created_at_source"] == "2026-06-09T10:00:00+00:00"
+    assert client.loaded_files[0][1][0]["source_partition_date"] == "2026-06-09"
+    assert client.loaded_files[0][1][0]["summary_payload"] == '{"id":"inserted"}'
     assert any(
         "MERGE `local-project.history_dataset.dev_copilot_sessions`" in sql
         for sql, _, _ in client.queries
     )
+
+
+# 概要・目的: BigQuery adapter が大きな同期を streaming insert ではなく load job に送る契約を守る。
+# テストケース: 51 件の新規 row を save_sessions に渡す。
+# 期待値: staging load job に全 row が渡され、保存 count は維持される。
+def test_bigquery_repository_save_sessions_loads_staging_rows_with_load_job() -> None:
+    client = _ClientDouble(query_rows=((), (),))
+    repository = BigQuerySessionReadModelRepository(client=client, settings=_settings())
+    rows = tuple(_row(f"inserted-{index:02d}") for index in range(51))
+
+    result = repository.save_sessions(rows, RepositoryExecutionOptions())
+
+    assert result.ok is True
+    assert result.inserted_count == 51
+    assert client.inserted_rows == []
+    assert len(client.loaded_files) == 1
+    assert len(client.loaded_files[0][1]) == 51
+    assert client.loaded_files[0][2] == "asia-northeast1"
 
 
 # 概要・目的: BigQuery adapter が sync run 保存と running lookup を query operation として実行する。
@@ -439,11 +486,11 @@ def test_bigquery_repository_maps_job_result_failure_to_repository_error() -> No
     assert result.error.kind == "cost_limit_exceeded"
 
 
-# 概要・目的: BigQuery adapter が staging insert failure を row-level failed count と混同しない。
-# テストケース: insert_rows_json が BigQuery insert error を返す。
+# 概要・目的: BigQuery adapter が staging load failure を row-level failed count と混同しない。
+# テストケース: load job の result が BigQuery load error を送出する。
 # 期待値: save_sessions は repository-level query_failed error になり、success count を返さない。
-def test_bigquery_repository_maps_staging_insert_failure_to_repository_error() -> None:
-    client = _ClientDouble(query_rows=((),), insert_errors=[{"message": "invalid row"}])
+def test_bigquery_repository_maps_staging_load_failure_to_repository_error() -> None:
+    client = _ClientDouble(query_rows=((),), result_error=RuntimeError("invalid row"))
     repository = BigQuerySessionReadModelRepository(client=client, settings=_settings())
 
     result = repository.save_sessions((_row("inserted"),), RepositoryExecutionOptions())

@@ -1,6 +1,6 @@
 # プロジェクト構造
 
-updated_at: 2026-05-09
+updated_at: 2026-06-13
 
 ## 組織方針
 
@@ -24,30 +24,35 @@ updated_at: 2026-05-09
 **Purpose**: 機能ごとに API / hooks / components / pages / presentation を近接配置する  
 **Example**: `features/sessions/` 配下で `api/sessionApi.ts`, `hooks/useSessionDetail.ts`, `pages/SessionDetailPage.tsx`, `presentation/sessionIndexCriteria.ts` を同じ文脈にまとめる
 
-### Backend API
-**Location**: `/backend/`  
-**Purpose**: Rails API、読取ロジック、永続化、API 提供を担う  
-**Example**: `app/controllers/api` は薄い HTTP 入口に保ち、`config/` に環境設定、`spec/` に request/lib/support 系のテストを配置する
+### Django project
+**Location**: `/backend/backend_config/`  
+**Purpose**: Django settings / URL routing / ASGI / WSGI の project 境界を置く  
+**Example**: `settings.py` で installed apps、repository backend、CORS origin、SQLite default を定義し、`urls.py` で health と history API を束ねる
 
-### Backend read models
-**Location**: `/backend/app/models/`, `/backend/db/migrate/`  
-**Purpose**: API 表示用 read model と同期履歴を ActiveRecord の境界として保持する  
-**Example**: `CopilotSession` は summary/detail payload、source fingerprint、検索 projection、`HistorySyncRun` は同期状態・件数・失敗概要を持つ
+### Backend health app
+**Location**: `/backend/health/`  
+**Purpose**: runtime の最小起動確認を BigQuery や raw files から独立して提供する  
+**Example**: `GET /up` は `{"status":"ok"}` を返し、settings import と routing の smoke test に使う
 
-### Backend domain namespace
-**Location**: `/backend/lib/copilot_history/`  
-**Purpose**: Copilot 履歴の読取・正規化・API 向け整形を Rails 本体から分離して置く  
-**Example**: `api/session_index_query.rb`, `api/presenters/session_detail_presenter.rb`, `projections/activity_projector.rb`, `types/normalized_session.rb`
+### Backend history API app
+**Location**: `/backend/history_api/`  
+**Purpose**: sync / list / detail の HTTP 境界、query validation、dependency selection、response helpers を置く  
+**Example**: `views.py` は repository と service を呼び、`services.py` が同期 orchestration、`query_validation.py` が request params の正規化を担う
 
-### Backend persistence / sync namespace
-**Location**: `/backend/lib/copilot_history/persistence/`, `/backend/lib/copilot_history/sync/`  
-**Purpose**: raw reader の normalized session を DB payload に変換し、明示同期 API から insert / update / skip を実行する  
-**Example**: `SessionRecordBuilder`, `SourceFingerprintBuilder`, `SessionSearchTextBuilder` で保存属性を作り、`HistorySyncService` が `HistorySyncRun` と `CopilotSession` を更新する
+### Copilot history domain
+**Location**: `/backend/copilot_history/`  
+**Purpose**: Copilot raw files の探索、current / legacy reader、event normalization、API payload projection を Django app から分離して置く  
+**Example**: `catalog_reader.py`, `current_reader.py`, `legacy_reader.py`, `event_normalizer.py`, `api/response_projection.py` で raw source から contract payload への流れを作る
 
-### Database bootstrap
-**Location**: `/mysql/`  
-**Purpose**: MySQL コンテナの初期化に必要なファイルだけを置く  
-**Example**: `mysql/init/` を compose から read-only mount して初期投入に使う
+### BigQuery read model
+**Location**: `/backend/history_read_model/`  
+**Purpose**: BigQuery schema、DDL、repository、fake repository、metadata comparison、management command をまとめる  
+**Example**: `bigquery_schema.py` が table contract、`bigquery_repository.py` が query / upsert、`management/commands/init_bigquery_read_model.py` が dry-run / execute / compare を提供する
+
+### Backend tests
+**Location**: `/backend/tests/`  
+**Purpose**: Python / Django のテストを production package と分離し、責務別に置く  
+**Example**: `tests/copilot_history/` は reader / presenter、`tests/history_api/` は HTTP / service、`tests/history_read_model/` は BigQuery schema / repository contract を確認する
 
 ### Project memory
 **Location**: `/.kiro/steering/`, `/.kiro/specs/`  
@@ -56,11 +61,12 @@ updated_at: 2026-05-09
 
 ## 命名規約
 
-- **Frontend files**: React コンポーネントは `App.tsx` のような PascalCase、テストは `*.test.tsx`
+- **Frontend files**: React コンポーネントは `SessionList.tsx` のような PascalCase、テストは `*.test.tsx`
 - **Frontend feature hooks**: hook は `useSessionIndex.ts` のように `use` 接頭辞で置く
-- **Backend files**: Rails 規約に従い、controller は `*_controller.rb`、spec は `*_spec.rb`
-- **Ruby constants**: クラス・モジュールは PascalCase
-- **Backend service objects**: query / presenter / reader は役割が分かる接尾辞で切る
+- **Frontend presentation utilities**: UI から独立した整形・条件生成は `presentation/` に置き、camelCase の関数名にする
+- **Backend Python modules**: snake_case file と typed function / dataclass を基本にする
+- **Django apps**: HTTP 境界は app 単位で分け、domain reader や read model repository と混ぜない
+- **Backend tests**: `test_*.py` を責務別ディレクトリへ置き、fixture / fake はテスト側に閉じる
 - **Docs / configs**: 既存ファイル名に合わせ、ルートの運用ドキュメントは用途が分かる名前を優先する
 
 ## import / load の整理
@@ -70,13 +76,9 @@ import './index.css'
 import App from './App.tsx'
 ```
 
-```rb
-module CopilotHistory
-  module Api
-    class SessionIndexQuery
-    end
-  end
-end
+```python
+from history_read_model.repository import SessionRepository
+from copilot_history.api.response_projection import build_session_detail_payload
 ```
 
 **Frontend**:
@@ -85,10 +87,10 @@ end
 - feature 内では API / hook / presentation utility を相対 import で閉じ、横断依存を増やしすぎない
 
 **Backend**:
-- Rails の autoload と規約配置を基本にする
-- `lib/` 配下は `config.autoload_lib` で読み込む前提に寄せ、手動 require を増やしすぎない
-- API 向けの orchestration は `CopilotHistory::Api` 名前空間に集め、controller に整形ロジックを溜めない
-- 永続化変換は `CopilotHistory::Persistence`、同期 orchestration は `CopilotHistory::Sync` に分け、query / presenter / reader と混ぜない
+- Python package と Django app の import を標準にし、sys.path 操作や手動 loader を増やさない
+- `history_api` は HTTP / orchestration、`copilot_history` は raw reader / projection、`history_read_model` は persistence access に分ける
+- BigQuery 実接続と fake repository は同じ repository contract に寄せ、view や frontend に datastore 差分を漏らさない
+- Django settings import と health endpoint は BigQuery credentials や raw files に依存させない
 
 ## コード構成の原則
 
@@ -97,20 +99,20 @@ end
 Compose、Dockerfile、README、Kiro 関連はルートで管理します。  
 一方で、アプリ実装は frontend / backend の責務境界をまたいで混在させません。
 
-### 2. バックエンドは Rails 規約を優先
+### 2. Backend は Django / Python 側を正とする
 
-新しい reader や domain logic を追加するときも、まず Rails 標準の置き場所を検討します。  
-共通処理は `lib/` や `concerns/` を使い、無秩序なトップレベル追加を避けます。
+新しい backend 実装は `backend_config`、`health`、`history_api`、`copilot_history`、`history_read_model` のいずれかに置きます。  
+Rails / MySQL 由来の `app/`、`config/`、`db/migrate/`、`lib/copilot_history/*.rb`、`spec/` は移行前 artifact として扱い、現行設計の追加先にしません。
 
 ### 3. HTTP と履歴ドメインを分離する
 
-request routing と response status は controller が担い、履歴の読取・検索・整形は `lib/copilot_history` に寄せます。  
-`query -> presenter -> types` の流れを保ち、UI 向け schema の都合を reader 層へ逆流させません。
+request routing と response status は Django view / URL が担い、履歴の読取・検索・整形は `copilot_history` と `history_read_model` に寄せます。  
+`reader -> projection -> repository -> API response` の境界を保ち、UI 向け schema の都合を raw reader 層へ逆流させません。
 
-### 4. DB read model と raw reader の境界を分ける
+### 4. BigQuery read model と raw reader の境界を分ける
 
-raw files の探索・正規化は reader / projections / types に閉じ、DB 保存用の shape は persistence namespace で作ります。  
-session API の query は `CopilotSession` を参照し、raw reader へ直接戻らない構成を基本にします。
+raw files の探索・正規化は `copilot_history` に閉じ、BigQuery 保存用の row / SQL / MERGE は `history_read_model` に置きます。  
+session API の query は repository contract を参照し、通常表示から raw reader へ直接戻らない構成を基本にします。
 
 ### 5. 同期 UI は sessions feature の中に閉じる
 

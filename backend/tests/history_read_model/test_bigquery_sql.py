@@ -115,7 +115,7 @@ def test_build_session_list_query_orders_stably_and_limits_after_ordering() -> N
 
 # 概要・目的: BigQuery detail SQL が raw files を読まず保存済み payload lookup に閉じることを守る。
 # テストケース: session_id を指定して detail query を生成する。
-# 期待値: detail_payload を copilot_sessions から session_id named parameter で取得する。
+# 期待値: detail_payload を session_id named parameter と partition filter で取得する。
 def test_build_session_detail_query_uses_session_id_named_parameter() -> None:
     query = build_session_detail_query(
         project_id="local-project",
@@ -128,6 +128,7 @@ def test_build_session_detail_query_uses_session_id_named_parameter() -> None:
     assert "`local-project.history_dataset.dev_copilot_sessions`" in query.sql
     assert "SELECT detail_payload" in query.sql
     assert "WHERE session_id = @session_id" in query.sql
+    assert "source_partition_date BETWEEN DATE '1970-01-01' AND CURRENT_DATE()" in query.sql
     assert "session-1" not in query.sql
     assert query.parameter_value("session_id") == "session-1"
     assert query.dry_run is True
@@ -174,10 +175,11 @@ def test_build_session_merge_query_uses_session_identity_and_candidate_filter() 
     )
 
     assert "MERGE `local-project.history_dataset.dev_copilot_sessions` AS target" in query.sql
-    assert "USING `local-project.history_dataset.session_stage_sync_1` AS source" in query.sql
+    assert "FROM `local-project.history_dataset.session_stage_sync_1`" in query.sql
+    assert "ROW_NUMBER() OVER (PARTITION BY session_id ORDER BY indexed_at DESC) = 1" in query.sql
     assert "ON target.session_id = source.session_id" in query.sql
     assert "target.source_partition_date BETWEEN @from_date AND @to_date" in query.sql
-    assert "source.session_id IN UNNEST(@session_ids)" in query.sql
+    assert "WHERE session_id IN UNNEST(@session_ids)" in query.sql
     assert "WHEN MATCHED THEN" in query.sql
     assert "WHEN NOT MATCHED THEN" in query.sql
     assert query.parameter_value("session_ids") == ("inserted", "updated")

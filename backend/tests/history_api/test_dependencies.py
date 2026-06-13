@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, NoReturn
@@ -18,10 +19,14 @@ class _ReaderDouble:
 
 # 概要・目的: Django settings が History API の runtime 設定を credentials なしで公開する。
 # テストケース: settings import 後に installed app、repository backend、allowed origins を読む。
-# 期待値: history_api が有効で、fake backend、local frontend origin、integration opt-in が読める。
+# 期待値: history_api が有効で、runtime backend、local frontend origin、
+# integration opt-in が読める。
 def test_history_api_settings_are_available_without_bigquery_client() -> None:
     assert "history_api" in settings.INSTALLED_APPS
-    assert settings.HISTORY_API_REPOSITORY_BACKEND == "fake"
+    assert settings.HISTORY_API_REPOSITORY_BACKEND == os.environ.get(
+        "HISTORY_API_REPOSITORY_BACKEND",
+        "fake",
+    ).strip()
     assert settings.HISTORY_API_ALLOWED_ORIGINS == (
         "http://localhost:51730",
         "http://127.0.0.1:51730",

@@ -29,7 +29,7 @@ BigQuery を Django ORM の通常 DB として扱わず、`google-cloud-bigquery
 
 ## Upstream / Downstream
 - **Upstream**: `django-backend-foundation`、現行 Rails migration、`TECH_STACK_MIGRATION_PLAN.md`
-- **Downstream**: `bigquery-session-repository`、`django-history-api`、`rails-django-parity-validation`
+- **Downstream**: `bigquery-session-repository`、`django-history-api`
 
 ## Existing Spec Touchpoints
 - **Extends**: なし。MySQL read model spec の後続置換境界として新規 spec にする。
