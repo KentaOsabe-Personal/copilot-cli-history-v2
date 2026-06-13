@@ -30,7 +30,7 @@ Django views と URL routing で既存 endpoint を再現し、request validatio
 
 ## Upstream / Downstream
 - **Upstream**: `bigquery-session-repository`、`django-presenters-contract`、現行 frontend API types
-- **Downstream**: `rails-django-parity-validation`、`remove-rails-mysql-stack`
+- **Downstream**: `react-django-runtime-validation`、`cleanup-legacy-rails-artifacts`
 
 ## Existing Spec Touchpoints
 - **Extends**: なし。Rails API の置換 spec として新規に切る。

@@ -1,12 +1,11 @@
-# Copilot CLI Session History
+# Copilot CLI Session History V2
 
-Docker ベースで frontend / backend / MySQL を起動する開発環境です。現在の active backend runtime は Django backend foundation です。
+Docker ベースで frontend / backend を起動する開発環境です。現在の active backend runtime は Django backend foundation です。
 
-| Service | Stack | Version line | Port |
-| --- | --- | --- | --- |
+| Service  | Stack                                             | Version line                                  | Port  |
+| -------- | ------------------------------------------------- | --------------------------------------------- | ----- |
 | frontend | React + TypeScript + Vite + Vitest + Tailwind CSS | React 19.2 / TypeScript 6 / Node.js 24 / pnpm | 51730 |
-| backend | Django + pytest + ruff + mypy | Python 3.14 / Django 5.2 | 30000 |
-| mysql | MySQL | MySQL 9.7 | 33006 |
+| backend  | Django + pytest + ruff + mypy                     | Python 3.14 / Django 5.2                      | 30000 |
 
 ## 起動
 
@@ -20,7 +19,6 @@ docker compose up --build
 - frontend の API base URL は `VITE_API_BASE_URL=http://localhost:30000` を維持します。
 - frontend の依存は bind mount された `frontend/node_modules` に入るため、ホストの VSCode でも `vite/client` や `vitest/globals` を含む型解決ができます。
 - frontend の `pnpm install` / `pnpm dev` / `pnpm test` / `pnpm build` はコンテナ内実行を前提にします。
-- mysql service は compose に残りますが、この Django foundation の backend 起動・health check・settings import の必須条件ではありません。
 
 backend だけを確認する場合は次を使います。
 
@@ -44,12 +42,12 @@ docker compose run --rm backend bin/typecheck
 docker compose run --rm backend bin/quality
 ```
 
-| Command | 実行内容 |
-| --- | --- |
-| `bin/test` | `python -m pytest` |
-| `bin/lint` | `ruff check .` |
-| `bin/typecheck` | `mypy .` |
-| `bin/quality` | lint、typecheck、test の順次実行 |
+| Command           | 実行内容                         |
+| ----------------- | -------------------------------- |
+| `bin/test`      | `python -m pytest`             |
+| `bin/lint`      | `ruff check .`                 |
+| `bin/typecheck` | `mypy .`                       |
+| `bin/quality`   | lint、typecheck、test の順次実行 |
 
 ## Frontend コマンド
 
@@ -71,7 +69,7 @@ docker compose run --rm frontend sh -lc "pnpm install --no-frozen-lockfile && pn
 
 - frontend の接続先は `http://localhost:30000` のままです。
 - backend host port は `30000` のままです。
-- mysql service は compose に残ります。
+- MySQL は通常 backend の依存ではありません。
 - backend は Django project と pytest / lint / type check / quality の入口を提供します。
 
 ## この foundation の対象外
@@ -82,6 +80,5 @@ docker compose run --rm frontend sh -lc "pnpm install --no-frozen-lockfile && pn
 - `GET /api/sessions`
 - `GET /api/sessions/:id`
 - Django admin / auth / session 機能
-- Rails / MySQL stack の全面削除
 
 後続 spec は `backend/README.md` の追加先と検証入口を確認してから実装します。

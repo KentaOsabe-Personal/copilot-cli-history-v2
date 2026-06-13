@@ -31,7 +31,7 @@ Rails の reader / normalizer / projection の責務を Python の readers / nor
 
 ## Upstream / Downstream
 - **Upstream**: `django-backend-foundation`、`api-contract-fixtures`、現行 Rails `backend/lib/copilot_history/`、既存 fixture
-- **Downstream**: `django-presenters-contract`、`bigquery-session-repository`、`django-history-api`、`rails-django-parity-validation`
+- **Downstream**: `django-presenters-contract`、`bigquery-session-repository`、`django-history-api`、`react-django-runtime-validation`
 
 ## Existing Spec Touchpoints
 - **Extends**: なし。移植 spec として新規に切る。
