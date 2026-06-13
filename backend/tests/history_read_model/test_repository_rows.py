@@ -1,10 +1,20 @@
-from datetime import UTC, datetime
+from __future__ import annotations
 
-from copilot_history.types import NormalizedEvent, NormalizedSession, ReadIssue
+from datetime import UTC, datetime
+from typing import Any, cast
+
+from copilot_history.types import (
+    MessageSnapshot,
+    NormalizedEvent,
+    NormalizedSession,
+    ReadIssue,
+)
 from history_read_model.repository_rows import (
     SessionRowBuildStatus,
     build_copilot_session_write_input,
 )
+
+OCCURRED_AT = datetime(2026, 6, 9, 10, tzinfo=UTC)
 
 
 def _event(*, sequence: int, content: str = "hello") -> NormalizedEvent:
@@ -45,6 +55,51 @@ def _session(
         message_snapshots=(),
         issues=issues,
         source_paths={"events": "/tmp/events.jsonl", "workspace": "/tmp/workspace.yaml"},
+    )
+
+
+def _session_with_raw_payload() -> NormalizedSession:
+    raw_payload = {
+        "type": "assistant.message",
+        "secret_raw_only_value": "do-not-index-this-raw-json",
+        "data": {"content": "visible assistant message"},
+    }
+    return NormalizedSession(
+        session_id="raw-session",
+        source_format="current",
+        source_state="complete",
+        cwd="/workspace",
+        git_root="/workspace",
+        repository="repo",
+        branch="main",
+        created_at=OCCURRED_AT,
+        updated_at=OCCURRED_AT,
+        selected_model="gpt-5",
+        events=(
+            NormalizedEvent(
+                sequence=1,
+                kind="message",
+                mapping_status="complete",
+                raw_type="assistant.message",
+                occurred_at=OCCURRED_AT,
+                role="assistant",
+                content="visible assistant message",
+                tool_calls=(),
+                detail={},
+                raw_payload=raw_payload,
+            ),
+        ),
+        message_snapshots=(
+            MessageSnapshot(
+                sequence=1,
+                role="assistant",
+                content="visible assistant message",
+                occurred_at=OCCURRED_AT,
+                raw_payload=raw_payload,
+            ),
+        ),
+        issues=(),
+        source_paths={"events": "/tmp/events.jsonl"},
     )
 
 
@@ -150,3 +205,40 @@ def test_session_row_build_status_type_covers_expected_classifications() -> None
     statuses: tuple[SessionRowBuildStatus, ...] = ("persistable", "workspace_only", "invalid")
 
     assert statuses == ("persistable", "workspace_only", "invalid")
+
+
+# 概要・目的: read model の詳細 payload が後続 API raw opt-in を再現できることを守る。
+# テストケース: raw payload を持つ normalized session から repository row を組み立てる。
+# 期待値: 保存される detail_payload は raw_included=true と raw_payload 実値を保持する。
+def test_build_copilot_session_write_input_stores_raw_capable_detail_payload() -> None:
+    candidate = build_copilot_session_write_input(
+        _session_with_raw_payload(),
+        source_fingerprint={"sha256": "raw-session"},
+        indexed_at=OCCURRED_AT,
+    )
+
+    assert candidate.row is not None
+    detail_payload = candidate.row.detail_payload
+    message_snapshots = cast(list[dict[str, Any]], detail_payload["message_snapshots"])
+
+    assert detail_payload["raw_included"] is True
+    assert message_snapshots[0]["raw_payload"] == {
+        "type": "assistant.message",
+        "secret_raw_only_value": "do-not-index-this-raw-json",
+        "data": {"content": "visible assistant message"},
+    }
+
+
+# 概要・目的: search projection が raw JSON 全文を検索対象に混ぜない契約を守る。
+# テストケース: raw payload だけに存在する secret 値を含む session row を組み立てる。
+# 期待値: search_text には表示用の会話本文だけが入り、raw-only 値は入らない。
+def test_build_copilot_session_write_input_excludes_raw_only_values_from_search_text() -> None:
+    candidate = build_copilot_session_write_input(
+        _session_with_raw_payload(),
+        source_fingerprint={"sha256": "raw-session"},
+        indexed_at=OCCURRED_AT,
+    )
+
+    assert candidate.row is not None
+    assert "visible assistant message" in candidate.row.search_text
+    assert "do-not-index-this-raw-json" not in candidate.row.search_text

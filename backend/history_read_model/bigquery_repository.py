@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict
+from datetime import datetime
 from types import SimpleNamespace
 from typing import Any, cast
 
@@ -14,6 +15,7 @@ from history_read_model.bigquery_sql import (
     build_session_list_query,
     build_session_merge_query,
     build_session_metadata_query,
+    build_sync_run_start_query,
     build_sync_run_upsert_query,
 )
 from history_read_model.fake_repository import CopilotSessionRow, HistorySyncRunRow
@@ -22,8 +24,10 @@ from history_read_model.repository import (
     SessionDetailResult,
     SessionListCriteria,
     SessionListResult,
+    SyncRunConflict,
     SyncRunLookupResult,
     SyncRunResult,
+    SyncRunStartResult,
     SyncWriteResult,
     validate_repository_options,
     validate_session_id,
@@ -187,6 +191,56 @@ class BigQuerySessionReadModelRepository:
             return SyncRunResult.failure(classify_bigquery_exception(exc))
         return SyncRunResult.success(row.sync_run_id)
 
+    def start_sync_run(
+        self,
+        row: HistorySyncRunRow,
+        options: RepositoryExecutionOptions,
+    ) -> SyncRunStartResult:
+        execution_options = _options_with_defaults(options, self._settings)
+        error = validate_repository_options(execution_options)
+        if error is not None:
+            return SyncRunStartResult.failure(error)
+
+        query = build_sync_run_start_query(
+            project_id=self._settings.project_id,
+            dataset_id=self._settings.dataset_id,
+            table_prefix=self._settings.table_prefix,
+            row=row,
+            options=execution_options,
+        )
+        if execution_options.dry_run:
+            return SyncRunStartResult.started_success(
+                row.sync_run_id,
+                dry_run=True,
+                planned_operations=("atomic_sync_start",),
+            )
+
+        try:
+            rows = self._run_query(query, execution_options)
+        except Exception as exc:  # noqa: BLE001
+            return SyncRunStartResult.failure(classify_bigquery_exception(exc))
+
+        for result_row in rows:
+            started = _row_value(result_row, "started")
+            sync_run_id = _row_value(result_row, "sync_run_id")
+            started_at = _datetime_value(_row_value(result_row, "started_at"))
+            if started is True and isinstance(sync_run_id, str):
+                return SyncRunStartResult.started_success(sync_run_id)
+            if started is False and isinstance(sync_run_id, str) and started_at is not None:
+                return SyncRunStartResult.conflict_result(
+                    SyncRunConflict(sync_run_id=sync_run_id, started_at=started_at)
+                )
+        return SyncRunStartResult.failure(
+            classify_bigquery_exception(RuntimeError("BigQuery sync start returned no result"))
+        )
+
+    def finish_sync_run(
+        self,
+        row: HistorySyncRunRow,
+        options: RepositoryExecutionOptions,
+    ) -> SyncRunResult:
+        return self.save_sync_run(row, options)
+
     def find_running_sync_run(
         self,
         options: RepositoryExecutionOptions,
@@ -217,8 +271,12 @@ class BigQuerySessionReadModelRepository:
 
         for row in rows:
             sync_run_id = _row_value(row, "sync_run_id")
+            started_at = _datetime_value(_row_value(row, "started_at"))
             if isinstance(sync_run_id, str):
-                return SyncRunLookupResult.success(sync_run_id)
+                return SyncRunLookupResult.success(
+                    sync_run_id,
+                    started_at=started_at,
+                )
         return SyncRunLookupResult.not_found()
 
     def _load_existing_metadata(
@@ -360,6 +418,10 @@ def _mapping_payloads(rows: Sequence[object], key: str) -> tuple[Mapping[str, ob
 
 def _mapping_value(value: object) -> Mapping[str, object] | None:
     return value if isinstance(value, Mapping) else None
+
+
+def _datetime_value(value: object) -> datetime | None:
+    return value if isinstance(value, datetime) else None
 
 
 def _row_value(row: object, key: str) -> object:

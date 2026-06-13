@@ -73,6 +73,14 @@ class ApiContractFixtureRepository:
             raise TypeError(msg)
         return response
 
+    def request(self, scenario_id: str) -> JsonObject:
+        scenario = self.scenario(scenario_id)
+        request = self._read_fixture_json(scenario.request_path)
+        if not isinstance(request, dict):
+            msg = f"request fixture must be a JSON object: {scenario.request_path}"
+            raise TypeError(msg)
+        return request
+
     def expected_body(self, scenario_id: str) -> JsonObject:
         response = self.expected_response(scenario_id)
         body = response.get("body")

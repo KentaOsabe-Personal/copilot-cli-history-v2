@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Literal, Protocol
+from typing import Any, Literal, Protocol
 
 type JsonObject = Mapping[str, object]
 
@@ -179,10 +179,65 @@ class SyncRunResult:
 
 
 @dataclass(frozen=True)
+class SyncRunConflict:
+    sync_run_id: str
+    started_at: datetime
+
+
+@dataclass(frozen=True)
+class SyncRunStartResult:
+    ok: bool
+    started: bool
+    sync_run_id: str | None = None
+    conflict: SyncRunConflict | None = None
+    error: RepositoryError | None = None
+    dry_run: bool = False
+    planned_operations: tuple[str, ...] = ()
+
+    @classmethod
+    def started_success(
+        cls,
+        sync_run_id: str,
+        *,
+        dry_run: bool = False,
+        planned_operations: Iterable[str] = (),
+    ) -> SyncRunStartResult:
+        return cls(
+            ok=True,
+            started=True,
+            sync_run_id=sync_run_id,
+            dry_run=dry_run,
+            planned_operations=tuple(planned_operations),
+        )
+
+    @classmethod
+    def conflict_result(
+        cls,
+        conflict: SyncRunConflict,
+        *,
+        dry_run: bool = False,
+        planned_operations: Iterable[str] = (),
+    ) -> SyncRunStartResult:
+        return cls(
+            ok=True,
+            started=False,
+            sync_run_id=conflict.sync_run_id,
+            conflict=conflict,
+            dry_run=dry_run,
+            planned_operations=tuple(planned_operations),
+        )
+
+    @classmethod
+    def failure(cls, error: RepositoryError) -> SyncRunStartResult:
+        return cls(ok=False, started=False, error=error)
+
+
+@dataclass(frozen=True)
 class SyncRunLookupResult:
     ok: bool
     found: bool
     sync_run_id: str | None = None
+    started_at: datetime | None = None
     error: RepositoryError | None = None
     dry_run: bool = False
     planned_operations: tuple[str, ...] = ()
@@ -192,6 +247,7 @@ class SyncRunLookupResult:
         cls,
         sync_run_id: str,
         *,
+        started_at: datetime | None = None,
         dry_run: bool = False,
         planned_operations: Iterable[str] = (),
     ) -> SyncRunLookupResult:
@@ -199,6 +255,7 @@ class SyncRunLookupResult:
             ok=True,
             found=True,
             sync_run_id=sync_run_id,
+            started_at=started_at,
             dry_run=dry_run,
             planned_operations=tuple(planned_operations),
         )
@@ -235,13 +292,25 @@ class SessionReadModelRepository(Protocol):
 
     def save_sessions(
         self,
-        rows: Sequence[CopilotSessionWriteInput],
+        rows: Sequence[Any],
         options: RepositoryExecutionOptions,
     ) -> SyncWriteResult: ...
 
     def save_sync_run(
         self,
-        row: HistorySyncRunWriteInput,
+        row: Any,
+        options: RepositoryExecutionOptions,
+    ) -> SyncRunResult: ...
+
+    def start_sync_run(
+        self,
+        row: Any,
+        options: RepositoryExecutionOptions,
+    ) -> SyncRunStartResult: ...
+
+    def finish_sync_run(
+        self,
+        row: Any,
         options: RepositoryExecutionOptions,
     ) -> SyncRunResult: ...
 
