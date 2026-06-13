@@ -51,7 +51,10 @@ def test_init_bigquery_read_model_defaults_to_dry_run_without_client(
     assert created_clients == []
     assert "Mode: dry-run" in output
     assert "Target dataset: local-project.copilot_history" in output
-    assert "Target tables: dev_copilot_sessions, dev_history_sync_runs" in output
+    assert (
+        "Target tables: dev_copilot_sessions, dev_session_write_stage, "
+        "dev_history_sync_runs"
+    ) in output
     assert "CREATE SCHEMA IF NOT EXISTS `local-project.copilot_history`" in output
     assert (
         "CREATE TABLE IF NOT EXISTS `local-project.copilot_history.dev_copilot_sessions`"
@@ -62,7 +65,7 @@ def test_init_bigquery_read_model_defaults_to_dry_run_without_client(
 
 # 概要・目的: execute mode だけが BigQuery client を作成する契約を守る。
 # テストケース: 必須 env と fake client factory を渡して --execute を実行する。
-# 期待値: dataset / 2 tables の作成 SQL だけが実行され、metadata compare query は実行されない。
+# 期待値: dataset / 3 tables の作成 SQL だけが実行され、metadata compare query は実行されない。
 def test_init_bigquery_read_model_execute_runs_create_sql_with_injected_client(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -81,10 +84,11 @@ def test_init_bigquery_read_model_execute_runs_create_sql_with_injected_client(
     output = stdout.getvalue()
     assert "Mode: execute" in output
     assert "Execute result: create statements submitted" in output
-    assert len(client.queries) == 3
+    assert len(client.queries) == 4
     assert client.queries[0].startswith("CREATE SCHEMA IF NOT EXISTS")
     assert "dev_copilot_sessions" in client.queries[1]
-    assert "dev_history_sync_runs" in client.queries[2]
+    assert "dev_session_write_stage" in client.queries[2]
+    assert "dev_history_sync_runs" in client.queries[3]
     assert "INFORMATION_SCHEMA" not in "\n".join(client.queries)
 
 

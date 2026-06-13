@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import json
+import tempfile
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict
-from datetime import datetime
+from datetime import date, datetime
 from types import SimpleNamespace
 from typing import Any, cast
 
@@ -37,6 +39,15 @@ from history_read_model.repository_write_planner import (
     ExistingSessionMetadata,
     SessionWriteInput,
     plan_sync_write,
+)
+
+JSON_COLUMN_NAMES = frozenset(
+    {
+        "source_paths",
+        "source_fingerprint",
+        "summary_payload",
+        "detail_payload",
+    }
 )
 
 
@@ -140,12 +151,7 @@ class BigQuerySessionReadModelRepository:
                 return result
 
             staging_table_id = self._staging_table_id()
-            insert_errors = self._client.insert_rows_json(
-                staging_table_id,
-                [_session_row_json(row) for row in plan.rows_for_merge],
-            )
-            if insert_errors:
-                raise RuntimeError(f"BigQuery staging insert failed: {insert_errors!r}")
+            self._load_session_rows(staging_table_id, plan.rows_for_merge, execution_options)
             merge_query = build_session_merge_query(
                 project_id=self._settings.project_id,
                 dataset_id=self._settings.dataset_id,
@@ -322,6 +328,30 @@ class BigQuerySessionReadModelRepository:
             f"{self._settings.table_prefix}{self._staging_table_suffix}"
         )
 
+    def _load_session_rows(
+        self,
+        table_id: str,
+        rows: Sequence[CopilotSessionRow],
+        options: RepositoryExecutionOptions,
+    ) -> None:
+        with tempfile.TemporaryFile() as file_obj:
+            for row in rows:
+                line = json.dumps(
+                    _session_row_json(row),
+                    separators=(",", ":"),
+                    ensure_ascii=False,
+                )
+                file_obj.write(line.encode("utf-8"))
+                file_obj.write(b"\n")
+            file_obj.seek(0)
+            job = self._client.load_table_from_file(
+                file_obj,
+                table_id,
+                job_config=_load_job_config(),
+                location=options.location or self._settings.location,
+            )
+            job.result()
+
 
 def _options_with_defaults(
     options: RepositoryExecutionOptions,
@@ -417,7 +447,15 @@ def _mapping_payloads(rows: Sequence[object], key: str) -> tuple[Mapping[str, ob
 
 
 def _mapping_value(value: object) -> Mapping[str, object] | None:
-    return value if isinstance(value, Mapping) else None
+    if isinstance(value, Mapping):
+        return value
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError:
+            return None
+        return parsed if isinstance(parsed, Mapping) else None
+    return None
 
 
 def _datetime_value(value: object) -> datetime | None:
@@ -434,7 +472,35 @@ def _row_value(row: object, key: str) -> object:
 
 
 def _session_row_json(row: CopilotSessionRow) -> dict[str, object]:
-    return asdict(row)
+    json_row = cast(dict[str, object], _json_compatible_value(asdict(row)))
+    for column_name in JSON_COLUMN_NAMES:
+        json_row[column_name] = json.dumps(
+            json_row[column_name],
+            separators=(",", ":"),
+            ensure_ascii=False,
+        )
+    return json_row
+
+
+def _json_compatible_value(value: object) -> object:
+    if isinstance(value, datetime):
+        return value.isoformat()
+    if isinstance(value, date):
+        return value.isoformat()
+    if isinstance(value, Mapping):
+        return {str(key): _json_compatible_value(item) for key, item in value.items()}
+    if isinstance(value, tuple | list):
+        return [_json_compatible_value(item) for item in value]
+    return value
+
+
+def _load_job_config() -> object:
+    try:
+        from google.cloud import bigquery
+    except Exception:  # noqa: BLE001
+        return SimpleNamespace(source_format="NEWLINE_DELIMITED_JSON")
+
+    return bigquery.LoadJobConfig(source_format=bigquery.SourceFormat.NEWLINE_DELIMITED_JSON)
 
 
 __all__ = ["BigQuerySessionReadModelRepository"]

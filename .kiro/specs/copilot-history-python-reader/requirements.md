@@ -12,7 +12,7 @@
 
 - **In scope**: 履歴ルートから session file を見つけること、current `session-state` を読むこと、legacy `history-session-state` を読むこと、raw event を会話 / activity / unknown に整理すること、読めた session と読めなかった理由を返すこと、検索用テキストの元になる情報を作ること、単体テストで検証すること。
 - **Out of scope**: session list/detail API response の最終形、HTTP error envelope、BigQuery への保存、同期 endpoint、frontend 表示、Rails / MySQL 削除、semantic search、Copilot CLI の raw file format 変更。
-- **Adjacent expectations**: `django-backend-foundation` は Python backend の実行・検証入口を提供する。`api-contract-fixtures` と現行 Rails 実装は互換期待値の参照元である。後続の `django-presenters-contract`、`bigquery-session-repository`、`django-history-api`、`react-django-runtime-validation` は、この spec が返す normalized session と issue 情報を入力として利用する。
+- **Adjacent expectations**: `django-backend-foundation` は Python backend の実行・検証入口を提供する。`api-contract-fixtures` と現行 Rails 実装は互換期待値の参照元である。後続の `django-presenters-contract`、`bigquery-session-repository`、`django-history-api` は、この spec が返す normalized session と issue 情報を入力として利用する。
 
 ## 要件
 

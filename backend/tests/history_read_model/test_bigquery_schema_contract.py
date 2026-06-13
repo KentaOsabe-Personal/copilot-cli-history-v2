@@ -1,6 +1,7 @@
 from history_read_model.bigquery_schema import (
     COPILOT_SESSION_COUNT_FIELDS,
     HISTORY_SYNC_RUN_COUNT_FIELDS,
+    SESSION_WRITE_STAGE_BASE_NAME,
     SOURCE_FORMAT_VALUES,
     SOURCE_STATE_VALUES,
     SYNC_STATUS_VALUES,
@@ -100,6 +101,7 @@ def test_history_sync_runs_schema_defines_lifecycle_and_count_contract() -> None
 # 期待値: date range、session lookup、repository / branch、sync status 用の layout が定義される。
 def test_partition_clustering_and_prefixed_table_names_are_contractual() -> None:
     sessions_table = table_by_base_name("copilot_sessions", table_prefix="dev_")
+    stage_table = table_by_base_name(SESSION_WRITE_STAGE_BASE_NAME, table_prefix="dev_")
     sync_runs_table = table_by_base_name("history_sync_runs", table_prefix="dev_")
 
     assert sessions_table.name == "dev_copilot_sessions"
@@ -121,6 +123,13 @@ def test_partition_clustering_and_prefixed_table_names_are_contractual() -> None
         "source_state",
         "search_text",
     )
+
+    assert stage_table.name == "dev_session_write_stage"
+    assert stage_table.partition_by == "source_partition_date"
+    assert stage_table.require_partition_filter is False
+    assert stage_table.cluster_by == ("session_id",)
+    assert stage_table.read_model_role == "operational_write_stage"
+    assert stage_table.column_map.keys() == sessions_table.column_map.keys()
 
     assert sync_runs_table.name == "dev_history_sync_runs"
     assert sync_runs_table.partition_by == "started_partition_date"

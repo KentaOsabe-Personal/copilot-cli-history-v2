@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
@@ -25,11 +26,17 @@ class _QueryJob:
         return self._rows
 
 
+class _LoadJob:
+    def result(self) -> None:
+        return None
+
+
 class _ClientDouble:
     def __init__(self, query_rows: tuple[tuple[Mapping[str, object], ...], ...] = ()) -> None:
         self.query_rows = list(query_rows)
         self.queries: list[str] = []
         self.inserted_rows: list[tuple[str, list[dict[str, object]]]] = []
+        self.loaded_rows: list[tuple[str, list[dict[str, object]]]] = []
 
     def query(
         self,
@@ -49,6 +56,21 @@ class _ClientDouble:
     ) -> list[object]:
         self.inserted_rows.append((table, json_rows))
         return []
+
+    def load_table_from_file(
+        self,
+        file_obj: object,
+        table: str,
+        *,
+        job_config: object | None = None,
+        location: str | None = None,
+    ) -> _LoadJob:
+        del job_config, location
+        data = file_obj.read().decode("utf-8")  # type: ignore[attr-defined]
+        self.loaded_rows.append(
+            (table, [json.loads(line) for line in data.splitlines() if line])
+        )
+        return _LoadJob()
 
 
 @dataclass(frozen=True)

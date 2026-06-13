@@ -29,6 +29,7 @@ HISTORY_SYNC_RUN_COUNT_FIELDS = (
 
 COPILOT_SESSIONS_BASE_NAME = "copilot_sessions"
 HISTORY_SYNC_RUNS_BASE_NAME = "history_sync_runs"
+SESSION_WRITE_STAGE_BASE_NAME = "session_write_stage"
 
 
 @dataclass(frozen=True)
@@ -67,6 +68,7 @@ class BigQueryTable:
 def read_model_tables(table_prefix: str = "") -> tuple[BigQueryTable, ...]:
     return (
         _copilot_sessions_table(table_prefix),
+        _session_write_stage_table(table_prefix),
         _history_sync_runs_table(table_prefix),
     )
 
@@ -239,6 +241,21 @@ def _copilot_sessions_table(table_prefix: str) -> BigQueryTable:
             "source_state",
             "search_text",
         ),
+    )
+
+
+def _session_write_stage_table(table_prefix: str) -> BigQueryTable:
+    source_table = _copilot_sessions_table(table_prefix)
+    return BigQueryTable(
+        base_name=SESSION_WRITE_STAGE_BASE_NAME,
+        name=_prefixed_table_name(SESSION_WRITE_STAGE_BASE_NAME, table_prefix),
+        columns=source_table.columns,
+        partition_by="source_partition_date",
+        partition_source="updated_at_source",
+        require_partition_filter=False,
+        cluster_by=("session_id",),
+        lookup_fields=("session_id", "source_partition_date"),
+        read_model_role="operational_write_stage",
     )
 
 

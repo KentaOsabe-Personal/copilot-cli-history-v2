@@ -6,17 +6,17 @@ Rails API + MySQL で構成されていた backend を、Python 3.14 + Django 5.
 
 Frontend は現行 React SPA を維持し、利用者から見える API contract は原則として維持する。Copilot CLI の raw files は引き続き一次ソースとし、BigQuery は MySQL と同じく再生成可能な read model として扱う。
 
-現在の worktree には Rails runtime が存在しないため、Rails backend と Django backend を live 並行稼働する parity validation は active plan から外す。Rails 由来の `api-contract-fixtures` を契約正本として Django API を検証し、React + Django の runtime smoke で切替確認を行う。
+現在の worktree には Rails runtime が存在しないため、Rails backend と Django backend を live 並行稼働する parity validation は active plan から外す。Rails 由来の `api-contract-fixtures` を契約正本として Django API を検証し、React からの runtime 確認や残存 artifact 整理は、必要な範囲で直接実装・検証として扱う。
 
 ## Approach Decision
 
-- **Chosen**: 互換 contract 固定を起点にした段階的 Django / BigQuery 移行。API contract fixture、Django backend の土台、BigQuery schema、Python reader、Django presenter、BigQuery repository、Django API、React + Django runtime validation、legacy Rails artifact cleanup を独立 spec として進める。
+- **Chosen**: 互換 contract 固定を起点にした段階的 Django / BigQuery 移行。API contract fixture、Django backend の土台、BigQuery schema、Python reader、Django presenter、BigQuery repository、Django API を独立 spec として進める。
 - **Why**: 現行機能を壊さず学習単位を明確にでき、API shape の互換性、raw file 正本、BigQuery の analytical datastore としての扱いを spec ごとに検証できるため。Rails runtime は既に削除済みのため、live Rails parity ではなく Rails 由来 fixture と React + Django smoke を切替判断の正本にする。
 - **Rejected alternatives**: 一括置換は backend runtime、datastore、reader 移植、API contract、Docker / docs 更新が混在してレビュー境界が大きすぎるため採用しない。Django ORM 用 BigQuery backend を通常 DB として使う案は、ORM 機能差や transaction 前提が学習目的と read model 用途に合わないため初期移行では採用しない。Frontend も同時に作り直す案は、API contract 互換性の検証を難しくするため採用しない。
 
 ## Scope
 
-- **In**: 現行 API fixture 固定、Django backend foundation、Python 3.14 runtime、Django settings / routing / health endpoint、Python 品質ツール、BigQuery dataset / table schema、schema 初期化 script、raw file reader / normalizer の Python 移植、summary / detail presenter と error envelope の Python 実装、BigQuery query / detail / upsert repository、`POST /api/history/sync`、`GET /api/sessions`、`GET /api/sessions/<session_id>`、Rails 由来 fixture に対する Django API 検証、React + Django runtime smoke、legacy Rails / MySQL artifact cleanup、README と steering 更新。
+- **In**: 現行 API fixture 固定、Django backend foundation、Python 3.14 runtime、Django settings / routing / health endpoint、Python 品質ツール、BigQuery dataset / table schema、schema 初期化 script、raw file reader / normalizer の Python 移植、summary / detail presenter と error envelope の Python 実装、BigQuery query / detail / upsert repository、`POST /api/history/sync`、`GET /api/sessions`、`GET /api/sessions/<session_id>`、Rails 由来 fixture に対する Django API 検証、README と steering 更新。
 - **Out**: Rails runtime の復元、Rails / Django live payload 差分検証、Frontend の全面刷新、Django admin / auth / session の導入、BigQuery を Django ORM の通常 DB として扱うこと、background job / file watch / 自動同期、raw files を一次ソースから外すこと、semantic search、外部公開向け hardening、本番 GCP 運用設計。
 
 ## Constraints
@@ -33,7 +33,7 @@ Frontend は現行 React SPA を維持し、利用者から見える API contrac
 
 ## Boundary Strategy
 
-- **Why this split**: API fixture は利用者から見える契約、Django foundation は runtime と開発品質、BigQuery schema は datastore contract、Python reader は raw file 正規化、Django presenter は response payload 互換、BigQuery repository は datastore access、Django API は HTTP orchestration、React + Django runtime validation は切替判断、legacy artifact cleanup は後始末と steering 更新に責務を分けられる。Rails runtime がない現状では、live Rails parity を復元せず、Rails 由来 fixture と現行 React + Django runtime を検証対象にする。
+- **Why this split**: API fixture は利用者から見える契約、Django foundation は runtime と開発品質、BigQuery schema は datastore contract、Python reader は raw file 正規化、Django presenter は response payload 互換、BigQuery repository は datastore access、Django API は HTTP orchestration に責務を分けられる。Rails runtime がない現状では、live Rails parity を復元せず、Rails 由来 fixture と必要な runtime smoke を検証対象にする。
 - **Shared seams to watch**: Rails 由来 fixture と Django response の JSON shape、`summary_payload` / `detail_payload`、root failure と degraded session の error envelope、日付 range と検索 query の互換性、BigQuery partition filter と scan cost、sync run の status / count / failure summary、Docker Compose の port と env vars、frontend の API base URL、残存 Rails / MySQL artifact の誤用。
 
 ## Specs (dependency order)
@@ -45,13 +45,11 @@ Frontend は現行 React SPA を維持し、利用者から見える API contrac
 - [x] django-presenters-contract -- Python presenter で summary / detail payload と error envelope を現行 API fixture に一致させる。Dependencies: copilot-history-python-reader, api-contract-fixtures
 - [x] bigquery-session-repository -- BigQuery の sessions query / detail query / staging + MERGE upsert repository を実装する。Dependencies: bigquery-read-model-schema, django-presenters-contract
 - [x] django-history-api -- Django で sync / list / detail API を実装し、現行 frontend が使う URL と JSON shape を返す。Dependencies: bigquery-session-repository
-- [ ] react-django-runtime-validation -- Rails 由来 fixture と React + Django runtime smoke で API contract と主要画面導線を検証する。Dependencies: django-history-api, api-contract-fixtures
-- [ ] cleanup-legacy-rails-artifacts -- Rails runtime 不在の現状に合わせ、残存 Rails / MySQL artifact と古い docs / steering を整理する。Dependencies: react-django-runtime-validation
 
 ## Retired / Replaced Specs
 
-- `rails-django-parity-validation` -- Rails runtime が current worktree に存在せず、Rails / Django live payload diff の前提が成立しないため retired。検証責務は `react-django-runtime-validation` に置き換える。
-- `remove-rails-mysql-stack` -- Rails / MySQL stack の削除は一部先行済みで、残っている作業は live stack removal ではなく artifact cleanup であるため retired。後始末責務は `cleanup-legacy-rails-artifacts` に置き換える。
+- `rails-django-parity-validation` -- Rails runtime が current worktree に存在せず、Rails / Django live payload diff の前提が成立しないため retired。検証責務は Rails 由来 fixture と必要な runtime smoke に寄せ、独立 spec は置かない。
+- `remove-rails-mysql-stack` -- Rails / MySQL stack の削除は一部先行済みで、残っている作業は live stack removal ではなく小さな artifact cleanup として直接扱うため retired。
 
 ## Previous Roadmap: MySQL Read Model Migration
 

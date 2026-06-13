@@ -1,11 +1,11 @@
 # Copilot CLI Session History V2
 
-Docker ベースで frontend / backend を起動する開発環境です。現在の active backend runtime は Django backend foundation です。
+Docker ベースで frontend / backend を起動する、Copilot CLI のローカル会話履歴ビューアです。現在の active backend runtime は **Django + BigQuery read model** です。
 
 | Service  | Stack                                             | Version line                                  | Port  |
 | -------- | ------------------------------------------------- | --------------------------------------------- | ----- |
 | frontend | React + TypeScript + Vite + Vitest + Tailwind CSS | React 19.2 / TypeScript 6 / Node.js 24 / pnpm | 51730 |
-| backend  | Django + pytest + ruff + mypy                     | Python 3.14 / Django 5.2                      | 30000 |
+| backend  | Django + pytest + ruff + mypy + BigQuery client   | Python 3.14 / Django 5.2                      | 30000 |
 
 ## 起動
 
@@ -33,6 +33,26 @@ curl http://localhost:30000/up
 {"status":"ok"}
 ```
 
+## API
+
+backend は Django で次の API を提供します。
+
+| Endpoint | 用途 |
+| --- | --- |
+| `GET /up` | Django runtime の health check |
+| `POST /api/history/sync` | Copilot raw files を読み取り、BigQuery read model を明示更新する |
+| `GET /api/sessions` | 同期済み read model から session 一覧を返す |
+| `GET /api/sessions/<session_id>` | 同期済み read model から session 詳細を返す |
+
+## データの流れ
+
+- **一次ソース**: ホストの `~/.copilot` にある Copilot CLI の raw files
+- **同期処理**: `POST /api/history/sync` が raw files を読み取り、再生成可能な BigQuery read model を更新する
+- **通常の表示**: `GET /api/sessions` と `GET /api/sessions/<session_id>` が BigQuery read model から JSON API を返す
+- **UI 表示**: frontend は明示同期、一覧、日付範囲、検索、cwd tabs、詳細タイムラインを API 契約に沿って表示する
+
+BigQuery は read model / index であり、raw files を一次ソースとするプロダクト原則は変更しません。
+
 ## Backend コマンド
 
 ```bash
@@ -44,10 +64,23 @@ docker compose run --rm backend bin/quality
 
 | Command           | 実行内容                         |
 | ----------------- | -------------------------------- |
-| `bin/test`      | `python -m pytest`             |
-| `bin/lint`      | `ruff check .`                 |
-| `bin/typecheck` | `mypy .`                       |
-| `bin/quality`   | lint、typecheck、test の順次実行 |
+| `bin/test`        | `python -m pytest`               |
+| `bin/lint`        | `ruff check .`                   |
+| `bin/typecheck`   | `mypy .`                         |
+| `bin/quality`     | lint、typecheck、test の順次実行 |
+
+BigQuery read model の schema SQL 確認は dry-run で実行できます。
+
+```bash
+docker compose run --rm backend python manage.py init_bigquery_read_model
+```
+
+実際に dataset / table 作成や metadata compare を行う場合は、BigQuery の環境変数と ADC または `GOOGLE_APPLICATION_CREDENTIALS` を設定したうえで実行します。
+
+```bash
+docker compose run --rm backend python manage.py init_bigquery_read_model --execute
+docker compose run --rm backend python manage.py init_bigquery_read_model --compare
+```
 
 ## Frontend コマンド
 
@@ -57,28 +90,32 @@ docker compose run --rm frontend sh -lc "pnpm install --no-frozen-lockfile && pn
 docker compose run --rm frontend sh -lc "pnpm install --no-frozen-lockfile && pnpm test"
 ```
 
-## データの流れ
+## BigQuery 設定
 
-- **一次ソース**: ホストの `~/.copilot` にある Copilot CLI の raw files
-- **同期処理**: 後続 spec で raw files を読み取り、再生成可能な read model に保存する
-- **通常の表示**: 後続 spec で read model から session API を返す
+backend は BigQuery read model を使う場合、次の環境変数を参照します。
 
-この foundation は raw files を一次ソースとして扱うプロダクト原則を変更しません。
+| Variable | 用途 |
+| --- | --- |
+| `HISTORY_API_REPOSITORY_BACKEND` | `bigquery` で BigQuery repository、未指定時は fake repository |
+| `BIGQUERY_PROJECT_ID` | BigQuery project |
+| `BIGQUERY_DATASET_ID` | read model dataset |
+| `BIGQUERY_LOCATION` | dataset / job location |
+| `BIGQUERY_TABLE_PREFIX` | 任意の table prefix |
+| `BIGQUERY_MAX_BYTES_BILLED_DEFAULT` | query cost guard の任意設定 |
+| `BIGQUERY_READ_MODEL_INTEGRATION` | opt-in integration tests / runtime integration の有効化 |
+| `GOOGLE_APPLICATION_CREDENTIALS` | service account credentials path。未指定時は ADC を使う |
 
-## この foundation で維持するもの
+Compose では `~/.copilot` と `~/.config/gcloud` を backend コンテナへ read-only mount します。
 
+## この runtime で維持するもの
+
+- Copilot raw files は一次ソースです。
+- BigQuery read model は再生成可能な補助層です。
 - frontend の接続先は `http://localhost:30000` のままです。
 - backend host port は `30000` のままです。
-- MySQL は通常 backend の依存ではありません。
-- backend は Django project と pytest / lint / type check / quality の入口を提供します。
+- Django admin / auth / session 機能は初期スコープ外で、API は stateless に保ちます。
+- Rails / MySQL 由来の artifact が残っていても、active backend runtime ではありません。
 
-## この foundation の対象外
+## 補足
 
-- BigQuery schema / 接続
-- Copilot raw history reader の Python 移植
-- `POST /api/history/sync`
-- `GET /api/sessions`
-- `GET /api/sessions/:id`
-- Django admin / auth / session 機能
-
-後続 spec は `backend/README.md` の追加先と検証入口を確認してから実装します。
+リポジトリ全体の判断基準は `.kiro/steering/`、機能ごとの要件・設計・タスクは `.kiro/specs/` に置きます。新しい backend 実装は Django / Python 側へ追加し、テストを追加・更新するときは各 test case の直前に `概要・目的`、`テストケース`、`期待値` のコメントを残します。

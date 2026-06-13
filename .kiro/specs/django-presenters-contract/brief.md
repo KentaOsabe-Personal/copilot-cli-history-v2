@@ -30,7 +30,7 @@ Python reader / projection の出力を入力にして、HTTP から独立した
 
 ## Upstream / Downstream
 - **Upstream**: `api-contract-fixtures`、`copilot-history-python-reader`
-- **Downstream**: `bigquery-session-repository`、`django-history-api`、`react-django-runtime-validation`
+- **Downstream**: `bigquery-session-repository`、`django-history-api`
 
 ## Existing Spec Touchpoints
 - **Extends**: なし。Rails presenter の Python 移植 spec として新規に切る。
