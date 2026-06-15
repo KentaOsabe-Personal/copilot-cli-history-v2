@@ -1,7 +1,0 @@
-session_id: current-schema-mixed
-cwd: /workspace/current-schema-mixed
-git_root: /workspace/current-schema-mixed
-repository: octo/example
-branch: feature/current-schema
-created_at: "2026-04-28T04:00:00Z"
-updated_at: "2026-04-28T04:02:00Z"

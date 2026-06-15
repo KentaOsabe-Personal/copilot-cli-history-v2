@@ -1,7 +1,0 @@
-session_id: current-model-root-fallback
-cwd: /workspace/current-model-root-fallback
-git_root: /workspace/current-model-root-fallback
-repository: octo/example
-branch: feature/session-ui-noise
-created_at: "2026-04-29T01:40:00Z"
-updated_at: "2026-04-29T01:42:00Z"

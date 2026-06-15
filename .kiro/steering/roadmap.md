@@ -34,7 +34,7 @@ Frontend は現行 React SPA を維持し、利用者から見える API contrac
 ## Boundary Strategy
 
 - **Why this split**: API fixture は利用者から見える契約、Django foundation は runtime と開発品質、BigQuery schema は datastore contract、Python reader は raw file 正規化、Django presenter は response payload 互換、BigQuery repository は datastore access、Django API は HTTP orchestration に責務を分けられる。Rails runtime がない現状では、live Rails parity を復元せず、Rails 由来 fixture と必要な runtime smoke を検証対象にする。
-- **Shared seams to watch**: Rails 由来 fixture と Django response の JSON shape、`summary_payload` / `detail_payload`、root failure と degraded session の error envelope、日付 range と検索 query の互換性、BigQuery partition filter と scan cost、sync run の status / count / failure summary、Docker Compose の port と env vars、frontend の API base URL、残存 Rails / MySQL artifact の誤用。
+- **Shared seams to watch**: Rails 由来 fixture と Django response の JSON shape、`summary_payload` / `detail_payload`、root failure と degraded session の error envelope、日付 range と検索 query の互換性、BigQuery partition filter と scan cost、sync run の status / count / failure summary、Docker Compose の port と env vars、frontend の API base URL、Rails / MySQL runtime artifact の再混入。
 
 ## Specs (dependency order)
 
@@ -49,7 +49,7 @@ Frontend は現行 React SPA を維持し、利用者から見える API contrac
 ## Retired / Replaced Specs
 
 - `rails-django-parity-validation` -- Rails runtime が current worktree に存在せず、Rails / Django live payload diff の前提が成立しないため retired。検証責務は Rails 由来 fixture と必要な runtime smoke に寄せ、独立 spec は置かない。
-- `remove-rails-mysql-stack` -- Rails / MySQL stack の削除は一部先行済みで、残っている作業は live stack removal ではなく小さな artifact cleanup として直接扱うため retired。
+- `remove-rails-mysql-stack` -- Rails / MySQL stack の削除は完了済みで、今後は runtime artifact の再混入を防ぐ cleanup として直接扱うため retired。
 
 ## Previous Roadmap: MySQL Read Model Migration
 

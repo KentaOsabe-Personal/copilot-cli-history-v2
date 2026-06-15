@@ -16,6 +16,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
   "django-stubs>=5.2,<5.3",
+  "debugpy>=1.8,<2",
   "mypy>=1.18,<2",
   "pytest>=9,<10",
   "pytest-django>=4.11,<5",

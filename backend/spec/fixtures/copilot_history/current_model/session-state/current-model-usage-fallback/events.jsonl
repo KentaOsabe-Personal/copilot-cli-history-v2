@@ -1,2 +1,0 @@
-{"type":"assistant.usage","data":{"model":"gpt-5-usage-fallback"},"model":"gpt-5-root-should-not-win","id":"usage-fallback-event-1","timestamp":"2026-04-29T01:30:01Z","parentId":null}
-{"type":"assistant.message","data":{"content":"usage fallback session"},"id":"usage-fallback-event-2","timestamp":"2026-04-29T01:30:02Z","parentId":"usage-fallback-event-1"}
