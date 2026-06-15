@@ -1,3 +1,0 @@
-{"type":"tool.execution_complete","data":{"toolCallId":"tool-model-earlier","toolName":"functions.bash","model":"gpt-5-tool-earlier","exitCode":0},"id":"same-priority-event-1","timestamp":"2026-04-29T01:50:01Z","parentId":null}
-{"type":"tool.execution_complete","data":{"toolCallId":"tool-model-blank","toolName":"functions.bash","model":"   ","exitCode":0},"id":"same-priority-event-2","timestamp":"2026-04-29T01:50:02Z","parentId":"same-priority-event-1"}
-{"type":"tool.execution_complete","data":{"toolCallId":"tool-model-later","toolName":"functions.bash","model":"gpt-5-tool-later","exitCode":0},"id":"same-priority-event-3","timestamp":"2026-04-29T01:50:03Z","parentId":"same-priority-event-2"}

@@ -1,7 +1,0 @@
-session_id: current-schema-degraded
-cwd: /workspace/current-schema-degraded
-git_root: /workspace/current-schema-degraded
-repository: octo/example
-branch: feature/current-schema
-created_at: "2026-04-28T02:00:00Z"
-updated_at: "2026-04-28T02:03:00Z"

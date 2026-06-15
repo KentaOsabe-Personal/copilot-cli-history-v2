@@ -93,7 +93,7 @@ docker compose run --rm backend python manage.py init_bigquery_read_model
 ### 2. Backend の active runtime は Django とする
 
 新しい API、reader、repository、management command は Python / Django 側へ追加します。  
-Rails / MySQL 由来のファイルが残っていても、現行の実装判断では active runtime として扱いません。
+Rails / MySQL 由来の runtime artifact は削除済みで、現行の実装判断では active runtime として扱いません。
 
 ### 3. BigQuery は read model として扱う
 

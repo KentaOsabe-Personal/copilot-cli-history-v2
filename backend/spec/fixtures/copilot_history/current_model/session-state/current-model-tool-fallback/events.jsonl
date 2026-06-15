@@ -1,3 +1,0 @@
-{"type":"assistant.usage","data":{"model":"gpt-5-usage-before-tool"},"id":"tool-fallback-event-1","timestamp":"2026-04-29T01:20:01Z","parentId":null}
-{"type":"tool.execution_complete","data":{"toolCallId":"tool-valid-model","toolName":"functions.bash","model":"gpt-5-tool-fallback","exitCode":0},"id":"tool-fallback-event-2","timestamp":"2026-04-29T01:20:02Z","parentId":"tool-fallback-event-1"}
-{"type":"assistant.usage","data":{"model":"gpt-5-usage-after-tool"},"model":"gpt-5-root-after-tool","id":"tool-fallback-event-3","timestamp":"2026-04-29T01:20:03Z","parentId":"tool-fallback-event-2"}

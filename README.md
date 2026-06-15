@@ -82,6 +82,18 @@ docker compose run --rm backend python manage.py init_bigquery_read_model --exec
 docker compose run --rm backend python manage.py init_bigquery_read_model --compare
 ```
 
+## VSCode で backend をデバッグする
+
+VSCode の Run and Debug から `Django backend: attach to Docker` を選ぶと、デバッグ用 Compose override で backend を起動し、`debugpy` に attach します。
+
+使い方:
+
+1. 任意の Python ファイルに breakpoint を置く
+2. VSCode の Run and Debug で `Django backend: attach to Docker` を開始する
+3. attach 後に http://localhost:30000/up や frontend から API を叩く
+
+デバッグ起動では `docker-compose.debug.yml` により backend command が `python -m debugpy ... -m django runserver ... --noreload` に差し替わります。Django autoreloader は親子プロセスでbreakpointが分かりにくくなるため、debug時は `--noreload` を使います。
+
 ## Frontend コマンド
 
 ```bash
@@ -114,7 +126,7 @@ Compose では `~/.copilot` と `~/.config/gcloud` を backend コンテナへ r
 - frontend の接続先は `http://localhost:30000` のままです。
 - backend host port は `30000` のままです。
 - Django admin / auth / session 機能は初期スコープ外で、API は stateless に保ちます。
-- Rails / MySQL 由来の artifact が残っていても、active backend runtime ではありません。
+- Rails / MySQL 由来の runtime artifact は削除済みで、active backend runtime は Django / Python です。
 
 ## 補足
 

@@ -54,6 +54,12 @@ docker compose run --rm backend bin/quality
 | `bin/typecheck` | `mypy .` | type check failure |
 | `bin/quality` | lint、typecheck、test の順次実行 | 最初に失敗した確認種別 |
 
+## VSCode デバッグ
+
+ルートの VSCode workspace で Run and Debug から `Django backend: attach to Docker` を選ぶと、backend container が `debugpy` 付きで起動し、VSCode が port `5678` に attach します。
+
+breakpoint を置いてからデバッグを開始し、attach 完了後に `GET /api/sessions` などのAPIを実行してください。デバッグ時は `docker-compose.debug.yml` で `--noreload` を指定し、Django autoreloader による二重プロセス化を避けます。
+
 ## BigQuery read model
 
 schema SQL の dry-run は credentials なしで確認できます。

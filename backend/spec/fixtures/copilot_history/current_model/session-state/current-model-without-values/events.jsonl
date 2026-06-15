@@ -1,5 +1,0 @@
-{"type":"user.message","data":{"content":"show a current session without model metadata"},"id":"missing-model-event-1","timestamp":"2026-04-29T01:10:01Z","parentId":null}
-{"type":"assistant.message","data":{"content":"This session has no usable model candidate."},"id":"missing-model-event-2","timestamp":"2026-04-29T01:10:02Z","parentId":"missing-model-event-1"}
-{"type":"session.shutdown","data":{"currentModel":""},"id":"missing-model-event-3","timestamp":"2026-04-29T01:10:03Z","parentId":"missing-model-event-2"}
-{"type":"tool.execution_complete","data":{"toolCallId":"tool-whitespace-model","toolName":"functions.bash","model":" "},"id":"missing-model-event-4","timestamp":"2026-04-29T01:10:04Z","parentId":"missing-model-event-2"}
-{"type":"assistant.usage","data":{"model":false},"model":{"value":"gpt-5-object"},"id":"missing-model-event-5","timestamp":"2026-04-29T01:10:05Z","parentId":"missing-model-event-2"}

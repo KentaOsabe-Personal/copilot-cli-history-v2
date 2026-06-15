@@ -102,7 +102,7 @@ Compose、Dockerfile、README、Kiro 関連はルートで管理します。
 ### 2. Backend は Django / Python 側を正とする
 
 新しい backend 実装は `backend_config`、`health`、`history_api`、`copilot_history`、`history_read_model` のいずれかに置きます。  
-Rails / MySQL 由来の `app/`、`config/`、`db/migrate/`、`lib/copilot_history/*.rb`、`spec/` は移行前 artifact として扱い、現行設計の追加先にしません。
+Rails / MySQL 由来の runtime artifact は削除済みです。`app/`、`config/`、`db/migrate/`、`lib/copilot_history/*.rb`、`spec/` は現行設計の追加先にしません。
 
 ### 3. HTTP と履歴ドメインを分離する
 
