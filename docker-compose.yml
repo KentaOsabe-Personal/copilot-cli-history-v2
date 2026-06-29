@@ -27,14 +27,18 @@ services:
       - "30000:30000"
     volumes:
       - ./backend:/app
+      - ./.kiro:/workspace/.kiro:ro
+      - ~/.copilot:/root/.copilot:ro
       - ~/.config/gcloud:/root/.config/gcloud:ro
     environment:
       DJANGO_SETTINGS_MODULE: backend_config.settings
       PYTHONUNBUFFERED: "1"
-      BIGQUERY_PROJECT_ID:
-      BIGQUERY_DATASET_ID:
-      BIGQUERY_LOCATION:
-      BIGQUERY_TABLE_PREFIX:
+      COPILOT_HOME: /root/.copilot
+      HISTORY_API_REPOSITORY_BACKEND: bigquery
+      BIGQUERY_PROJECT_ID: project-d53e5021-e5a2-49c9-a4b
+      BIGQUERY_DATASET_ID: copilot_cli_history_v2
+      BIGQUERY_LOCATION: asia-northeast1
+      BIGQUERY_TABLE_PREFIX: ""
       BIGQUERY_READ_MODEL_INTEGRATION: 1
 volumes:
   frontend_pnpm_store:
