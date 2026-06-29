@@ -17,6 +17,7 @@ Read `references/publish-history.md` when selecting titles, branch/base defaults
 - Normal branch flow: `develop` -> `main`.
 - PR state: ready for review by default. Create a draft only when the user asks for draft or the work is explicitly incomplete.
 - Language: use Japanese for user-facing summaries and PR prose unless an existing title or user request is English.
+- PR body headings: use Japanese headings by default, for example `## 概要`, `## 検証`, and `## 補足`.
 - Scope safety: never stage unrelated user changes silently.
 
 ## Prerequisites
@@ -83,10 +84,14 @@ If a high-risk file is already staged, do not commit. Ask whether to unstage it 
    - If a PR exists, update it only if the user asked or the title/body is clearly stale.
    - If no PR exists, create one targeting `main`.
    - Use a title that summarizes the whole published diff. `[codex] ...` is acceptable but not mandatory; follow recent repository history and user wording.
-   - Write a PR body with:
-     - Summary
-     - Validation
-     - Notes or limitations, only when relevant
+   - Write a PR body with Japanese headings by default:
+     - `## 概要`
+     - `## 検証`
+     - `## 補足` only for blockers, skipped checks, intentional exclusions, or follow-up context
+   - In the validation section, do not list only raw command names. Pair each command with the purpose or result it verifies, so reviewers can understand why it matters.
+     - Good: ``- `jq empty lsp.json`: repo-level LSP 設定が valid JSON であることを確認``
+     - Good: ``- `docker compose config --quiet`: Compose 設定が構文上有効で、サービス定義として解釈できることを確認``
+     - Bad: `- jq empty lsp.json`
 
 8. Report the result.
    - Include branch, commit hash, PR URL, validation run, and any uncommitted files intentionally left untouched.

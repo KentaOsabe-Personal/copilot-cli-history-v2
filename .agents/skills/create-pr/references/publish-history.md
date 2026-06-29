@@ -37,14 +37,16 @@ Prefer concise messages that describe the actual committed diff. Avoid broad mes
 
 ## PR Body Shape
 
-Use short Markdown:
+Use short Japanese Markdown by default:
 
 ```md
-## Summary
+## 概要
 - ...
 
-## Validation
-- ...
+## 検証
+- `command`: 何を確認したか
 ```
 
-Add a `## Notes` section only for blockers, skipped checks, intentional exclusions, or follow-up context.
+Add a `## 補足` section only for blockers, skipped checks, intentional exclusions, or follow-up context.
+
+Do not list validation commands without context. The validation section should explain the verification intent or result, not just the literal command output.
